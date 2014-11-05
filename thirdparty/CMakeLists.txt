@@ -1,5 +1,5 @@
 
-set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw-3.0.4)
 add_subdirectory(glew-cmake)
