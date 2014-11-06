@@ -1,6 +1,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #include <iostream>
 
 static void error_callback(int error, const char* description)
@@ -14,7 +18,17 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
+
+#ifdef WIN32
+int CALLBACK WinMain(
+   HINSTANCE hInstance,
+   HINSTANCE hPrevInstance,
+   LPSTR lpCmdLine,
+   int nCmdShow
+)
+#else
 int main()
+#endif
 {
    glfwSetErrorCallback(error_callback);
 

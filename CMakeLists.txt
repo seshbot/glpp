@@ -15,4 +15,4 @@ link_libraries(${GLEW_LIBRARIES})
 
 include_directories(SYSTEM ${GLM_INCLUDES})
 
-add_executable(glapp main.cpp)
+add_executable(glapp WIN32 main.cpp)
