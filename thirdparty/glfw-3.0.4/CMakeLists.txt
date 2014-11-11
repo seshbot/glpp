@@ -442,5 +442,3 @@ if (GLFW_INSTALL)
                           ${GLFW_BINARY_DIR}/cmake_uninstall.cmake)
     endif()
 endif()
-
-set(GLEW_INCLUDES xxxxkkkkkkxkxkxkxkx)

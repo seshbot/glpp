@@ -1,10 +1,31 @@
 
 #
+# Angle
+#
+
+if (WIN32)
+    add_subdirectory(angle)
+endif ()
+
+#
 # GLFW
 #
 
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+
+if (WIN32)
+    set(GLFW_USE_EGL ON CACHE BOOL "" FORCE)
+    set(GLFW_CLIENT_LIBRARY glesv2 CACHE STRING "" FORCE)
+
+    set(EGL_INCLUDE_DIR ${ANGLE_EGL_INCLUDE_DIR} CACHE INTERNAL "")
+    set(EGL_LIBRARY ${ANGLE_EGL_LIBRARY} CACHE INTERNAL "")
+
+    set(GLESv2_INCLUDE_DIR ${ANGLE_GLESv2_INCLUDE_DIR} CACHE INTERNAL "")
+    set(GLESv2_LIBRARY ${ANGLE_GLESv2_LIBRARY} CACHE INTERNAL "")
+endif ()
 
 add_subdirectory(glfw-3.0.4)
 
@@ -12,9 +33,13 @@ add_subdirectory(glfw-3.0.4)
 # GLEW
 #
 
-set(GLEW_LIBRARIES libglew_static CACHE INTERNAL "")
+if (NOT WIN32)
+    set(glew-cmake_BUILD_STATIC OFF CACHE BOOL "" FORCE)
+    set(GLEW_LIBRARIES libglew_shared CACHE INTERNAL "")
+    set(GLEW_INCLUDES ${glew_SOURCE_DIR}/include CACHE INTERNAL "")
 
-add_subdirectory(glew-cmake)
+    add_subdirectory(glew-cmake)
+endif ()
 
 #
 # GLM
