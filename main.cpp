@@ -1,24 +1,10 @@
 #ifdef WIN32
 #  include <windows.h>
-#  include <direct.h>
 #  include <GLES2/gl2.h>
 
-   const char * cwd() {
-      static char cwd[MAX_PATH]; // not thread safe!
-      return _getcwd(cwd, MAX_PATH);
-   }
-
 #  define USE_OPENGL_ES_2
-
 #else  // LINUX, OSX
-#  include <unistd.h>
-#  include <limits.h> // for MAX_PATH
 #  include <GL/glew.h>
-
-   const char * cwd() {
-      static char cwd[PATH_MAX];
-      return getcwd(cwd, PATH_MAX);
-   }
 
 #  define USE_GLEW
 #endif
@@ -26,36 +12,16 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include "utils.h"
 
 
 namespace
 {
-   template <typename T>
-   void print_log(T msg)
-   {
-#ifdef WIN32
-      ::OutputDebugString((LPCSTR)msg);
-#endif
-      std::cout << msg;
-   }
-
-   template <typename T>
-   void print_error(T msg)
-   {
-#ifdef WIN32
-      ::OutputDebugString((LPCSTR)msg);
-#endif
-      std::cerr << msg;
-   }
-
    void error_callback(int error, const char* description)
    {
-      print_error("Error: ");
-      print_error(description);
-      print_error("\n\tOpenGL error: ");
+      utils::log(utils::LOG_ERROR, "Error: %s\n", description);
 
       const char * err = "No Error";
-
       GLenum glErr = glGetError();
       switch (glErr)
       {
@@ -68,8 +34,7 @@ namespace
       default:                   err = "unrecognised enum value!";
       }
 
-      print_error(err);
-      print_error("\n");
+      utils::log(utils::LOG_ERROR, "\n\tOpenGL error: %s\n", err);
    }
 
    static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -90,16 +55,14 @@ namespace
       {
          char* buffer = new char[length];
          glGetShaderInfoLog(shader, length, NULL, buffer);
-         print_log("shader info: ");
-         print_log(buffer);
-         print_log("\n");
+         utils::log(utils::LOG_INFO, "shader info: %s\n", buffer);
          delete[] buffer;
 
          GLint success;
          glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
          if (success != GL_TRUE)
          {
-            print_error("GL Error: Could not get shader info\n");
+            utils::log(utils::LOG_ERROR, "GL Error: Could not get shader info\n");
             // TODO: get error
             exit(EXIT_FAILURE);
          }
@@ -131,10 +94,7 @@ int CALLBACK WinMain(
 int main()
 #endif
 {
-   print_log("starting (cwd: ");
-
-   print_log(cwd());
-   print_log(")...\n");
+   utils::log(utils::LOG_INFO, "starting (cwd: %s)\n", utils::getcwd().c_str());
 
    glfwSetErrorCallback(error_callback);
 
@@ -179,14 +139,13 @@ int main()
    }
 #endif
 
-   print_log("GLFW version        : "); print_log(glfwGetVersionString());
-   print_log("\nGL_VERSION          : "); print_log(glGetString(GL_VERSION));
-   print_log("\nGL_VENDOR           : "); print_log(glGetString(GL_VENDOR));
-   print_log("\nGL_RENDERER         : "); print_log(glGetString(GL_RENDERER));
-   print_log("\n");
-//   print_log("GL_SHADING_LANGUAGE_VERSION : "); print_log(glGetString(GL_SHADING_LANGUAGE_VERSION));
+   utils::log(utils::LOG_INFO, "GLFW version        : %s\n", glfwGetVersionString());
+   utils::log(utils::LOG_INFO, "GL_VERSION          : %s\n", glGetString(GL_VERSION));
+   utils::log(utils::LOG_INFO, "GL_VENDOR           : %s\n", glGetString(GL_VENDOR));
+   utils::log(utils::LOG_INFO, "GL_RENDERER         : %s\n", glGetString(GL_RENDERER));
+//   utils::log(utils::LOG_INFO, "GL_SHADING_LANGUAGE_VERSION : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-   print_log("creating shader program...\n");
+   utils::log(utils::LOG_INFO, "creating shader program...\n");
 
    const char vertex_src[] = "\
       attribute vec4 position;                     \n\
@@ -210,35 +169,33 @@ int main()
    glLinkProgram(shaderProgram);    // link the program
    glUseProgram(shaderProgram);    // and select it for usage
 
-   print_log("initialising shader...\n");
+   utils::log(utils::LOG_INFO, "initialising shader...\n");
 
    GLint position_loc = glGetAttribLocation(shaderProgram, "position");
 
    if (position_loc < 0) {
-      print_error("GL Error: Unable to get uniform location\n");
+      utils::log(utils::LOG_ERROR, "GL Error: Unable to get uniform location\n");
 
       exit(EXIT_FAILURE);
    }
 
-   const float vertexArray[] = {
-      0.0, 0.5, 0.0,
-      -0.5, 0.0, 0.0,
-      0.0, -0.5, 0.0,
-      0.5, 0.0, 0.0,
-      0.0, 0.5, 0.0
-   };
-
-   int t = 0;
    while (!glfwWindowShouldClose(window))
    {
       int width, height;
       glfwGetFramebufferSize(window, &width, &height);
-      float ratio = width / (float)height;
 
       glClearColor(.9f, .9f, .9f, 1.f);
 
       glViewport(0, 0, width, height);
       glClear(GL_COLOR_BUFFER_BIT);
+
+      static const float vertexArray[] = {
+         0.0, 0.5, 0.0,
+         -0.5, 0.0, 0.0,
+         0.0, -0.5, 0.0,
+         0.5, 0.0, 0.0,
+         0.0, 0.5, 0.0
+      };
 
       glVertexAttribPointer(position_loc, 3, GL_FLOAT, false, 0, vertexArray);
       glEnableVertexAttribArray(position_loc);
