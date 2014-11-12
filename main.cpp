@@ -1,12 +1,29 @@
 #ifdef WIN32
-#include <windows.h>
-#include <direct.h>
-#else
-#include <unistd.h>
+#  include <windows.h>
+#  include <direct.h>
+#  include <GLES2/gl2.h>
+
+   const char * cwd() {
+      static char cwd[MAX_PATH]; // not thread safe!
+      return _getcwd(cwd, MAX_PATH);
+   }
+
+#  define USE_OPENGL_ES_2
+
+#else  // LINUX, OSX
+#  include <unistd.h>
+#  include <limits.h> // for MAX_PATH
+#  include <GL/glew.h>
+
+   const char * cwd() {
+      static char cwd[PATH_MAX];
+      return getcwd(cwd, PATH_MAX);
+   }
+
+#  define USE_GLEW
 #endif
 
 #include <GLFW/glfw3.h>
-#include <GLES2/gl2.h>
 
 #include <iostream>
 
@@ -93,6 +110,7 @@ namespace
    {
       GLuint shader = glCreateShader(type);
 
+
       glShaderSource(shader, 1, &source, NULL);
       glCompileShader(shader);
 
@@ -115,9 +133,8 @@ int main()
 {
    print_log("starting (cwd: ");
 
-   char cwd[MAX_PATH];
-   print_log(_getcwd(cwd, MAX_PATH));
-   print_log(")...");
+   print_log(cwd());
+   print_log(")...\n");
 
    glfwSetErrorCallback(error_callback);
 
@@ -129,7 +146,9 @@ int main()
    // glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
    // GL_ARB_framebuffer_object available in GL ES 2.0?
 
+#ifdef USE_OPENGL_ES_2
    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#endif
    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
    glfwWindowHint(GLFW_SAMPLES, 4);
@@ -145,6 +164,21 @@ int main()
    glfwMakeContextCurrent(window);
    glfwSetKeyCallback(window, key_callback);
    
+#ifdef USE_GLEW
+   GLenum err = glewInit();
+   if (err != GLEW_OK)
+   {
+      print_error("GLEW init error\n");
+      exit(EXIT_FAILURE);
+   }
+
+   if (!GLEW_VERSION_2_1)
+   {
+      print_error("GLEW v2.1 not available!\n");
+      exit(EXIT_FAILURE);
+   }
+#endif
+
    print_log("GLFW version        : "); print_log(glfwGetVersionString());
    print_log("\nGL_VERSION          : "); print_log(glGetString(GL_VERSION));
    print_log("\nGL_VENDOR           : "); print_log(glGetString(GL_VENDOR));
