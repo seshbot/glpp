@@ -128,13 +128,13 @@ int main()
    GLenum err = glewInit();
    if (err != GLEW_OK)
    {
-      print_error("GLEW init error\n");
+      utils::log(utils::LOG_ERROR, "GLEW init error\n");
       exit(EXIT_FAILURE);
    }
 
    if (!GLEW_VERSION_2_1)
    {
-      print_error("GLEW v2.1 not available!\n");
+      utils::log(utils::LOG_ERROR, "GLEW v2.1 not available!\n");
       exit(EXIT_FAILURE);
    }
 #endif

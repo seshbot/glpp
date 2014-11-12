@@ -17,10 +17,10 @@ namespace utils
    {
 #ifdef WIN32
          char cwd[MAX_PATH]; // not thread safe!
-         return _getcwd(cwd, MAX_PATH);
+         return ::_getcwd(cwd, MAX_PATH);
 #else  // LINUX, OSX
          char cwd[PATH_MAX];
-         return getcwd(cwd, PATH_MAX);
+         return ::getcwd(cwd, PATH_MAX);
 #endif
    }
 
@@ -31,7 +31,7 @@ namespace utils
       char buffer[1024];
 #pragma warning( push )
 #pragma warning( disable : 4996 )
-      vsprintf_s(buffer, format, args);
+      vsprintf(buffer, format, args);
 #pragma warning( pop )
       va_end(args);
 
