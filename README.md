@@ -1,7 +1,7 @@
 Getting started with OpenGL
 =============
 
-My first attempt at creating an OpenGL starter project.
+My first attempt at creating an OpenGL starter project, the only dependency should be CMake.
 
 To compile you should be able to write: 
 
