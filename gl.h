@@ -6,6 +6,8 @@
 #include <functional>
 #include <memory>
 
+#include "input.h"
+
 namespace gl {
    struct error : public std::runtime_error {
       error() : std::runtime_error("") { }
@@ -37,7 +39,7 @@ namespace gl {
    };
 
    class context;
-   using key_callback_t = std::function < void(context &, int, int, int, int) >; // key, scancode, action, mods
+   using key_callback_t = std::function < void(context &, Key, int, KeyAction, int) >; // key, scancode, action, mods
 
 	class context {
    public:
@@ -45,6 +47,8 @@ namespace gl {
       context(context const &) = delete;
       context & operator=(context const &) = delete;
       ~context();
+
+      std::string info() const;
 
       void destroy(); // optional, will be invoked by dtor
 

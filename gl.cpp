@@ -84,7 +84,7 @@ namespace gl
             callbacks_.push_back({ window, context, callback });
          }
 
-         void invoke(GLFWwindow* window, int key, int scancode, int action, int mods) {
+         void invoke(GLFWwindow* window, Key key, int scancode, KeyAction action, int mods) {
             auto info = [&]() -> callback_info_t {
                std::unique_lock<std::mutex> l(m_);
 
@@ -105,7 +105,12 @@ namespace gl
       window_key_callbacks_t window_key_callbacks_;
 
       void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-         window_key_callbacks_.invoke(window, key, scancode, action, mods);
+         window_key_callbacks_.invoke(
+            window, 
+            gl::from_glfw_key(key), 
+            scancode, 
+            gl::from_glfw_key_action(action), 
+            gl::from_glfw_key_mods(mods));
       }
    }
 
@@ -148,6 +153,20 @@ namespace gl
 
    context::~context() {
       destroy();
+   }
+
+   std::string context::info() const {
+      std::string buf;
+      buf += "GLFW version        : "; buf += glfwGetVersionString();
+      buf += "\nGL_VERSION          : "; buf += (const char *)glGetString(GL_VERSION);
+      buf += "\nGL_VENDOR           : "; buf += (const char *)glGetString(GL_VENDOR);
+      buf += "\nGL_RENDERER         : "; buf += (const char *)glGetString(GL_RENDERER);
+#ifdef GL_SHADING_LANGUAGE_VERSION
+      buf += "\nGL_SHADING_LANGUAGE_VERSION : "; buf += (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+#endif
+      buf += "\n";
+
+      return buf;
    }
 
    void context::destroy() {

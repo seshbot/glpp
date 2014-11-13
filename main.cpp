@@ -9,8 +9,6 @@
 #  define USE_GLEW
 #endif
 
-#include <GLFW/glfw3.h>
-
 #include <iostream>
 #include "utils.h"
 #include "gl.h"
@@ -77,12 +75,12 @@ int main()
    }
 
    try {
-      auto key_handler = [](gl::context & ctx, int key, int scancode, int action, int mods) {
-         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+      auto key_handler = [](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
+         if (key == gl::KEY_ESCAPE && action == gl::KEY_ACTION_PRESS)
             ctx.set_should_close();
       };
 
-      gl::context context = { key_handler };
+      gl::context context { key_handler };
 
 #ifdef USE_GLEW
       GLenum err = glewInit();
@@ -99,11 +97,7 @@ int main()
       }
 #endif
 
-      utils::log(utils::LOG_INFO, "GLFW version        : %s\n", glfwGetVersionString());
-      utils::log(utils::LOG_INFO, "GL_VERSION          : %s\n", glGetString(GL_VERSION));
-      utils::log(utils::LOG_INFO, "GL_VENDOR           : %s\n", glGetString(GL_VENDOR));
-      utils::log(utils::LOG_INFO, "GL_RENDERER         : %s\n", glGetString(GL_RENDERER));
-      //   utils::log(utils::LOG_INFO, "GL_SHADING_LANGUAGE_VERSION : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+      utils::log(utils::LOG_INFO, context.info().c_str());
 
       utils::log(utils::LOG_INFO, "creating shader program...\n");
       
