@@ -14,45 +14,6 @@
 #include "gl.h"
 
 
-namespace
-{
-   void print_shader_info_log(GLuint shader)
-   {
-      GLint  length;
-      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-
-      if (length)
-      {
-         char* buffer = new char[length];
-         glGetShaderInfoLog(shader, length, NULL, buffer);
-         utils::log(utils::LOG_INFO, "shader info: %s\n", buffer);
-         delete[] buffer;
-
-         GLint success;
-         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-         if (success != GL_TRUE)
-         {
-            utils::log(utils::LOG_ERROR, "GL Error: Could not get shader info\n");
-            // TODO: get error
-            exit(EXIT_FAILURE);
-         }
-      }
-   }
-
-   GLuint load_shader(const char * source, GLenum type)
-   {
-      GLuint shader = glCreateShader(type);
-
-
-      glShaderSource(shader, 1, &source, NULL);
-      glCompileShader(shader);
-
-      print_shader_info_log(shader);
-
-      return shader;
-   }
-}
-
 #ifdef WIN32
 int CALLBACK WinMain(
    HINSTANCE hInstance,
@@ -75,9 +36,12 @@ int main()
    }
 
    try {
-      auto key_handler = [](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
+      bool reload_program = false;
+      auto key_handler = [&](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
          if (key == gl::KEY_ESCAPE && action == gl::KEY_ACTION_PRESS)
             ctx.set_should_close();
+         if (key == gl::KEY_R && action == gl::KEY_ACTION_PRESS)
+            reload_program = true;
       };
 
       gl::context context { key_handler };
@@ -98,34 +62,39 @@ int main()
 #endif
 
       utils::log(utils::LOG_INFO, context.info().c_str());
-
-      utils::log(utils::LOG_INFO, "creating shader program...\n");
       
-      const char vertex_src[] = "\
-         attribute vec4 position;                     \n\
-                                                      \n\
-         void main() {                                \n\
-            gl_Position = position;                   \n\
-         }";
+      auto create_program = [] {
+         utils::log(utils::LOG_INFO, "compiling shader program...\n");
 
-      const char fragment_src[] = "\
-         void main() {                                \n\
-            gl_FragColor = vec4(.2, .2, .2, 1.);      \n\
-         }";
+         const char vertex_src[] = "\
+            attribute vec4 position;                     \n\
+                                                         \n\
+            void main() {                                \n\
+               gl_Position = position;                   \n\
+            }";
 
-      GLuint vertexShader = load_shader(vertex_src, GL_VERTEX_SHADER);
-      GLuint fragmentShader = load_shader(fragment_src, GL_FRAGMENT_SHADER);
+         const char fragment_src[] = "\
+            void main() {                                \n\
+               gl_FragColor = vec4(.2, .2, .2, 1.);      \n\
+            }";
 
-      GLuint shaderProgram = glCreateProgram();
-      glAttachShader(shaderProgram, vertexShader);
-      glAttachShader(shaderProgram, fragmentShader);
+         auto program = gl::program { 
+               gl::shader::create_from_source(vertex_src, gl::shader::Vertex),
+               gl::shader::create_from_source(fragment_src, gl::shader::Fragment)
+            };
 
-      glLinkProgram(shaderProgram);    // link the program
-      glUseProgram(shaderProgram);    // and select it for usage
+         utils::log(utils::LOG_INFO, " ...success\n");
+         auto logs = program.compile_logs();
+         if (logs.length() > 0) {
+            utils::log(utils::LOG_INFO, "%s", logs.c_str());
+         }
 
-      utils::log(utils::LOG_INFO, "initialising shader...\n");
+         return program;
+      };
 
-      GLint position_loc = glGetAttribLocation(shaderProgram, "position");
+      auto program = create_program();
+
+      GLint position_loc = glGetAttribLocation(program.id(), "position");
 
       if (position_loc < 0) {
          utils::log(utils::LOG_ERROR, "GL Error: Unable to get uniform location\n");
@@ -135,6 +104,13 @@ int main()
 
       while (!context.closing())
       {
+         if (reload_program) {
+            program = create_program();
+            position_loc = glGetAttribLocation(program.id(), "position");
+
+            reload_program = false;
+         }
+
          auto dims = context.frame_buffer_dims();
 
          glClearColor(.9f, .9f, .9f, 1.f);
@@ -157,8 +133,7 @@ int main()
          context.swap();
       }
 
-      glDeleteProgram(shaderProgram);
-
+      program.destroy();
       context.destroy();
       gl::shutdown();
 

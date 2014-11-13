@@ -17,8 +17,28 @@
 #include <atomic>
 #include <mutex>
 
+#include "utils.h"
+
 
 namespace {
+
+   std::string get_shader_info_log(gl::id_t shader_id)
+   {
+      GLint  length;
+      glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &length);
+
+      if (length) {
+         char* buffer = new char[length];
+         glGetShaderInfoLog(shader_id, length, NULL, buffer);
+
+         std::string message(buffer);
+         delete[] buffer;
+         return message;
+      }
+
+      return "";
+   }
+
    void delete_program_shaders(gl::id_t id) {
       if (0 == id) return;
 
@@ -30,26 +50,113 @@ namespace {
 
       for (auto s : shaders) { glDeleteShader(s); }
    }
+
+   GLenum to_glenum(gl::shader::Type type) {
+      switch (type) {
+      case gl::shader::Vertex: return GL_VERTEX_SHADER;
+      case gl::shader::Fragment: return GL_FRAGMENT_SHADER;
+      default: throw gl::error("unsupported shader type");
+      }
+   }
 }
 
 namespace gl
 {
+
+   /**
+   * class shader
+   *
+   */
+   shader_compile_error::shader_compile_error(id_t id)
+      : error("could not compile shader")
+      , log_(get_shader_info_log(id)) {
+   }
+
+   shader::shader(std::string const & source, shader::Type type)
+      : id_(glCreateShader(to_glenum(type)))
+   {
+      const char * srcdata = source.c_str();
+      glShaderSource(id_, 1, &srcdata, NULL);
+      glCompileShader(id_);
+
+      GLint success;
+      glGetShaderiv(id_, GL_COMPILE_STATUS, &success);
+      if (success != GL_TRUE) {
+         throw shader_compile_error(id_);
+         // TODO: delete shader?
+      }
+
+      compile_log_ = get_shader_info_log(id_);
+   }
+
+   shader shader::create_from_file(std::string const & filename, shader::Type type) {
+      return create_from_source(utils::read_file(filename), type);
+   }
+
+   shader shader::create_from_source(std::string const & source, shader::Type type) {
+      return{ source, type };
+   }
+
+   shader::~shader() {
+      glDeleteShader(id_);
+   }
+
+   shader::shader(shader && other)
+      : id_(other.id_)
+      , type_(other.type_)
+      , compile_log_(std::move(other.compile_log_)) {
+      other.id_ = 0;
+   }
+
+   shader & shader::operator=(shader && other) {
+      std::swap(id_, other.id_);
+      type_ = other.type_;
+      compile_log_ = std::move(other.compile_log_);
+      return *this;
+   }
+
+
   /**
    * class program
    *
    */
 
-   program::program(id_t id)
-   : id_(id) {
+   program::program()
+      : id_(glCreateProgram()) {
+
+   }
+
+   program::program(shader s)
+      : program() {
+      try {
+         attach(std::move(s));
+
+         glLinkProgram(id_);
+         use();
+      }
+      catch (...) {
+         destroy();
+         throw;
+      }
+   }
+
+   program::program(shader s1, shader s2)
+   : program() {
+      try {
+         attach(std::move(s1));
+         attach(std::move(s2));
+
+         glLinkProgram(id_);
+         use();
+      }
+      catch (...) {
+         destroy();
+         throw;
+      }
    }
 
    program::~program() {
-      delete_program_shaders(id_);
-      glDeleteProgram(id_);
-   }
-
-   program program::create() {
-      return { glCreateProgram() };
+      destroy();
    }
 
    program::program(program && other)
@@ -60,6 +167,43 @@ namespace gl
    program & program::operator=(program && other) {
       std::swap(id_, other.id_);
       return *this;
+   }
+
+   void program::use() const {
+      glUseProgram(id_);
+   }
+
+   void program::destroy() {
+      shaders_.clear();
+
+      glDeleteProgram(id_);
+      id_ = 0;
+   }
+
+   void program::attach(shader s) {
+      glAttachShader(id_, s.id());
+      shaders_.push_back(std::move(s));
+   }
+
+   std::string program::compile_logs() const {
+      auto type_to_string = [](shader const & s) -> std::string {
+         switch (s.type()) {
+         case shader::Vertex: return " --- vertex log ---\n";
+         case shader::Fragment: return " --- fragment log ---\n";
+         default: return " --- unrecognised shader type log ---\n";
+         }
+      };
+
+      std::string logs;
+      for (auto & s : shaders_) {
+         auto log = s.compile_log();
+         if (log.length() == 0) continue;
+
+         logs += type_to_string(s);
+         logs += log + "\n";
+      }
+
+      return logs;
    }
 
 
