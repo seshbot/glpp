@@ -7,6 +7,7 @@
 #  define USE_GLEW
 #endif
 
+#include <cstdlib>
 #include "utils.h"
 #include "gl.h"
 
