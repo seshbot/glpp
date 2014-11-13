@@ -69,7 +69,7 @@ namespace gl
    */
 
    namespace {
-      static std::atomic<bool> initialized_ = false;
+      static std::atomic<bool> initialized_ { false };
 
       struct window_key_callbacks_t {
          struct callback_info_t { GLFWwindow* window; context & context; key_callback_t callback; };
@@ -134,10 +134,8 @@ namespace gl
       glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
       GLFWwindow* window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
-      if (!window)
-      {
-         glfwTerminate();
-         exit(EXIT_FAILURE);
+      if (!window) {
+         throw error("could not create GLFW window or context");
       }
 
       glfwMakeContextCurrent(window);

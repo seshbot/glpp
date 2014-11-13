@@ -70,7 +70,13 @@ int main()
 
    try {
       gl::init();
+   }
+   catch (std::exception const & ex) {
+      utils::log(utils::LOG_ERROR, ex.what());
+      exit(EXIT_FAILURE);
+   }
 
+   try {
       auto key_handler = [](gl::context & ctx, int key, int scancode, int action, int mods) {
          if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             ctx.set_should_close();
@@ -166,6 +172,8 @@ int main()
    }
    catch (std::exception const & ex) {
       utils::log(utils::LOG_ERROR, ex.what());
+
+      gl::shutdown();
       exit(EXIT_FAILURE);
    }
 }
