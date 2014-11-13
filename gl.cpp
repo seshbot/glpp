@@ -67,9 +67,16 @@ namespace gl
    * class shader
    *
    */
-   shader_compile_error::shader_compile_error(id_t id)
+
+
+   shader_compile_error::shader_compile_error(std::string source_name, shader_compile_error const & parent)
+      : error(parent.what()) {
+      log_ = std::string(" --- ") + source_name + " --- \n" + parent.log_;
+   }
+
+   shader_compile_error::shader_compile_error(id_t shader_id)
       : error("could not compile shader")
-      , log_(get_shader_info_log(id)) {
+      , log_(get_shader_info_log(shader_id)) {
    }
 
    shader::shader(std::string const & source, shader::Type type)
@@ -89,8 +96,12 @@ namespace gl
       compile_log_ = get_shader_info_log(id_);
    }
 
-   shader shader::create_from_file(std::string const & filename, shader::Type type) {
+   shader shader::create_from_file(std::string const & filename, shader::Type type)
+   try {
       return create_from_source(utils::read_file(filename), type);
+   }
+   catch (shader_compile_error & ex) {
+      throw shader_compile_error(filename, ex);
    }
 
    shader shader::create_from_source(std::string const & source, shader::Type type) {

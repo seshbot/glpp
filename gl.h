@@ -19,6 +19,7 @@ namespace gl {
    };
 
    struct shader_compile_error : public error {
+      shader_compile_error(std::string source_name, shader_compile_error const & parent);
       shader_compile_error(id_t shader_id);
       std::string const & log() const { return log_; }
    private:
