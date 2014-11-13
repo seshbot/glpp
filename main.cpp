@@ -1,15 +1,12 @@
 #ifdef WIN32
 #  include <windows.h>
 #  include <GLES2/gl2.h>
-
-#  define USE_OPENGL_ES_2
 #else  // LINUX, OSX
 #  include <GL/glew.h>
 
 #  define USE_GLEW
 #endif
 
-#include <iostream>
 #include "utils.h"
 #include "gl.h"
 
@@ -31,7 +28,7 @@ int main()
       gl::init();
    }
    catch (std::exception const & ex) {
-      utils::log(utils::LOG_ERROR, ex.what());
+      utils::log(utils::LOG_ERROR, "%s\n", ex.what());
       exit(EXIT_FAILURE);
    }
 
@@ -61,29 +58,18 @@ int main()
       }
 #endif
 
-      utils::log(utils::LOG_INFO, context.info().c_str());
+      utils::log(utils::LOG_INFO, "%s\n", context.info().c_str());
       
       auto create_program = [] {
          utils::log(utils::LOG_INFO, "compiling shader program...\n");
 
-         const char vertex_src[] = "\
-            attribute vec4 position;                     \n\
-                                                         \n\
-            void main() {                                \n\
-               gl_Position = position;                   \n\
-            }";
-
-         const char fragment_src[] = "\
-            void main() {                                \n\
-               gl_FragColor = vec4(.2, .2, .2, 1.);      \n\
-            }";
-
          auto program = gl::program { 
-               gl::shader::create_from_source(vertex_src, gl::shader::Vertex),
-               gl::shader::create_from_source(fragment_src, gl::shader::Fragment)
+               gl::shader::create_from_file("shaders/2d.vert", gl::shader::Vertex),
+               gl::shader::create_from_file("shaders/2d.frag", gl::shader::Fragment)
             };
 
          utils::log(utils::LOG_INFO, " ...success\n");
+
          auto logs = program.compile_logs();
          if (logs.length() > 0) {
             utils::log(utils::LOG_INFO, "%s", logs.c_str());
@@ -95,19 +81,19 @@ int main()
       auto program = create_program();
 
       GLint position_loc = glGetAttribLocation(program.id(), "position");
-
-      if (position_loc < 0) {
-         utils::log(utils::LOG_ERROR, "GL Error: Unable to get uniform location\n");
-
-         exit(EXIT_FAILURE);
-      }
+      if (position_loc < 0) { throw std::runtime_error("GL Error: Unable to get uniform location"); }
 
       while (!context.closing())
       {
          if (reload_program) {
-            program = create_program();
-            position_loc = glGetAttribLocation(program.id(), "position");
-
+            try {
+               program = create_program();
+               position_loc = glGetAttribLocation(program.id(), "position");
+            }
+            catch (gl::shader_compile_error const & ex) {
+               utils::log(utils::LOG_ERROR, "%s\n", ex.what());
+               utils::log(utils::LOG_ERROR, "%s\n", ex.log().c_str());
+            }
             reload_program = false;
          }
 
@@ -139,8 +125,15 @@ int main()
 
       exit(EXIT_SUCCESS);
    }
+   catch (gl::shader_compile_error const & ex) {
+      utils::log(utils::LOG_ERROR, "%s\n", ex.what());
+      utils::log(utils::LOG_ERROR, "%s\n", ex.log().c_str());
+
+      gl::shutdown();
+      exit(EXIT_FAILURE);
+   }
    catch (std::exception const & ex) {
-      utils::log(utils::LOG_ERROR, ex.what());
+      utils::log(utils::LOG_ERROR, "%s\n", ex.what());
 
       gl::shutdown();
       exit(EXIT_FAILURE);

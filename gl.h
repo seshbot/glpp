@@ -111,6 +111,8 @@ namespace gl {
 
    void init();
    void shutdown();
+
+   double get_time();
 }
 
 

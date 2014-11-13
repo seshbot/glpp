@@ -12,7 +12,18 @@ else ()
     include_directories(SYSTEM ${GLEW_INCLUDES})
 endif ()
 
-add_executable(glapp WIN32 main.cpp utils.cpp utils.h gl.cpp gl.h input.cpp input.h)
+set(SOURCE
+	main.cpp
+	utils.cpp utils.h
+	gl.cpp    gl.h
+	input.cpp input.h)
+
+set(SHADERS
+	shaders/2d.frag shaders/2d.vert)
+
+add_executable(glapp WIN32 ${SOURCE} ${SHADERS})
+
+source_group(Shaders FILES ${SHADERS})
 
 target_link_libraries(glapp glfw ${OPENGL_GLU_LIBRARY} ${GLFW_LIBRARIES})
 if (WIN32)
@@ -20,5 +31,10 @@ if (WIN32)
 else ()
     target_link_libraries(glapp ${GLEW_LIBRARIES})
 endif ()
+
+add_custom_command(TARGET glapp POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/shaders
+        ${CMAKE_BINARY_DIR}/shaders)            # $<TARGET_FILE_DIR:glapp>/shaders)
 
 INSTALL(TARGETS glapp DESTINATION bin)

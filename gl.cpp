@@ -267,7 +267,7 @@ namespace gl
    context::context(key_callback_t key_handler)
    : impl_(nullptr)
    {
-      if (!initialized_) { throw error("runtime not initialised"); }
+      if (!initialized_) { throw error("runtime not initialised - call gl::init() first"); }
 
       // some more info on extensions: http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-12-opengl-extensions/
       // glfwOpenWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1); 
@@ -308,7 +308,6 @@ namespace gl
 #ifdef GL_SHADING_LANGUAGE_VERSION
       buf += "\nGL_SHADING_LANGUAGE_VERSION : "; buf += (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
 #endif
-      buf += "\n";
 
       return buf;
    }
@@ -378,5 +377,9 @@ namespace gl
       glfwTerminate();
 
       initialized_ = false;
+   }
+
+   double get_time() {
+      return glfwGetTime();
    }
 }
