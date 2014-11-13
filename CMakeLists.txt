@@ -12,7 +12,7 @@ else ()
     include_directories(SYSTEM ${GLEW_INCLUDES})
 endif ()
 
-add_executable(glapp WIN32 main.cpp utils.cpp utils.h)
+add_executable(glapp WIN32 main.cpp utils.cpp utils.h gl.cpp gl.h)
 
 target_link_libraries(glapp glfw ${OPENGL_GLU_LIBRARY} ${GLFW_LIBRARIES})
 if (WIN32)
