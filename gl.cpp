@@ -58,6 +58,36 @@ namespace {
       default: throw gl::error("unsupported shader type");
       }
    }
+
+   gl::uniform::Type gl_to_uniform_type(GLuint type) {
+      switch (type) {
+      case GL_BYTE: return gl::uniform::Type::Byte;
+      case GL_UNSIGNED_BYTE: return gl::uniform::Type::UByte;
+      case GL_SHORT: return gl::uniform::Type::Short;
+      case GL_UNSIGNED_SHORT: return gl::uniform::Type::UShort;
+      case GL_INT: return gl::uniform::Type::Int;
+      case GL_UNSIGNED_INT: return gl::uniform::Type::UInt;
+      case GL_FLOAT: return gl::uniform::Type::Float;
+      case GL_FIXED: return gl::uniform::Type::Fixed;
+
+      case GL_FLOAT_VEC2: return gl::uniform::Type::FloatVec2;
+      case GL_FLOAT_VEC3: return gl::uniform::Type::FloatVec3;
+      case GL_FLOAT_VEC4: return gl::uniform::Type::FloatVec4;
+      case GL_INT_VEC2: return gl::uniform::Type::IntVec2;
+      case GL_INT_VEC3: return gl::uniform::Type::IntVec3;
+      case GL_INT_VEC4: return gl::uniform::Type::IntVec4;
+      case GL_BOOL: return gl::uniform::Type::Bool;
+      case GL_BOOL_VEC2: return gl::uniform::Type::BoolVec2;
+      case GL_BOOL_VEC3: return gl::uniform::Type::BoolVec3;
+      case GL_BOOL_VEC4: return gl::uniform::Type::BoolVec4;
+      case GL_FLOAT_MAT2: return gl::uniform::Type::FloatMat2;
+      case GL_FLOAT_MAT3: return gl::uniform::Type::FloatMat3;
+      case GL_FLOAT_MAT4: return gl::uniform::Type::FloatMat4;
+      case GL_SAMPLER_2D: return gl::uniform::Type::Sampler2d;
+      case GL_SAMPLER_CUBE: return gl::uniform::Type::SamplerCube;
+      default: return gl::uniform::Type::Unknown;
+      }
+   }
 }
 
 namespace gl
@@ -126,6 +156,40 @@ namespace gl
       return *this;
    }
 
+  /**
+   * class uniform
+   *
+   */
+
+   uniform uniform::INVALID = {"INVALID", -1, 1, uniform::Type::Unknown};
+
+   uniform::uniform(std::string const & name, int location, int size, Type type)
+      : name_(name), location_(location), size_(size), type_(type) {
+   }
+
+   uniform::uniform(uniform && other) {
+      *this = std::move(other);
+   }
+
+   uniform & uniform::operator=(uniform && other) {
+      name_ = other.name_;
+      location_ = other.location_;
+      size_ = other.size_;
+      type_ = other.type_;
+
+      return *this;
+   }
+
+   void uniform::set(int val) {
+      if (!is_valid()) { utils::log(utils::LOG_INFO, "cannot set uniform - program does not contain '%s'", name_.c_str()); return; }
+      glUniform1i(location_, val);
+   }
+
+   void uniform::set(float val) {
+      if (!is_valid()) { utils::log(utils::LOG_INFO, "cannot set uniform - program does not contain '%s'", name_.c_str()); return; }
+      glUniform1f(location_, val);
+   }
+
 
   /**
    * class program
@@ -142,8 +206,7 @@ namespace gl
       try {
          attach(std::move(s));
 
-         glLinkProgram(id_);
-         use();
+         reload();
       }
       catch (...) {
          destroy();
@@ -157,8 +220,7 @@ namespace gl
          attach(std::move(s1));
          attach(std::move(s2));
 
-         glLinkProgram(id_);
-         use();
+         reload();
       }
       catch (...) {
          destroy();
@@ -170,13 +232,60 @@ namespace gl
       destroy();
    }
 
-   program::program(program && other)
-   : id_(other.id_) {
+   void program::reload() {
+      // TODO: ensure same attrib locations with 'glBindAttribLocation(id_, u.idx, u.name.c_str())'
+      uniforms_.clear();
+
+      glLinkProgram(id_);
+
+      use();
+
+      GLint uniforms;
+      glGetProgramiv(id_, GL_ACTIVE_UNIFORMS, &uniforms);
+
+      for (auto idx = 0; idx < uniforms; idx++) {
+         int size;
+         unsigned int type;
+         char name[513];
+
+         glGetActiveUniform(id_, idx, 512, nullptr, &size, &type, name);
+         int location = glGetUniformLocation(id_, name);
+
+         assert(location == idx);
+
+         uniforms_.push_back({ name, idx, size, gl_to_uniform_type(type) });
+      }
+   }
+
+   uniform & program::uniform(std::string const & name) {
+      for (auto & u : uniforms_) {
+         if (u.name() == name) return u;
+      }
+
+      return uniform::INVALID;
+   }
+
+   uniform & program::uniform(unsigned int idx) {
+      utils::log(utils::LOG_INFO, "WARNING: idx may be unstable for now when program reloaded!\n");
+
+      if (idx >= uniforms_.size()) return uniform::INVALID;
+
+      return uniforms_.at(idx);
+   }
+
+
+   program::program(program && other) {
+      *this = std::move(other);
+
       other.id_ = 0;
    }
 
    program & program::operator=(program && other) {
       std::swap(id_, other.id_);
+
+      shaders_ = std::move(other.shaders_);
+      uniforms_ = std::move(other.uniforms_);
+
       return *this;
    }
 
@@ -218,8 +327,50 @@ namespace gl
    }
 
 
-   /**
-   * class env
+  /**
+   * class window
+   *
+   */
+
+   struct context::impl {
+      impl(GLFWwindow* window) : window_(window) { }
+
+      GLFWwindow* window_ = nullptr;
+   };
+
+
+   window::window(context & ctx)
+      : ctx_(ctx) {
+   }
+
+   void window::set_should_close(bool close) {
+      glfwSetWindowShouldClose(ctx_.impl_->window_, close ? GL_TRUE : GL_FALSE);
+   }
+
+   bool window::closing() const {
+      return GL_TRUE == glfwWindowShouldClose(ctx_.impl_->window_);
+   }
+
+   void window::swap() {
+      glfwSwapBuffers(ctx_.impl_->window_);
+      glfwPollEvents();
+   }
+
+   window::dim_t window::window_dims() const {
+      int width, height;
+      glfwGetWindowSize(ctx_.impl_->window_, &width, &height);
+      return{ width, height };
+   }
+
+   window::dim_t window::frame_buffer_dims() const {
+      int width, height;
+      glfwGetFramebufferSize(ctx_.impl_->window_, &width, &height);
+      return{ width, height };
+   }
+
+
+  /**
+   * class context
    *
    */
 
@@ -227,9 +378,9 @@ namespace gl
       static std::atomic<bool> initialized_ { false };
 
       struct window_key_callbacks_t {
-         struct callback_info_t { GLFWwindow* window; context & context; key_callback_t callback; };
+         struct callback_info_t { GLFWwindow* window; context & context; context::key_callback_t callback; };
 
-         void set(GLFWwindow* window, context & context, key_callback_t callback) {
+         void set(GLFWwindow* window, context & context, context::key_callback_t callback) {
             std::unique_lock<std::mutex> l(m_);
 
             for (auto p : callbacks_) {
@@ -269,14 +420,8 @@ namespace gl
       }
    }
 
-   struct context::impl {
-      impl(GLFWwindow* window) : window_(window) { }
-
-      GLFWwindow* window_ = nullptr;
-   };
-
    context::context(key_callback_t key_handler)
-   : impl_(nullptr)
+   : win_(*this), impl_(nullptr)
    {
       if (!initialized_) { throw error("runtime not initialised - call gl::init() first"); }
 
@@ -325,31 +470,6 @@ namespace gl
 
    void context::destroy() {
       if (impl_ && impl_->window_) glfwDestroyWindow(impl_->window_);
-   }
-
-   void context::set_should_close(bool close) {
-      glfwSetWindowShouldClose(impl_->window_, close ? GL_TRUE : GL_FALSE);
-   }
-
-   bool context::closing() const {
-      return GL_TRUE == glfwWindowShouldClose(impl_->window_);
-   }
-
-   void context::swap() {
-      glfwSwapBuffers(impl_->window_);
-      glfwPollEvents();
-   }
-
-   context::dim_t context::window_dims() const {
-      int width, height;
-      glfwGetWindowSize(impl_->window_, &width, &height);
-      return{ width, height };
-   }
-
-   context::dim_t context::frame_buffer_dims() const {
-      int width, height;
-      glfwGetFramebufferSize(impl_->window_, &width, &height);
-      return{ width, height };
    }
 
    /**

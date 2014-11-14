@@ -11,6 +11,27 @@
 #include "utils.h"
 #include "gl.h"
 
+namespace {
+
+   gl::program create_program() {
+      utils::log(utils::LOG_INFO, "compiling shader program... ");
+
+      auto program = gl::program{
+         gl::shader::create_from_file("shaders/2d.vert", gl::shader::Vertex),
+         gl::shader::create_from_file("shaders/2d.frag", gl::shader::Fragment)
+      };
+
+      utils::log(utils::LOG_INFO, "success\n");
+
+      auto logs = program.compile_logs();
+      if (logs.length() > 0) {
+         utils::log(utils::LOG_INFO, "%s", logs.c_str());
+      }
+
+      return program;
+   };
+}
+
 
 #ifdef WIN32
 int CALLBACK WinMain(
@@ -37,7 +58,7 @@ int main()
       bool reload_program = false;
       auto key_handler = [&](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
          if (key == gl::KEY_ESCAPE && action == gl::KEY_ACTION_PRESS)
-            ctx.set_should_close();
+            ctx.win().set_should_close();
          if (key == gl::KEY_R && action == gl::KEY_ACTION_PRESS)
             reload_program = true;
       };
@@ -61,30 +82,12 @@ int main()
 
       utils::log(utils::LOG_INFO, "%s\n", context.info().c_str());
       
-      auto create_program = [] {
-         utils::log(utils::LOG_INFO, "compiling shader program...\n");
-
-         auto program = gl::program { 
-               gl::shader::create_from_file("shaders/2d.vert", gl::shader::Vertex),
-               gl::shader::create_from_file("shaders/2d.frag", gl::shader::Fragment)
-            };
-
-         utils::log(utils::LOG_INFO, " ...success\n");
-
-         auto logs = program.compile_logs();
-         if (logs.length() > 0) {
-            utils::log(utils::LOG_INFO, "%s", logs.c_str());
-         }
-
-         return program;
-      };
-
       auto program = create_program();
 
       GLint position_loc = glGetAttribLocation(program.id(), "position");
       if (position_loc < 0) { throw std::runtime_error("GL Error: Unable to get uniform location"); }
 
-      while (!context.closing())
+      while (!context.win().closing())
       {
          if (reload_program) {
             try {
@@ -98,7 +101,7 @@ int main()
             reload_program = false;
          }
 
-         auto dims = context.frame_buffer_dims();
+         auto dims = context.win().frame_buffer_dims();
 
          glClearColor(.9f, .9f, .9f, 1.f);
 
@@ -113,11 +116,13 @@ int main()
             0.0, 0.5, 0.0
          };
 
+         program.uniform("time").set(static_cast<float>(gl::get_time()));
+
          glVertexAttribPointer(position_loc, 3, GL_FLOAT, false, 0, vertexArray);
          glEnableVertexAttribArray(position_loc);
          glDrawArrays(GL_TRIANGLE_STRIP, 0, 5);
 
-         context.swap();
+         context.win().swap();
       }
 
       program.destroy();

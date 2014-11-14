@@ -7,7 +7,7 @@ namespace utils
 {
    std::string getcwd();
 
-   enum LogType { LOG_INFO, LOG_ERROR };
+   enum LogType { LOG_INFO, LOG_WARN, LOG_ERROR };
    void log(LogType type, const char * format, ...);
 
    std::string read_file(std::string const & filename);
