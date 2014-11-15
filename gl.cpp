@@ -17,6 +17,7 @@
 #include <utility>
 #include <atomic>
 #include <mutex>
+#include <cassert>
 
 #include "utils.h"
 
