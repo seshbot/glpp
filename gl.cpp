@@ -11,6 +11,7 @@
 #endif
 
 #include <GLFW/glfw3.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <vector>
 #include <utility>
@@ -88,6 +89,39 @@ namespace {
       default: return gl::uniform::Type::Unknown;
       }
    }
+
+   std::string to_string(gl::uniform::Type type) {
+      switch (type) {
+      case gl::uniform::Type::Byte: return "Byte";
+      case gl::uniform::Type::UByte: return "UByte";
+      case gl::uniform::Type::Short: return "Short";
+      case gl::uniform::Type::UShort: return "UShort";
+      case gl::uniform::Type::Int: return "Int";
+      case gl::uniform::Type::UInt: return "UInt";
+      case gl::uniform::Type::Float: return "Float";
+      case gl::uniform::Type::Fixed: return "Fixed";
+
+      case gl::uniform::Type::FloatVec2: return "FloatVec2";
+      case gl::uniform::Type::FloatVec3: return "FloatVec3";
+      case gl::uniform::Type::FloatVec4: return "FloatVec4";
+      case gl::uniform::Type::IntVec2: return "IntVec2";
+      case gl::uniform::Type::IntVec3: return "IntVec3";
+      case gl::uniform::Type::IntVec4: return "IntVec4";
+      case gl::uniform::Type::Bool: return "Bool";
+      case gl::uniform::Type::BoolVec2: return "BoolVec2";
+      case gl::uniform::Type::BoolVec3: return "BoolVec3";
+      case gl::uniform::Type::BoolVec4: return "BoolVec4";
+      case gl::uniform::Type::FloatMat2: return "FloatMat2";
+      case gl::uniform::Type::FloatMat3: return "FloatMat3";
+      case gl::uniform::Type::FloatMat4: return "FloatMat4";
+      case gl::uniform::Type::Sampler2d: return "Sampler2d";
+      case gl::uniform::Type::SamplerCube: return "SamplerCube";
+
+      case gl::uniform::Type::Unknown: return "Unknown";
+
+      default: return "UNRECOGNISED TYPE";
+      }
+   }
 }
 
 namespace gl
@@ -161,33 +195,101 @@ namespace gl
    *
    */
 
-   uniform uniform::INVALID = {"INVALID", -1, 1, uniform::Type::Unknown};
-
    uniform::uniform(std::string const & name, int location, int size, Type type)
-      : name_(name), location_(location), size_(size), type_(type) {
+      : state_{ new state{ name, location, size, type, false } } {
    }
 
-   uniform::uniform(uniform && other) {
-      *this = std::move(other);
+   uniform::uniform(std::string const & name)
+      : uniform{ name, -1, 1, uniform::Type::Unknown } {
    }
 
-   uniform & uniform::operator=(uniform && other) {
-      name_ = other.name_;
-      location_ = other.location_;
-      size_ = other.size_;
-      type_ = other.type_;
+   void uniform::reset(int location, int size, Type type) {
+      state_->location_ = location;
+      state_->size_ = size;
+      state_->type_ = type;
+      state_->error_ = false;
+   }
 
-      return *this;
+   void uniform::reset() {
+      state_->location_ = -1;
+      state_->error_ = false;
+   }
+
+   namespace {
+      template <typename T>
+      uniform::Type uniform_type();
+      template <> uniform::Type uniform_type<int>() { return uniform::Type::Int; }
+      template <> uniform::Type uniform_type<float>() { return uniform::Type::Float; }
+      template <> uniform::Type uniform_type<glm::vec2>() { return uniform::Type::FloatVec2; }
+      template <> uniform::Type uniform_type<glm::vec3>() { return uniform::Type::FloatVec3; }
+      template <> uniform::Type uniform_type<glm::vec4>() { return uniform::Type::FloatVec4; }
+      template <> uniform::Type uniform_type<glm::mat2>() { return uniform::Type::FloatMat2; }
+      template <> uniform::Type uniform_type<glm::mat3>() { return uniform::Type::FloatMat3; }
+      template <> uniform::Type uniform_type<glm::mat4>() { return uniform::Type::FloatMat4; }
+
+      template <typename T>
+      bool set_uniform(uniform & u, T val, bool report_errors) {
+         if (!u.is_valid()) {
+            if (report_errors) {
+               utils::log(utils::LOG_WARN, "cannot set uniform - either program does not contain '%s' or it has been invalidated\n",
+                  u.name().c_str());
+            }
+            return false;
+         }
+
+         if (uniform_type<T>() != u.type()) {
+            if (report_errors) {
+               utils::log(utils::LOG_WARN, "cannot set uniform - shader uniform '%s' is type %s, app provided %s\n",
+                  u.name().c_str(),
+                  ::to_string(u.type()).c_str(),
+                  ::to_string(uniform_type<T>()).c_str());
+            }
+            return false;
+         }
+
+         gl::glUniform(u.location(), val);
+         return true;
+      }
    }
 
    void uniform::set(int val) {
-      if (!is_valid()) { utils::log(utils::LOG_INFO, "cannot set uniform - program does not contain '%s'", name_.c_str()); return; }
-      glUniform1i(location_, val);
+      if (!set_uniform(*this, val, !state_->error_))
+         state_->error_ = true;
    }
 
    void uniform::set(float val) {
-      if (!is_valid()) { utils::log(utils::LOG_INFO, "cannot set uniform - program does not contain '%s'", name_.c_str()); return; }
-      glUniform1f(location_, val);
+      if (!set_uniform(*this, val, !state_->error_))
+         state_->error_ = true;
+   }
+
+   void uniform::set(glm::vec2 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::vec3 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::vec4 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::mat2 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::mat3 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::mat4 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
    }
 
 
@@ -233,8 +335,16 @@ namespace gl
    }
 
    void program::reload() {
-      // TODO: ensure same attrib locations with 'glBindAttribLocation(id_, u.idx, u.name.c_str())'
-      uniforms_.clear();
+      decltype(uniforms_) old_uniforms;
+      old_uniforms.swap(uniforms_);
+
+      auto find_uniform_with_name = [&](std::string const & name) {
+         for (auto it = old_uniforms.begin(); it != old_uniforms.end(); ++it) {
+            if (it->name() == name) return it;
+         }
+
+         return old_uniforms.end();
+      };
 
       glLinkProgram(id_);
 
@@ -253,24 +363,41 @@ namespace gl
 
          assert(location == idx);
 
-         uniforms_.push_back({ name, idx, size, gl_to_uniform_type(type) });
+         auto it = find_uniform_with_name(name);
+         if (it == old_uniforms.end()) {
+            uniforms_.push_back({ name, idx, size, gl_to_uniform_type(type) });
+         }
+         else {
+            it->reset(idx, size, gl_to_uniform_type(type));
+            uniforms_.push_back(*it);
+            old_uniforms.erase(it);
+         }
+      }
+
+      // make sure we keep handles to the old uniforms so existing handles dont just break
+      for (auto & u : old_uniforms) {
+         u.reset();
+         uniforms_.push_back(u);
       }
    }
 
-   uniform & program::uniform(std::string const & name) {
+   uniform program::uniform(std::string const & name) {
       for (auto & u : uniforms_) {
          if (u.name() == name) return u;
       }
 
-      return uniform::INVALID;
+      // not found, create and start tracking an invalid uniform
+      auto new_uniform = gl::uniform{ name };
+      uniforms_.push_back(new_uniform);
+      return new_uniform;
    }
 
-   uniform & program::uniform(unsigned int idx) {
-      utils::log(utils::LOG_INFO, "WARNING: idx may be unstable for now when program reloaded!\n");
+   uniform program::uniform(unsigned int idx) {
+      for (auto & u : uniforms_) {
+         if (u.location() == idx) return u;
+      }
 
-      if (idx >= uniforms_.size()) return uniform::INVALID;
-
-      return uniforms_.at(idx);
+      throw error(std::string("cannot retrieve uniform - no uniform has index ") + std::to_string(idx));
    }
 
 
@@ -283,8 +410,8 @@ namespace gl
    program & program::operator=(program && other) {
       std::swap(id_, other.id_);
 
-      shaders_ = std::move(other.shaders_);
-      uniforms_ = std::move(other.uniforms_);
+      std::swap(shaders_, other.shaders_);
+      std::swap(uniforms_, other.uniforms_);
 
       return *this;
    }
@@ -295,6 +422,7 @@ namespace gl
 
    void program::destroy() {
       shaders_.clear();
+      for (auto & u : uniforms_) { u.reset(); }
 
       glDeleteProgram(id_);
       id_ = 0;
@@ -513,4 +641,14 @@ namespace gl
    double get_time() {
       return glfwGetTime();
    }
+
+   void glUniform(int location, glm::mat4 const & mat) { glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat)); }
+   void glUniform(int location, glm::mat3 const & mat) { glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat)); }
+   void glUniform(int location, glm::mat2 const & mat) { glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat)); }
+   void glUniform(int location, glm::vec4 const & vec) { glUniform4f(location, vec.x, vec.y, vec.z, vec.w); }
+   void glUniform(int location, glm::vec3 const & vec) { glUniform3f(location, vec.x, vec.y, vec.z); }
+   void glUniform(int location, glm::vec2 const & vec) { glUniform2f(location, vec.x, vec.y); }
+   void glUniform(int location, float f) { glUniform1f(location, f); }
+   void glUniform(int location, int i) { glUniform1i(location, i); }
+   //void glUniform(GLint location, GLuint i) { glUniform1ui(location, i); }
 }

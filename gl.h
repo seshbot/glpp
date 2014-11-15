@@ -8,6 +8,13 @@
 #include <memory>
 
 #include "input.h"
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat2x2.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/mat4x4.hpp>
+
 
 namespace gl {
 	using id_t = unsigned int;
@@ -71,30 +78,39 @@ namespace gl {
          Sampler2d, SamplerCube,
       };
 
-      uniform(uniform &&);
-      uniform & operator=(uniform &&);
-
       void set(int val);
       void set(float val);
+      void set(glm::mat4 const & mat);
+      void set(glm::mat3 const & mat);
+      void set(glm::mat2 const & mat);
+      void set(glm::vec4 const & vec);
+      void set(glm::vec3 const & vec);
+      void set(glm::vec2 const & vec);
 
-      std::string const & name() const { return name_; }
-      int location() const { return location_; }
-      int size() const { return size_; }
-      Type type() const { return type_; }
+      std::string const & name() const { return state_->name_; }
+      int location() const { return state_->location_; }
+      int size() const { return state_->size_; }
+      Type type() const { return state_->type_; }
 
-      bool is_valid() const { return location_ != -1; }
+      bool is_valid() const { return state_->location_ != -1; }
 
    private:
       friend class program;
 
       uniform(std::string const & name, int location, int size, Type type);
-      uniform(uniform const &) = delete;
-      uniform & operator=(uniform const &) = delete;
+      uniform(std::string const & name); // creates an INVALID uniform
+      void reset(int location, int size, Type type);
+      void reset();
 
-      std::string name_;
-      int location_;
-      int size_;
-      Type type_;
+      struct state {
+         std::string name_;
+         int location_;
+         int size_;
+         Type type_;
+         bool error_; // just used to prevent repeated error reports
+      };
+
+      std::shared_ptr<state> state_;
    };
 
 	class program {
@@ -108,8 +124,8 @@ namespace gl {
 
       void reload();
 
-      gl::uniform & uniform(std::string const & name);
-      gl::uniform & uniform(unsigned int idx);
+      gl::uniform uniform(std::string const & name);
+      gl::uniform uniform(unsigned int idx);
 
       void use() const;
 
@@ -184,6 +200,16 @@ namespace gl {
    void shutdown();
 
    double get_time();
+
+   void glUniform(int location, glm::mat4 const & mat);
+   void glUniform(int location, glm::mat3 const & mat);
+   void glUniform(int location, glm::mat2 const & mat);
+   void glUniform(int location, glm::vec4 const & vec);
+   void glUniform(int location, glm::vec3 const & vec);
+   void glUniform(int location, glm::vec2 const & vec);
+   void glUniform(int location, float f);
+   void glUniform(int location, int i);
+   //void glUniform(GLint location, GLuint i);
 }
 
 

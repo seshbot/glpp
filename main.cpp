@@ -16,7 +16,7 @@ namespace {
    gl::program create_program() {
       utils::log(utils::LOG_INFO, "compiling shader program... ");
 
-      auto program = gl::program{
+      gl::program program {
          gl::shader::create_from_file("shaders/2d.vert", gl::shader::Vertex),
          gl::shader::create_from_file("shaders/2d.frag", gl::shader::Fragment)
       };
@@ -87,11 +87,15 @@ int main()
       GLint position_loc = glGetAttribLocation(program.id(), "position");
       if (position_loc < 0) { throw std::runtime_error("GL Error: Unable to get uniform location"); }
 
+      auto u_time = program.uniform("time");
+
       while (!context.win().closing())
       {
          if (reload_program) {
             try {
                program = create_program();
+               u_time = program.uniform("time");
+
                position_loc = glGetAttribLocation(program.id(), "position");
             }
             catch (gl::shader_compile_error const & ex) {
@@ -116,7 +120,7 @@ int main()
             0.0, 0.5, 0.0
          };
 
-         program.uniform("time").set(static_cast<float>(gl::get_time()));
+         u_time.set(static_cast<float>(gl::get_time()));
 
          glVertexAttribPointer(position_loc, 3, GL_FLOAT, false, 0, vertexArray);
          glEnableVertexAttribArray(position_loc);
