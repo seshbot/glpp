@@ -61,64 +61,86 @@ namespace {
       }
    }
 
-   gl::uniform::Type gl_to_uniform_type(GLuint type) {
+   gl::ValueType gl_to_value_type(GLuint type) {
       switch (type) {
-      case GL_BYTE: return gl::uniform::Type::Byte;
-      case GL_UNSIGNED_BYTE: return gl::uniform::Type::UByte;
-      case GL_SHORT: return gl::uniform::Type::Short;
-      case GL_UNSIGNED_SHORT: return gl::uniform::Type::UShort;
-      case GL_INT: return gl::uniform::Type::Int;
-      case GL_UNSIGNED_INT: return gl::uniform::Type::UInt;
-      case GL_FLOAT: return gl::uniform::Type::Float;
-      case GL_FIXED: return gl::uniform::Type::Fixed;
+      case GL_BYTE: return gl::ValueType::Byte;
+      case GL_UNSIGNED_BYTE: return gl::ValueType::UByte;
+      case GL_SHORT: return gl::ValueType::Short;
+      case GL_UNSIGNED_SHORT: return gl::ValueType::UShort;
+      case GL_INT: return gl::ValueType::Int;
+      case GL_UNSIGNED_INT: return gl::ValueType::UInt;
+      case GL_FLOAT: return gl::ValueType::Float;
+      case GL_FIXED: return gl::ValueType::Fixed;
 
-      case GL_FLOAT_VEC2: return gl::uniform::Type::FloatVec2;
-      case GL_FLOAT_VEC3: return gl::uniform::Type::FloatVec3;
-      case GL_FLOAT_VEC4: return gl::uniform::Type::FloatVec4;
-      case GL_INT_VEC2: return gl::uniform::Type::IntVec2;
-      case GL_INT_VEC3: return gl::uniform::Type::IntVec3;
-      case GL_INT_VEC4: return gl::uniform::Type::IntVec4;
-      case GL_BOOL: return gl::uniform::Type::Bool;
-      case GL_BOOL_VEC2: return gl::uniform::Type::BoolVec2;
-      case GL_BOOL_VEC3: return gl::uniform::Type::BoolVec3;
-      case GL_BOOL_VEC4: return gl::uniform::Type::BoolVec4;
-      case GL_FLOAT_MAT2: return gl::uniform::Type::FloatMat2;
-      case GL_FLOAT_MAT3: return gl::uniform::Type::FloatMat3;
-      case GL_FLOAT_MAT4: return gl::uniform::Type::FloatMat4;
-      case GL_SAMPLER_2D: return gl::uniform::Type::Sampler2d;
-      case GL_SAMPLER_CUBE: return gl::uniform::Type::SamplerCube;
-      default: return gl::uniform::Type::Unknown;
+      case GL_FLOAT_VEC2: return gl::ValueType::FloatVec2;
+      case GL_FLOAT_VEC3: return gl::ValueType::FloatVec3;
+      case GL_FLOAT_VEC4: return gl::ValueType::FloatVec4;
+      case GL_INT_VEC2: return gl::ValueType::IntVec2;
+      case GL_INT_VEC3: return gl::ValueType::IntVec3;
+      case GL_INT_VEC4: return gl::ValueType::IntVec4;
+      case GL_BOOL: return gl::ValueType::Bool;
+      case GL_BOOL_VEC2: return gl::ValueType::BoolVec2;
+      case GL_BOOL_VEC3: return gl::ValueType::BoolVec3;
+      case GL_BOOL_VEC4: return gl::ValueType::BoolVec4;
+      case GL_FLOAT_MAT2: return gl::ValueType::FloatMat2;
+      case GL_FLOAT_MAT3: return gl::ValueType::FloatMat3;
+      case GL_FLOAT_MAT4: return gl::ValueType::FloatMat4;
+      case GL_SAMPLER_2D: return gl::ValueType::Sampler2d;
+      case GL_SAMPLER_CUBE: return gl::ValueType::SamplerCube;
+      default: return gl::ValueType::Unknown;
       }
    }
 
-   std::string to_string(gl::uniform::Type type) {
+   std::string to_string(gl::ValueType type) {
       switch (type) {
-      case gl::uniform::Type::Byte: return "Byte";
-      case gl::uniform::Type::UByte: return "UByte";
-      case gl::uniform::Type::Short: return "Short";
-      case gl::uniform::Type::UShort: return "UShort";
-      case gl::uniform::Type::Int: return "Int";
-      case gl::uniform::Type::UInt: return "UInt";
-      case gl::uniform::Type::Float: return "Float";
-      case gl::uniform::Type::Fixed: return "Fixed";
+      case gl::ValueType::Unknown: return "Unknown";
+      case gl::ValueType::Int: return "Int";
+      case gl::ValueType::UInt: return "UInt";
+      case gl::ValueType::Float: return "Float";
+      case gl::ValueType::FloatVec2: return "FloatVec2";
+      case gl::ValueType::FloatVec3: return "FloatVec3";
+      case gl::ValueType::FloatVec4: return "FloatVec4";
+      case gl::ValueType::IntVec2: return "IntVec2";
+      case gl::ValueType::IntVec3: return "IntVec3";
+      case gl::ValueType::IntVec4: return "IntVec4";
+      case gl::ValueType::FloatMat2: return "FloatMat2";
+      case gl::ValueType::FloatMat3: return "FloatMat3";
+      case gl::ValueType::FloatMat4: return "FloatMat4";
 
-      case gl::uniform::Type::FloatVec2: return "FloatVec2";
-      case gl::uniform::Type::FloatVec3: return "FloatVec3";
-      case gl::uniform::Type::FloatVec4: return "FloatVec4";
-      case gl::uniform::Type::IntVec2: return "IntVec2";
-      case gl::uniform::Type::IntVec3: return "IntVec3";
-      case gl::uniform::Type::IntVec4: return "IntVec4";
-      case gl::uniform::Type::Bool: return "Bool";
-      case gl::uniform::Type::BoolVec2: return "BoolVec2";
-      case gl::uniform::Type::BoolVec3: return "BoolVec3";
-      case gl::uniform::Type::BoolVec4: return "BoolVec4";
-      case gl::uniform::Type::FloatMat2: return "FloatMat2";
-      case gl::uniform::Type::FloatMat3: return "FloatMat3";
-      case gl::uniform::Type::FloatMat4: return "FloatMat4";
-      case gl::uniform::Type::Sampler2d: return "Sampler2d";
-      case gl::uniform::Type::SamplerCube: return "SamplerCube";
+      case gl::ValueType::Bool: return "Bool";
+      case gl::ValueType::Byte: return "Byte";
+      case gl::ValueType::UByte: return "UByte";
+      case gl::ValueType::Short: return "Short";
+      case gl::ValueType::UShort: return "UShort";
+      case gl::ValueType::Fixed: return "Fixed";
+      case gl::ValueType::BoolVec2: return "BoolVec2";
+      case gl::ValueType::BoolVec3: return "BoolVec3";
+      case gl::ValueType::BoolVec4: return "BoolVec4";
+      case gl::ValueType::Sampler2d: return "Sampler2d";
+      case gl::ValueType::SamplerCube: return "SamplerCube";
 
-      case gl::uniform::Type::Unknown: return "Unknown";
+      case gl::ValueType::FloatMat2x3: return "FloatMat2x3";
+      case gl::ValueType::FloatMat2x4: return "FloatMat2x4";
+      case gl::ValueType::FloatMat3x2: return "FloatMat3x2";
+      case gl::ValueType::FloatMat3x4: return "FloatMat3x4";
+      case gl::ValueType::FloatMat4x2: return "FloatMat4x2";
+      case gl::ValueType::FloatMat4x3: return "FloatMat4x3";
+      case gl::ValueType::UIntVec2: return "UIntVec2";
+      case gl::ValueType::UIntVec3: return "UIntVec3";
+      case gl::ValueType::UIntVec4: return "UIntVec4";
+      case gl::ValueType::Double: return "Double";
+      case gl::ValueType::DoubleVec2: return "DoubleVec2";
+      case gl::ValueType::DoubleVec3: return "DoubleVec3";
+      case gl::ValueType::DoubleVec4: return "DoubleVec4";
+      case gl::ValueType::DoubleMat2: return "DoubleMat2";
+      case gl::ValueType::DoubleMat3: return "DoubleMat3";
+      case gl::ValueType::DoubleMat4: return "DoubleMat4";
+      case gl::ValueType::DoubleMat2x3: return "DoubleMat2x3";
+      case gl::ValueType::DoubleMat2x4: return "DoubleMat2x4";
+      case gl::ValueType::DoubleMat3x2: return "DoubleMat3x2";
+      case gl::ValueType::DoubleMat3x4: return "DoubleMat3x4";
+      case gl::ValueType::DoubleMat4x2: return "DoubleMat4x2";
+      case gl::ValueType::DoubleMat4x3: return "DoubleMat4x3";
 
       default: return "UNRECOGNISED TYPE";
       }
@@ -196,15 +218,15 @@ namespace gl
    *
    */
 
-   uniform::uniform(std::string const & name, int location, int size, Type type)
+   uniform::uniform(std::string const & name, int location, int size, ValueType type)
       : state_{ new state{ name, location, size, type, false } } {
    }
 
    uniform::uniform(std::string const & name)
-      : uniform{ name, -1, 1, uniform::Type::Unknown } {
+      : uniform{ name, -1, 1, ValueType::Unknown } {
    }
 
-   void uniform::reset(int location, int size, Type type) {
+   void uniform::reset(int location, int size, ValueType type) {
       state_->location_ = location;
       state_->size_ = size;
       state_->type_ = type;
@@ -218,15 +240,15 @@ namespace gl
 
    namespace {
       template <typename T>
-      uniform::Type uniform_type();
-      template <> uniform::Type uniform_type<int>() { return uniform::Type::Int; }
-      template <> uniform::Type uniform_type<float>() { return uniform::Type::Float; }
-      template <> uniform::Type uniform_type<glm::vec2>() { return uniform::Type::FloatVec2; }
-      template <> uniform::Type uniform_type<glm::vec3>() { return uniform::Type::FloatVec3; }
-      template <> uniform::Type uniform_type<glm::vec4>() { return uniform::Type::FloatVec4; }
-      template <> uniform::Type uniform_type<glm::mat2>() { return uniform::Type::FloatMat2; }
-      template <> uniform::Type uniform_type<glm::mat3>() { return uniform::Type::FloatMat3; }
-      template <> uniform::Type uniform_type<glm::mat4>() { return uniform::Type::FloatMat4; }
+      ValueType uniform_type();
+      template <> ValueType uniform_type<int>() { return ValueType::Int; }
+      template <> ValueType uniform_type<float>() { return ValueType::Float; }
+      template <> ValueType uniform_type<glm::vec2>() { return ValueType::FloatVec2; }
+      template <> ValueType uniform_type<glm::vec3>() { return ValueType::FloatVec3; }
+      template <> ValueType uniform_type<glm::vec4>() { return ValueType::FloatVec4; }
+      template <> ValueType uniform_type<glm::mat2>() { return ValueType::FloatMat2; }
+      template <> ValueType uniform_type<glm::mat3>() { return ValueType::FloatMat3; }
+      template <> ValueType uniform_type<glm::mat4>() { return ValueType::FloatMat4; }
 
       template <typename T>
       bool set_uniform(uniform & u, T val, bool report_errors) {
@@ -295,6 +317,32 @@ namespace gl
 
 
   /**
+   * class attrib
+   *
+   */
+
+   attrib::attrib(std::string const & name, int location, int size, ValueType type)
+      : state_{ new state{ name, location, size, type, false } } {
+   }
+
+   attrib::attrib(std::string const & name)
+      : attrib{ name, -1, 1, ValueType::Unknown } {
+   }
+
+   void attrib::reset(int location, int size, ValueType type) {
+      state_->location_ = location;
+      state_->size_ = size;
+      state_->type_ = type;
+      state_->error_ = false;
+   }
+
+   void attrib::reset() {
+      state_->location_ = -1;
+      state_->error_ = false;
+   }
+
+
+  /**
    * class program
    *
    */
@@ -339,6 +387,9 @@ namespace gl
       decltype(uniforms_) old_uniforms;
       old_uniforms.swap(uniforms_);
 
+      decltype(attribs_) old_attribs;
+      old_attribs.swap(attribs_);
+
       auto find_uniform_with_name = [&](std::string const & name) {
          for (auto it = old_uniforms.begin(); it != old_uniforms.end(); ++it) {
             if (it->name() == name) return it;
@@ -347,31 +398,61 @@ namespace gl
          return old_uniforms.end();
       };
 
+      auto find_attrib_with_name = [&](std::string const & name) {
+         for (auto it = old_attribs.begin(); it != old_attribs.end(); ++it) {
+            if (it->name() == name) return it;
+         }
+
+         return old_attribs.end();
+      };
+
       glLinkProgram(id_);
 
       use();
 
-      GLint uniforms;
-      glGetProgramiv(id_, GL_ACTIVE_UNIFORMS, &uniforms);
+      GLint num_uniforms;
+      glGetProgramiv(id_, GL_ACTIVE_UNIFORMS, &num_uniforms);
 
-      for (auto idx = 0; idx < uniforms; idx++) {
+      for (auto idx = 0; idx < num_uniforms; idx++) {
          int size;
-         unsigned int type;
+         unsigned int gl_type;
          char name[513];
 
-         glGetActiveUniform(id_, idx, 512, nullptr, &size, &type, name);
-         int location = glGetUniformLocation(id_, name);
+         glGetActiveUniform(id_, idx, 512, nullptr, &size, &gl_type, name);
+         assert(idx == glGetUniformLocation(id_, name));
 
-         assert(location == idx);
-
+         auto type = gl_to_value_type(gl_type);
          auto it = find_uniform_with_name(name);
          if (it == old_uniforms.end()) {
-            uniforms_.push_back({ name, idx, size, gl_to_uniform_type(type) });
+            uniforms_.push_back({ name, idx, size, type });
          }
          else {
-            it->reset(idx, size, gl_to_uniform_type(type));
+            it->reset(idx, size, type);
             uniforms_.push_back(*it);
             old_uniforms.erase(it);
+         }
+      }
+
+      GLint num_attribs;
+      glGetProgramiv(id_, GL_ACTIVE_ATTRIBUTES, &num_attribs);
+
+      for (auto idx = 0; idx < num_attribs; idx++) {
+         int size;
+         unsigned int gl_type;
+         char name[513];
+
+         glGetActiveAttrib(id_, idx, 512, nullptr, &size, &gl_type, name);
+         assert(idx == glGetAttribLocation(id_, name));
+
+         auto type = gl_to_value_type(gl_type);
+         auto it = find_attrib_with_name(name);
+         if (it == old_attribs.end()) {
+            attribs_.push_back({ name, idx, size, type });
+         }
+         else {
+            it->reset(idx, size, type);
+            attribs_.push_back(*it);
+            old_attribs.erase(it);
          }
       }
 
@@ -379,6 +460,10 @@ namespace gl
       for (auto & u : old_uniforms) {
          u.reset();
          uniforms_.push_back(u);
+      }
+      for (auto & a : old_attribs) {
+         a.reset();
+         attribs_.push_back(a);
       }
    }
 
@@ -393,15 +478,6 @@ namespace gl
       return new_uniform;
    }
 
-   uniform program::uniform(unsigned int idx) {
-      for (auto & u : uniforms_) {
-         if (u.location() == idx) return u;
-      }
-
-      throw error(std::string("cannot retrieve uniform - no uniform has index ") + std::to_string(idx));
-   }
-
-
    program::program(program && other) {
       *this = std::move(other);
 
@@ -413,6 +489,7 @@ namespace gl
 
       std::swap(shaders_, other.shaders_);
       std::swap(uniforms_, other.uniforms_);
+      std::swap(attribs_, other.attribs_);
 
       return *this;
    }
@@ -424,6 +501,7 @@ namespace gl
    void program::destroy() {
       shaders_.clear();
       for (auto & u : uniforms_) { u.reset(); }
+      for (auto & a : attribs_) { a.reset(); }
 
       glDeleteProgram(id_);
       id_ = 0;

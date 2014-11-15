@@ -63,21 +63,30 @@ namespace gl {
    // attr types: GL_FLOAT, GL_FLOAT_VEC2, GL_FLOAT_VEC3, GL_FLOAT_VEC4, GL_FLOAT_MAT2, GL_FLOAT_MAT3, or GL_FLOAT_MAT4
    // attr { name, idx, location, size, type }
 
+   enum ValueType {
+      Unknown,
+      Int, UInt, Float,
+      FloatVec2, FloatVec3, FloatVec4,
+      IntVec2, IntVec3, IntVec4,
+      FloatMat2, FloatMat3, FloatMat4,
+
+      // uniform only
+      Bool, Byte, UByte, Short, UShort, Fixed,
+      BoolVec2, BoolVec3, BoolVec4,
+      Sampler2d, SamplerCube,
+
+      // attrib only
+      FloatMat2x3, FloatMat2x4, FloatMat3x2, FloatMat3x4, FloatMat4x2, FloatMat4x3,
+      UIntVec2, UIntVec3, UIntVec4,
+      Double, DoubleVec2, DoubleVec3, DoubleVec4,
+      DoubleMat2, DoubleMat3, DoubleMat4,
+      DoubleMat2x3, DoubleMat2x4,
+      DoubleMat3x2, DoubleMat3x4,
+      DoubleMat4x2, DoubleMat4x3,
+   };
+
    class uniform {
    public:
-      static uniform INVALID;
-
-      enum Type {
-         Unknown,
-         Byte, UByte, Short, UShort, Int, UInt, Float, Fixed, 
-         FloatVec2, FloatVec3, FloatVec4,
-         IntVec2, IntVec3, IntVec4,
-         Bool,
-         BoolVec2, BoolVec3, BoolVec4,
-         FloatMat2, FloatMat3, FloatMat4,
-         Sampler2d, SamplerCube,
-      };
-
       void set(int val);
       void set(float val);
       void set(glm::mat4 const & mat);
@@ -90,23 +99,52 @@ namespace gl {
       std::string const & name() const { return state_->name_; }
       int location() const { return state_->location_; }
       int size() const { return state_->size_; }
-      Type type() const { return state_->type_; }
+      ValueType type() const { return state_->type_; }
 
       bool is_valid() const { return state_->location_ != -1; }
 
    private:
       friend class program;
 
-      uniform(std::string const & name, int location, int size, Type type);
+      uniform(std::string const & name, int location, int size, ValueType type);
       uniform(std::string const & name); // creates an INVALID uniform
-      void reset(int location, int size, Type type);
+      void reset(int location, int size, ValueType type);
       void reset();
 
       struct state {
          std::string name_;
          int location_;
          int size_;
-         Type type_;
+         ValueType type_;
+         bool error_; // just used to prevent repeated error reports
+      };
+
+      std::shared_ptr<state> state_;
+   };
+
+
+   class attrib {
+   public:
+      std::string const & name() const { return state_->name_; }
+      int location() const { return state_->location_; }
+      int size() const { return state_->size_; }
+      ValueType type() const { return state_->type_; }
+
+      bool is_valid() const { return state_->location_ != -1; }
+
+   private:
+      friend class program;
+
+      attrib(std::string const & name, int location, int size, ValueType type);
+      attrib(std::string const & name); // creates an INVALID uniform
+      void reset(int location, int size, ValueType type);
+      void reset();
+
+      struct state {
+         std::string name_;
+         int location_;
+         int size_;
+         ValueType type_;
          bool error_; // just used to prevent repeated error reports
       };
 
@@ -125,7 +163,6 @@ namespace gl {
       void reload();
 
       gl::uniform uniform(std::string const & name);
-      gl::uniform uniform(unsigned int idx);
 
       void use() const;
 
@@ -143,6 +180,7 @@ namespace gl {
       id_t id_;
       std::vector<shader> shaders_;
       std::vector<gl::uniform> uniforms_;
+      std::vector<gl::attrib> attribs_;
 
       int version_ = 1;
    };
