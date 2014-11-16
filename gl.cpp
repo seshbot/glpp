@@ -23,6 +23,29 @@
 
 
 namespace {
+#ifdef _DEBUG
+   static inline void checkOpenGLError(const char* function, const char* file, int line)
+   {
+      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
+
+      utils::log(utils::LOG_ERROR, "OpenGL error 0x%04x called from %s in file %s line %d", err, function, file, line);
+   }
+
+   static inline void checkOpenGLError(const char* stmt, const char* function, const char* file, int line)
+   {
+      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
+
+      utils::log(utils::LOG_ERROR, "OpenGL error 0x%04x at %s called from %s in file %s line %d", err, stmt, function, file, line);
+   }
+
+#define GL_VERIFY(stmt) do { stmt; checkOpenGLError(#stmt, __FUNCTION__, __FILE__, __LINE__); } while (0)
+#define GL_CHECK() do { checkOpenGLError(__FUNCTION__, __FILE__, __LINE__); } while (0)
+#define GL_IGNORE(stmt) do { GL_CHECK(); stmt; glGetError(); } while (0)
+#else
+#define GL_VERIFY(stmt) stmt
+#define GL_CHECK()
+#define GL_IGNORE(stmt) stmt
+#endif
 
    std::string get_shader_info_log(gl::id_t shader_id)
    {
@@ -582,7 +605,7 @@ namespace gl
    }
 
    void program::attach(shader s) {
-      glAttachShader(id_, s.id());
+      GL_VERIFY(glAttachShader(id_, s.id()));
       shaders_.push_back(std::move(s));
    }
 
@@ -892,10 +915,10 @@ namespace gl
          auto gl_type = gl_val_type(b.array.type());
          int8_t * data = reinterpret_cast<int8_t*>(b.array.data()) + b.offset_bytes;
 
-         glVertexAttribPointer(
-            b.attrib.location(), b.count, gl_type, false, b.stride, data);
+         GL_VERIFY(glVertexAttribPointer(
+            b.attrib.location(), b.count, gl_type, false, b.stride, data));
 
-         glEnableVertexAttribArray(b.attrib.location());
+         GL_VERIFY(glEnableVertexAttribArray(b.attrib.location()));
       }
 
       auto gl_draw_type = [type] {
@@ -910,7 +933,7 @@ namespace gl
          }
       }();
 
-      glDrawArrays(gl_draw_type, first, count);
+      GL_VERIFY(glDrawArrays(gl_draw_type, first, count));
 
       return *this;
    }
@@ -958,13 +981,13 @@ namespace gl
       return glfwGetTime();
    }
 
-   void glUniform(int location, glm::mat4 const & mat) { glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat)); }
-   void glUniform(int location, glm::mat3 const & mat) { glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat)); }
-   void glUniform(int location, glm::mat2 const & mat) { glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat)); }
-   void glUniform(int location, glm::vec4 const & vec) { glUniform4f(location, vec.x, vec.y, vec.z, vec.w); }
-   void glUniform(int location, glm::vec3 const & vec) { glUniform3f(location, vec.x, vec.y, vec.z); }
-   void glUniform(int location, glm::vec2 const & vec) { glUniform2f(location, vec.x, vec.y); }
-   void glUniform(int location, float f) { glUniform1f(location, f); }
-   void glUniform(int location, int i) { glUniform1i(location, i); }
+   void glUniform(int location, glm::mat4 const & mat) { GL_VERIFY(glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
+   void glUniform(int location, glm::mat3 const & mat) { GL_VERIFY(glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
+   void glUniform(int location, glm::mat2 const & mat) { GL_VERIFY(glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
+   void glUniform(int location, glm::vec4 const & vec) { GL_VERIFY(glUniform4f(location, vec.x, vec.y, vec.z, vec.w)); }
+   void glUniform(int location, glm::vec3 const & vec) { GL_VERIFY(glUniform3f(location, vec.x, vec.y, vec.z)); }
+   void glUniform(int location, glm::vec2 const & vec) { GL_VERIFY(glUniform2f(location, vec.x, vec.y)); }
+   void glUniform(int location, float f) { GL_VERIFY(glUniform1f(location, f)); }
+   void glUniform(int location, int i) { GL_VERIFY(glUniform1i(location, i)); }
    //void glUniform(GLint location, GLuint i) { glUniform1ui(location, i); }
 }
