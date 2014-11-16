@@ -253,7 +253,9 @@ namespace gl {
       draw_helper_t(draw_helper_t const &) = delete;
       draw_helper_t & operator=(draw_helper_t const &) = delete;
 
-      draw_helper_t & with_attrib(attrib a, array data, unsigned count, unsigned stride);
+      draw_helper_t & with_attrib(attrib a, array data, unsigned count, unsigned stride_bytes);
+      draw_helper_t & with_attrib(attrib a, array data, unsigned offset_bytes, unsigned count, unsigned stride_bytes);
+      draw_helper_t & validate_attribs(bool validate = true);
 
       draw_helper_t & draw(DrawType type);
       draw_helper_t & draw(DrawType type, unsigned first, unsigned count);
@@ -263,8 +265,8 @@ namespace gl {
       draw_helper_t(context & ctx) : ctx_(ctx) { }
 
       struct attrib_binding {
-         attrib_binding(attrib a, array d, unsigned c, unsigned s) : attrib(std::move(a)), array(std::move(d)), count(c), stride(s) {}
-         attrib attrib; array array; unsigned count; unsigned stride;
+         attrib attrib; array array; unsigned offset_bytes; unsigned count; unsigned stride;
+         unsigned block_size() const;
       };
       context & ctx_;
       std::vector<attrib_binding const> attrib_bindings_;

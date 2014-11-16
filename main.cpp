@@ -98,13 +98,14 @@ int main()
 
       auto u_time = program.uniform("time");
       auto a_position = program.attrib("position");
+      auto a_red_color = program.attrib("red_colour");
 
       static const float vertexArray[] = {
-         0.0, 0.5, 0.0,
-         -0.5, 0.0, 0.0,
-         0.0, -0.5, 0.0,
-         0.5, 0.0, 0.0,
-         0.0, 0.5, 0.0
+         0.0, 0.5, 0.0, 0.,
+         -0.5, 0.0, 0.0, .25,
+         0.0, -0.5, 0.0, .5,
+         0.5, 0.0, 0.0, .75,
+         0.0, 0.5, 0.0, 1.,
       };
 
       auto vertices = context.new_array(vertexArray);
@@ -131,7 +132,11 @@ int main()
 
          u_time.set(static_cast<float>(gl::get_time()));
 
-         context.pass().with_attrib(a_position, vertices, 3, 0).draw(gl::DrawType::TriangleStrip);
+         context.pass()
+            .with_attrib(a_position, vertices, 3, 16)
+            .with_attrib(a_red_color, vertices, 12, 1, 16)
+            .validate_attribs()
+            .draw(gl::DrawType::TriangleStrip);
 
          context.win().swap();
       }

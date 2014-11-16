@@ -5,7 +5,11 @@
 #endif
 
 attribute mediump vec4 position;
+attribute mediump float red_colour;
+
+varying mediump float v_red_colour;
 
 void main() {
    gl_Position = position;
+   v_red_colour = red_colour;
 }

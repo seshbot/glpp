@@ -786,45 +786,86 @@ namespace gl
    * draw_helper_t
    *
    */
+   unsigned draw_helper_t::attrib_binding::block_size() const {
+      return stride != 0
+         ? stride
+         : attrib_primitive_bytes(attrib.type()) * count;
+   }
 
-   draw_helper_t & draw_helper_t::with_attrib(attrib a, array data, unsigned count, unsigned stride) {
-      attrib_bindings_.emplace_back(std::move(a), std::move(data), count, stride);
+   draw_helper_t & draw_helper_t::with_attrib(attrib a, array data, unsigned count, unsigned stride_bytes) {
+      return with_attrib(std::move(a), std::move(data), 0, count, stride_bytes);
+   }
+
+   draw_helper_t & draw_helper_t::with_attrib(attrib a, array data, unsigned offset_bytes, unsigned count, unsigned stride_bytes) {
+      attrib_bindings_.push_back({ std::move(a), std::move(data), offset_bytes, count, stride_bytes });
+
       return *this;
    }
 
-   namespace {
-      template <typename T, typename FuncT>
-      auto transform(std::vector<T> const & in, FuncT f)->std::vector < decltype(f(std::declval<T>())) > {
-         std::vector < decltype(f(std::declval<T>())) > out; out.reserve(in.size());
+   draw_helper_t & draw_helper_t::validate_attribs(bool validate) {
+      if (!validate) return *this;
 
-         for (auto & e : in) out.push_back(f(e));
+      struct slice_info { unsigned offset; unsigned size; };
+      struct array_info { void * data; unsigned block_size; std::vector<slice_info> slices; };
 
-         return out;
-      }
-
-      template <typename ContT>
-      auto min(ContT const & c)-> typename ContT::value_type {
-         if (c.empty()) throw error("cannot find min in an empty container");
-         auto m = *c.begin();
-         for (auto it = c.begin() + 1; it != c.end(); ++it) {
-            if (*it < m) m = *it;
+      std::vector<array_info> arrays;
+      auto find_array_info = [&](void * p, unsigned block_size) -> array_info & {
+         for (auto & a : arrays) {
+            if (a.data == p) {
+               assert(a.block_size == block_size && "attribute bindings disagree on block sizes");
+               return a;
+            }
          }
-         return m;
+         arrays.push_back({ p, block_size });
+         return arrays.back();
+      };
+
+      for (auto & b : attrib_bindings_) {
+         // find or add the array info
+         auto & arrinfo = find_array_info(b.array.data(), b.block_size());
+
+         // add the slice info for this attrib in the array
+         auto ins_it = arrinfo.slices.begin();
+         while (ins_it != arrinfo.slices.end() && b.offset_bytes > ins_it->offset)
+            ++ins_it;
+
+         arrinfo.slices.insert(ins_it, {b.offset_bytes, b.count * b.array.elem_size()});
       }
+
+      // validate the structure of the slices within each array
+      for (auto & arrinfo : arrays) {
+         auto block_size = arrinfo.block_size;
+         auto end_of_last_attrib = 0U;
+         for (auto & slice : arrinfo.slices) {
+            assert(slice.offset < block_size && "attribute data exceeds the expected 'block' size");
+            assert(slice.offset >= end_of_last_attrib && "attribute data overlaps another attribute's data");
+            auto end_of_attrib = slice.offset + slice.size;
+            assert(end_of_attrib <= block_size && "attribute data runs off the end of the block");
+            end_of_last_attrib = end_of_attrib;
+         }
+      }
+
+      return *this;
    }
 
    draw_helper_t & draw_helper_t::draw(DrawType type) {
       if (attrib_bindings_.empty()) return *this;
 
+      // calculate how many verticies to render
+
       auto block_count = [](attrib_binding const & b) {
-         auto block_size = attrib_primitive_bytes(b.attrib.type()) * b.count + b.stride;
+         auto block_size = b.block_size();
          assert(b.array.byte_size() % block_size == 0);
 
          return b.array.byte_size() / block_size;
       };
 
-      auto attrib_block_counts = transform(attrib_bindings_, block_count);
-      auto min_block_count = min(attrib_block_counts);
+      auto min_block_count = block_count(attrib_bindings_.front());
+
+      for (auto it = attrib_bindings_.begin() + 1; it != attrib_bindings_.end(); ++it) {
+         auto c = block_count(*it);
+         if (c < min_block_count) min_block_count = c;
+      }
 
       assert(min_block_count > 0);
 
@@ -846,10 +887,15 @@ namespace gl
          }
       };
 
-      for (auto & a : attrib_bindings_) {
+      for (auto & b : attrib_bindings_) {
          // TODO: validate array data
-         glVertexAttribPointer(a.attrib.location(), a.count, gl_val_type(a.array.type()), false, a.stride, a.array.state_->data_);
-         glEnableVertexAttribArray(a.attrib.location());
+         auto gl_type = gl_val_type(b.array.type());
+         int8_t * data = reinterpret_cast<int8_t*>(b.array.data()) + b.offset_bytes;
+
+         glVertexAttribPointer(
+            b.attrib.location(), b.count, gl_type, false, b.stride, data);
+
+         glEnableVertexAttribArray(b.attrib.location());
       }
 
       auto gl_draw_type = [type] {
