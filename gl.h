@@ -122,7 +122,6 @@ namespace gl {
       std::shared_ptr<state> state_;
    };
 
-
    class attrib {
    public:
       std::string const & name() const { return state_->name_; }
@@ -153,16 +152,18 @@ namespace gl {
 
 	class program {
    public:
-      program(shader s);
       program(shader s1, shader s2);
       ~program();
+
+      static program create_using_vars_from(program & other, shader s1, shader s2);
 
 		program(program && other);
 		program & operator=(program && other);
 
-      void reload();
+      void reload(shader s1, shader s2);
 
       gl::uniform uniform(std::string const & name);
+      gl::attrib attrib(std::string const & name);
 
       void use() const;
 
@@ -174,8 +175,13 @@ namespace gl {
 
    private:
       program();
+      program(program & other, shader s);
+      program(program & other, shader s1, shader s2);
+
       program(program const &) = delete;
       program & operator=(program const &) = delete;
+
+      void reload();
 
       id_t id_;
       std::vector<shader> shaders_;
@@ -210,6 +216,60 @@ namespace gl {
       context & ctx_;
    };
 
+   class array {
+   public:
+      enum Type { Byte, UByte, Short, UShort, Int, UInt, Float, Double };
+
+      template <typename T> static Type type_of();
+
+      array(void* data, Type type, unsigned count, std::size_t elem_size);
+
+      void* data() { return state_->data_; }
+      Type type() const { return state_->type_; }
+      unsigned count() const { return state_->count_; }
+      std::size_t elem_size() const { return state_->elem_size_; }
+      std::size_t byte_size() const { return state_->elem_size_ * state_->count_; }
+
+      struct state {
+         state(void* d, Type t, unsigned c, std::size_t sz) : data_(d), type_(t), count_(c), elem_size_(sz) { }
+         void* data_; Type type_; unsigned count_; std::size_t elem_size_;
+      };
+
+      std::shared_ptr<state const> state_;
+   };
+
+
+   class buffer {
+   };
+
+   enum class DrawType {
+      Points,
+      Lines, LineLoop,
+      Triangles, TriangleStrip, TriangleFan,
+   };
+
+   class draw_helper_t {
+   public:
+      draw_helper_t(draw_helper_t const &) = delete;
+      draw_helper_t & operator=(draw_helper_t const &) = delete;
+
+      draw_helper_t & with_attrib(attrib a, array data, unsigned count, unsigned stride);
+
+      draw_helper_t & draw(DrawType type);
+      draw_helper_t & draw(DrawType type, unsigned first, unsigned count);
+
+   private:
+      friend class context;
+      draw_helper_t(context & ctx) : ctx_(ctx) { }
+
+      struct attrib_binding {
+         attrib_binding(attrib a, array d, unsigned c, unsigned s) : attrib(std::move(a)), array(std::move(d)), count(c), stride(s) {}
+         attrib attrib; array array; unsigned count; unsigned stride;
+      };
+      context & ctx_;
+      std::vector<attrib_binding const> attrib_bindings_;
+   };
+
 	class context {
    public:
       using key_callback_t = std::function < void(context &, Key, int, KeyAction, int) >; // key, scancode, action, mods
@@ -226,9 +286,16 @@ namespace gl {
       window const & win() const { return win_; }
       window & win() { return win_; }
 
+      template <typename T, unsigned N>
+      array new_array(const T(&data)[N]) { return new_array_impl((void*)data, array::type_of<T>(), N, sizeof(T)); }
+
+      draw_helper_t pass();
+
    private:
       friend class window;
       window win_;
+
+      array new_array_impl(void* data, array::Type type, unsigned count, std::size_t elem_size);
 
       struct impl;
       std::unique_ptr<impl> impl_;
@@ -248,6 +315,7 @@ namespace gl {
    void glUniform(int location, float f);
    void glUniform(int location, int i);
    //void glUniform(GLint location, GLuint i);
+
 }
 
 

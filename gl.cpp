@@ -145,6 +145,52 @@ namespace {
       default: return "UNRECOGNISED TYPE";
       }
    }
+
+   
+   std::size_t attrib_primitive_bytes(gl::ValueType type) {
+      switch (type) {
+      case gl::ValueType::Int:
+      case gl::ValueType::UInt:
+      case gl::ValueType::Float:
+      case gl::ValueType::FloatVec2:
+      case gl::ValueType::FloatVec3:
+      case gl::ValueType::FloatVec4:
+      case gl::ValueType::IntVec2:
+      case gl::ValueType::IntVec3:
+      case gl::ValueType::IntVec4:
+      case gl::ValueType::FloatMat2:
+      case gl::ValueType::FloatMat3:
+      case gl::ValueType::FloatMat4:
+
+      case gl::ValueType::FloatMat2x3:
+      case gl::ValueType::FloatMat2x4:
+      case gl::ValueType::FloatMat3x2:
+      case gl::ValueType::FloatMat3x4:
+      case gl::ValueType::FloatMat4x2:
+      case gl::ValueType::FloatMat4x3:
+      case gl::ValueType::UIntVec2:
+      case gl::ValueType::UIntVec3:
+      case gl::ValueType::UIntVec4:
+         return 4;
+
+      case gl::ValueType::Double:
+      case gl::ValueType::DoubleVec2:
+      case gl::ValueType::DoubleVec3:
+      case gl::ValueType::DoubleVec4:
+      case gl::ValueType::DoubleMat2:
+      case gl::ValueType::DoubleMat3:
+      case gl::ValueType::DoubleMat4:
+      case gl::ValueType::DoubleMat2x3:
+      case gl::ValueType::DoubleMat2x4:
+      case gl::ValueType::DoubleMat3x2:
+      case gl::ValueType::DoubleMat3x4:
+      case gl::ValueType::DoubleMat4x2:
+      case gl::ValueType::DoubleMat4x3:
+         return 8;
+
+      default: throw gl::error("cannot calculate primitive size of invalid attribute type");
+      }
+   }
 }
 
 namespace gl
@@ -349,20 +395,6 @@ namespace gl
 
    program::program()
       : id_(glCreateProgram()) {
-
-   }
-
-   program::program(shader s)
-      : program() {
-      try {
-         attach(std::move(s));
-
-         reload();
-      }
-      catch (...) {
-         destroy();
-         throw;
-      }
    }
 
    program::program(shader s1, shader s2)
@@ -377,6 +409,37 @@ namespace gl
          destroy();
          throw;
       }
+   }
+
+   program::program(program & other, shader s1, shader s2)
+      : program() {
+      try {
+         attach(std::move(s1));
+         attach(std::move(s2));
+
+         for (auto & v : other.uniforms_) uniforms_.push_back({ v.name() });
+         for (auto & v : other.attribs_) attribs_.push_back({ v.name() });
+
+         reload();
+      }
+      catch (...) {
+         destroy();
+         throw;
+      }
+   }
+
+   program program::create_using_vars_from(program & other, shader s1, shader s2) {
+      return{ other, std::move(s1), std::move(s2) };
+   }
+
+   void program::reload(shader s1, shader s2) {
+      for (auto & s : shaders_) glDetachShader(id_, s.id());
+      shaders_.clear();
+
+      attach(std::move(s1));
+      attach(std::move(s2));
+
+      reload();
    }
 
    program::~program() {
@@ -476,6 +539,17 @@ namespace gl
       auto new_uniform = gl::uniform{ name };
       uniforms_.push_back(new_uniform);
       return new_uniform;
+   }
+
+   attrib program::attrib(std::string const & name) {
+      for (auto & a : attribs_) {
+         if (a.name() == name) return a;
+      }
+
+      // not found, create and start tracking an invalid attrib
+      auto new_attrib = gl::attrib{ name };
+      attribs_.push_back(new_attrib);
+      return new_attrib;
    }
 
    program::program(program && other) {
@@ -678,6 +752,123 @@ namespace gl
    void context::destroy() {
       if (impl_ && impl_->window_) glfwDestroyWindow(impl_->window_);
    }
+
+   array context::new_array_impl(void* data, array::Type type, unsigned count, std::size_t elem_size) {
+      return{ data, type, count, elem_size };
+   }
+
+
+   draw_helper_t context::pass() {
+      return{*this};
+   }
+
+
+  /**
+   * array
+   *
+   */
+
+   array::array(void* data, Type type, unsigned count, std::size_t elem_size)
+      : state_(std::make_shared<state>(data, type, count, elem_size)) {
+   }
+
+   template <> array::Type array::type_of<int8_t>() { return array::Byte; }
+   template <> array::Type array::type_of<uint8_t>() { return array::UByte; }
+   template <> array::Type array::type_of<int16_t>() { return array::Short; }
+   template <> array::Type array::type_of<uint16_t>() { return array::UShort; }
+   template <> array::Type array::type_of<int32_t>() { return array::Int; }
+   template <> array::Type array::type_of<uint32_t>() { return array::UInt; }
+   template <> array::Type array::type_of<float>() { return array::Float; }
+   template <> array::Type array::type_of<double>() { return array::Double; }
+
+
+   /**
+   * draw_helper_t
+   *
+   */
+
+   draw_helper_t & draw_helper_t::with_attrib(attrib a, array data, unsigned count, unsigned stride) {
+      attrib_bindings_.emplace_back(std::move(a), std::move(data), count, stride);
+      return *this;
+   }
+
+   namespace {
+      template <typename T, typename FuncT>
+      auto transform(std::vector<T> const & in, FuncT f)->std::vector < decltype(f(std::declval<T>())) > {
+         std::vector < decltype(f(std::declval<T>())) > out; out.reserve(in.size());
+
+         for (auto & e : in) out.push_back(f(e));
+
+         return out;
+      }
+
+      template <typename ContT>
+      auto min(ContT const & c)-> typename ContT::value_type {
+         if (c.empty()) throw error("cannot find min in an empty container");
+         auto m = *c.begin();
+         for (auto it = c.begin() + 1; it != c.end(); ++it) {
+            if (*it < m) m = *it;
+         }
+         return m;
+      }
+   }
+
+   draw_helper_t & draw_helper_t::draw(DrawType type) {
+      if (attrib_bindings_.empty()) return *this;
+
+      auto block_count = [](attrib_binding const & b) {
+         auto block_size = attrib_primitive_bytes(b.attrib.type()) * b.count + b.stride;
+         assert(b.array.byte_size() % block_size == 0);
+
+         return b.array.byte_size() / block_size;
+      };
+
+      auto attrib_block_counts = transform(attrib_bindings_, block_count);
+      auto min_block_count = min(attrib_block_counts);
+
+      assert(min_block_count > 0);
+
+      return draw(type, 0, min_block_count);
+   }
+
+   draw_helper_t & draw_helper_t::draw(DrawType type, unsigned first, unsigned count) {
+      auto gl_val_type = [](array::Type t) {
+         switch (t) {
+         case array::Type::Byte: return GL_BYTE;
+         case array::Type::UByte: return GL_UNSIGNED_BYTE;
+         case array::Type::Short: return GL_SHORT;
+         case array::Type::UShort: return GL_UNSIGNED_SHORT;
+         case array::Type::Int: return GL_INT;
+         case array::Type::UInt: return GL_UNSIGNED_INT;
+         case array::Type::Float: return GL_FLOAT;
+         case array::Type::Double: return GL_DOUBLE;
+         default: throw error("unrecognised value type when drawing");
+         }
+      };
+
+      for (auto & a : attrib_bindings_) {
+         // TODO: validate array data
+         glVertexAttribPointer(a.attrib.location(), a.count, gl_val_type(a.array.type()), false, a.stride, a.array.state_->data_);
+         glEnableVertexAttribArray(a.attrib.location());
+      }
+
+      auto gl_draw_type = [type] {
+         switch (type) {
+         case DrawType::Points: return GL_POINTS;
+         case DrawType::Lines: return GL_LINES;
+         case DrawType::LineLoop: return GL_LINE_LOOP;
+         case DrawType::Triangles: return GL_TRIANGLES;
+         case DrawType::TriangleStrip: return GL_TRIANGLE_STRIP;
+         case DrawType::TriangleFan: return GL_TRIANGLE_FAN;
+         default: throw error("unrecognised draw type when drawing");
+         }
+      }();
+
+      glDrawArrays(gl_draw_type, first, count);
+
+      return *this;
+   }
+
 
    /**
     * free functions
