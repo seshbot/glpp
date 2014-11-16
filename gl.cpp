@@ -828,11 +828,11 @@ namespace gl
    draw_helper_t & draw_helper_t::validate_attribs(bool validate) {
       if (!validate) return *this;
 
-      struct slice_info { unsigned offset; unsigned size; };
-      struct array_info { void * data; unsigned block_size; std::vector<slice_info> slices; };
+      struct slice_info { unsigned offset; unsigned long size; };
+      struct array_info { void * const data; unsigned block_size; std::vector<slice_info> slices; };
 
       std::vector<array_info> arrays;
-      auto find_array_info = [&](void * p, unsigned block_size) -> array_info & {
+      auto find_array_info = [&](void * const p, unsigned block_size) -> array_info & {
          for (auto & a : arrays) {
             if (a.data == p) {
                assert(a.block_size == block_size && "attribute bindings disagree on block sizes");

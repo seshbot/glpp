@@ -224,7 +224,7 @@ namespace gl {
 
       array(void* data, Type type, unsigned count, std::size_t elem_size);
 
-      void* data() { return state_->data_; }
+      void * const data() const { return state_->data_; }
       Type type() const { return state_->type_; }
       unsigned count() const { return state_->count_; }
       std::size_t elem_size() const { return state_->elem_size_; }
@@ -232,7 +232,7 @@ namespace gl {
 
       struct state {
          state(void* d, Type t, unsigned c, std::size_t sz) : data_(d), type_(t), count_(c), elem_size_(sz) { }
-         void* data_; Type type_; unsigned count_; std::size_t elem_size_;
+         void * const data_; Type type_; unsigned count_; std::size_t elem_size_;
       };
 
       std::shared_ptr<state const> state_;
