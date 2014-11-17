@@ -108,7 +108,12 @@ int main()
          0.0, 0.5, 0.0, 1.,
       };
 
-      auto vertices = context.new_array(vertexArray);
+      auto vert_data = gl::array_t(vertexArray);
+
+      auto buf = gl::buffer({
+            { a_position, 3 },
+            { a_red_color, 1 },
+      });
 
       while (!context.win().closing())
       {
@@ -132,10 +137,11 @@ int main()
 
          u_time.set(static_cast<float>(gl::get_time()));
 
-         context.pass()
-            .with_attrib(a_position, vertices, 3, 16)
-            .with_attrib(a_red_color, vertices, 12, 1, 16)
-            .validate_attribs()
+         program.pass()
+            .with(vert_data, {
+                  {a_position, 3, 16},
+                  {a_red_color, 1, 16, 12},
+               })
             .draw(gl::DrawType::TriangleStrip);
 
          context.win().swap();

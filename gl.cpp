@@ -24,18 +24,32 @@
 
 namespace {
 #ifdef _DEBUG
-   static inline void checkOpenGLError(const char* function, const char* file, int line)
-   {
-      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
-
-      utils::log(utils::LOG_ERROR, "OpenGL error 0x%04x called from %s in file %s line %d", err, function, file, line);
+   const char * openGlErrorString(GLenum err) {
+      switch (err) {
+      case 0x0500: return "GL_INVALID_ENUM";
+      case 0x0501: return "GL_INVALID_VALUE";
+      case 0x0502: return "GL_INVALID_OPERATION";
+      case 0x0503: return "GL_STACK_OVERFLOW";
+      case 0x0504: return "GL_STACK_UNDERFLOW";
+      case 0x0505: return "GL_OUT_OF_MEMORY";
+      case 0x0506: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+      case 0x8031: return "GL_TABLE_TOO_LARGE1";
+      default: return "unrecognised";
+      }
    }
 
-   static inline void checkOpenGLError(const char* stmt, const char* function, const char* file, int line)
+   void checkOpenGLError(const char* function, const char* file, int line)
    {
       GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
 
-      utils::log(utils::LOG_ERROR, "OpenGL error 0x%04x at %s called from %s in file %s line %d", err, stmt, function, file, line);
+      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", openGlErrorString(err), err, function, file, line);
+   }
+
+   void checkOpenGLError(const char* stmt, const char* function, const char* file, int line)
+   {
+      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
+
+      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", openGlErrorString(err), err, stmt, function, file, line);
    }
 
 #define GL_VERIFY(stmt) do { stmt; checkOpenGLError(#stmt, __FUNCTION__, __FILE__, __LINE__); } while (0)
@@ -214,6 +228,47 @@ namespace {
       default: throw gl::error("cannot calculate primitive size of invalid attribute type");
       }
    }
+
+
+   GLuint gl_atomic_val_type(gl::ValueType type) {
+      switch (type) {
+      case gl::ValueType::Byte: return GL_BYTE;
+      case gl::ValueType::UByte: return GL_UNSIGNED_BYTE;
+      case gl::ValueType::Short: return GL_SHORT;
+      case gl::ValueType::UShort: return GL_UNSIGNED_SHORT;
+      case gl::ValueType::Int: return GL_INT;
+      case gl::ValueType::UInt: return GL_UNSIGNED_INT;
+      case gl::ValueType::Float: return GL_FLOAT;
+      case gl::ValueType::Double: return GL_DOUBLE;
+
+      case gl::ValueType::FloatVec2: return GL_FLOAT;
+      case gl::ValueType::FloatVec3: return GL_FLOAT;
+      case gl::ValueType::FloatVec4: return GL_FLOAT;
+      case gl::ValueType::IntVec2: return GL_INT;
+      case gl::ValueType::IntVec3: return GL_INT;
+      case gl::ValueType::IntVec4: return GL_INT;
+
+      case gl::ValueType::FloatMat2: return GL_FLOAT;
+      case gl::ValueType::FloatMat3: return GL_FLOAT;
+      case gl::ValueType::FloatMat4: return GL_FLOAT;
+
+      default: throw gl::error("invalid data value type when drawing");
+      }
+   }
+
+   int gl_val_type(gl::array_t::AttribDataType t) {
+      switch (t) {
+      case gl::array_t::AttribDataType::Byte: return GL_BYTE;
+      case gl::array_t::AttribDataType::UByte: return GL_UNSIGNED_BYTE;
+      case gl::array_t::AttribDataType::Short: return GL_SHORT;
+      case gl::array_t::AttribDataType::UShort: return GL_UNSIGNED_SHORT;
+      case gl::array_t::AttribDataType::Int: return GL_INT;
+      case gl::array_t::AttribDataType::UInt: return GL_UNSIGNED_INT;
+      case gl::array_t::AttribDataType::Float: return GL_FLOAT;
+      case gl::array_t::AttribDataType::Double: return GL_DOUBLE;
+      default: throw gl::error("unrecognised data value type when drawing");
+      }
+   };
 }
 
 namespace gl
@@ -408,6 +463,160 @@ namespace gl
    void attrib::reset() {
       state_->location_ = -1;
       state_->error_ = false;
+   }
+
+
+  /**
+   * buffer functions
+   *
+   */
+
+   unsigned attrib_data::calc_stride_bytes() const{
+      return stride_bytes != 0
+         ? stride_bytes
+         : attrib_primitive_bytes(attrib.type()) * count;
+   }
+
+   unsigned num_vertices(array_pack_t const & packed) {
+      auto block_count = [&](attrib_data const & b) {
+         auto stride_bytes = b.calc_stride_bytes();
+         assert(packed.array.byte_size() % stride_bytes == 0);
+
+         return packed.array.byte_size() / stride_bytes;
+      };
+
+      auto min_block_count = block_count(packed.attribs.front());
+
+      for (auto it = packed.attribs.begin() + 1; it != packed.attribs.end(); ++it) {
+         auto c = block_count(*it);
+         if (c < min_block_count) min_block_count = c;
+      }
+
+      assert(min_block_count > 0);
+
+      return min_block_count;
+   }
+
+   void use(array_pack_t const & packed) {
+      for (auto & attrib_data : packed.attribs) {
+         auto gl_type = gl_atomic_val_type(attrib_data.attrib.type());
+         int8_t * data = reinterpret_cast<int8_t*>(packed.array.data()) + attrib_data.offset_bytes;
+
+         GL_VERIFY(glVertexAttribPointer(attrib_data.attrib.location(), attrib_data.count, gl_type, false, attrib_data.stride_bytes, data));
+         GL_VERIFY(glEnableVertexAttribArray(attrib_data.attrib.location()));
+      }
+   }
+
+   buffer_pack_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs) {
+      return{ b, { std::begin(attribs), std::end(attribs) } };
+   }
+
+   buffer_pack_t buffer(std::initializer_list<attrib_data> attribs) {
+      return{ {}, { std::begin(attribs), std::end(attribs) } };
+   }
+
+   unsigned num_vertices(buffer_pack_t const & b) {
+      // TODO
+      return 0;
+   }
+
+   void use(buffer_pack_t const & b) {
+      // TODO
+   }
+
+
+  /**
+   * draw_helper_t
+   *
+   */
+
+   draw_helper_t & draw_helper_t::with(array_t array, std::initializer_list<attrib_data> attribs) {
+      vertex_data_.push_back(array_pack_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
+      return *this;
+   }
+
+   //draw_helper_t & draw_helper_t::validate_attribs(bool validate) {
+   //   if (!validate) return *this;
+
+   //   struct slice_info { unsigned offset; unsigned long size; };
+   //   struct array_info { void * const data; unsigned block_size; std::vector<slice_info> slices; };
+
+   //   std::vector<array_info> arrays;
+   //   auto find_array_info = [&](void * const p, unsigned block_size) -> array_info & {
+   //      for (auto & a : arrays) {
+   //         if (a.data == p) {
+   //            assert(a.block_size == block_size && "attribute bindings disagree on block sizes");
+   //            return a;
+   //         }
+   //      }
+   //      arrays.push_back({ p, block_size });
+   //      return arrays.back();
+   //   };
+
+   //   for (auto & b : attrib_bindings_) {
+   //      // find or add the array info
+   //      auto & arrinfo = find_array_info(b.array.data(), b.calc_stride_bytes());
+
+   //      // add the slice info for this attrib in the array
+   //      auto ins_it = arrinfo.slices.begin();
+   //      while (ins_it != arrinfo.slices.end() && b.offset_bytes > ins_it->offset)
+   //         ++ins_it;
+
+   //      arrinfo.slices.insert(ins_it, { b.offset_bytes, b.count * b.array.elem_size() });
+   //   }
+
+   //   // validate the structure of the slices within each array
+   //   for (auto & arrinfo : arrays) {
+   //      auto block_size = arrinfo.block_size;
+   //      auto end_of_last_attrib = 0U;
+   //      for (auto & slice : arrinfo.slices) {
+   //         assert(slice.offset < block_size && "attribute data exceeds the expected 'block' size");
+   //         assert(slice.offset >= end_of_last_attrib && "attribute data overlaps another attribute's data");
+   //         auto end_of_attrib = slice.offset + slice.size;
+   //         assert(end_of_attrib <= block_size && "attribute data runs off the end of the block");
+   //         end_of_last_attrib = end_of_attrib;
+   //      }
+   //   }
+
+   //   return *this;
+   //}
+
+   draw_helper_t & draw_helper_t::draw(DrawType type) {
+      if (vertex_data_.empty()) return *this;
+
+      // calculate how many verticies to render
+      auto min_block_count = vertex_data_.front().num_vertices();
+
+      for (auto it = vertex_data_.begin() + 1; it != vertex_data_.end(); ++it) {
+         auto c = it->num_vertices();
+         if (c < min_block_count) min_block_count = c;
+      }
+
+      assert(min_block_count > 0);
+
+      return draw(type, 0, min_block_count);
+   }
+
+   draw_helper_t & draw_helper_t::draw(DrawType type, unsigned first, unsigned count) {
+      prg_.use();
+
+      for (auto & v : vertex_data_) v.use();
+
+      auto gl_draw_type = [type] {
+         switch (type) {
+         case DrawType::Points: return GL_POINTS;
+         case DrawType::Lines: return GL_LINES;
+         case DrawType::LineLoop: return GL_LINE_LOOP;
+         case DrawType::Triangles: return GL_TRIANGLES;
+         case DrawType::TriangleStrip: return GL_TRIANGLE_STRIP;
+         case DrawType::TriangleFan: return GL_TRIANGLE_FAN;
+         default: throw error("unrecognised draw type when drawing");
+         }
+      }();
+
+      GL_VERIFY(glDrawArrays(gl_draw_type, first, count));
+
+      return *this;
    }
 
 
@@ -630,6 +839,10 @@ namespace gl
       return logs;
    }
 
+   draw_helper_t program::pass() {
+      return{ *this };
+   }
+
 
   /**
    * class window
@@ -776,166 +989,52 @@ namespace gl
       if (impl_ && impl_->window_) glfwDestroyWindow(impl_->window_);
    }
 
-   array context::new_array_impl(void* data, array::Type type, unsigned count, std::size_t elem_size) {
-      return{ data, type, count, elem_size };
-   }
+
+  /**
+   * array_t
+   *
+   */
+
+   template <> array_t::AttribDataType array_t::type_of<int8_t>() { return AttribDataType::Byte; }
+   template <> array_t::AttribDataType array_t::type_of<uint8_t>() { return AttribDataType::UByte; }
+   template <> array_t::AttribDataType array_t::type_of<int16_t>() { return AttribDataType::Short; }
+   template <> array_t::AttribDataType array_t::type_of<uint16_t>() { return AttribDataType::UShort; }
+   template <> array_t::AttribDataType array_t::type_of<int32_t>() { return AttribDataType::Int; }
+   template <> array_t::AttribDataType array_t::type_of<uint32_t>() { return AttribDataType::UInt; }
+   template <> array_t::AttribDataType array_t::type_of<float>() { return AttribDataType::Float; }
+   template <> array_t::AttribDataType array_t::type_of<double>() { return AttribDataType::Double; }
 
 
-   draw_helper_t context::pass() {
-      return{*this};
+   array_t::array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size)
+      : state_(std::make_shared<state>(data, data_type, count, elem_size)) {
    }
 
 
   /**
-   * array
+   * buffer_t
    *
    */
 
-   array::array(void* data, Type type, unsigned count, std::size_t elem_size)
-      : state_(std::make_shared<state>(data, type, count, elem_size)) {
+   buffer_t::buffer_t()
+      : state_(new state()) {
    }
 
-   template <> array::Type array::type_of<int8_t>() { return array::Byte; }
-   template <> array::Type array::type_of<uint8_t>() { return array::UByte; }
-   template <> array::Type array::type_of<int16_t>() { return array::Short; }
-   template <> array::Type array::type_of<uint16_t>() { return array::UShort; }
-   template <> array::Type array::type_of<int32_t>() { return array::Int; }
-   template <> array::Type array::type_of<uint32_t>() { return array::UInt; }
-   template <> array::Type array::type_of<float>() { return array::Float; }
-   template <> array::Type array::type_of<double>() { return array::Double; }
-
-
-   /**
-   * draw_helper_t
-   *
-   */
-   unsigned draw_helper_t::attrib_binding::block_size() const {
-      return stride != 0
-         ? stride
-         : attrib_primitive_bytes(attrib.type()) * count;
+   buffer_t::state::state() {
+      glGenBuffers(1, &id_);
    }
 
-   draw_helper_t & draw_helper_t::with_attrib(attrib a, array data, unsigned count, unsigned stride_bytes) {
-      return with_attrib(std::move(a), std::move(data), 0, count, stride_bytes);
+   buffer_t::state::~state() {
+      GL_VERIFY(glDeleteBuffers(1, &id_));
    }
 
-   draw_helper_t & draw_helper_t::with_attrib(attrib a, array data, unsigned offset_bytes, unsigned count, unsigned stride_bytes) {
-      attrib_bindings_.push_back({ std::move(a), std::move(data), offset_bytes, count, stride_bytes });
+   void buffer_t::use(Type type) const {
+      auto gl_type
+         = type == Vertex ? GL_ARRAY_BUFFER
+         : type == Index ? GL_ELEMENT_ARRAY_BUFFER
+         : throw error("unrecognised buffer type");
 
-      return *this;
-   }
-
-   draw_helper_t & draw_helper_t::validate_attribs(bool validate) {
-      if (!validate) return *this;
-
-      struct slice_info { unsigned offset; unsigned long size; };
-      struct array_info { void * const data; unsigned block_size; std::vector<slice_info> slices; };
-
-      std::vector<array_info> arrays;
-      auto find_array_info = [&](void * const p, unsigned block_size) -> array_info & {
-         for (auto & a : arrays) {
-            if (a.data == p) {
-               assert(a.block_size == block_size && "attribute bindings disagree on block sizes");
-               return a;
-            }
-         }
-         arrays.push_back({ p, block_size });
-         return arrays.back();
-      };
-
-      for (auto & b : attrib_bindings_) {
-         // find or add the array info
-         auto & arrinfo = find_array_info(b.array.data(), b.block_size());
-
-         // add the slice info for this attrib in the array
-         auto ins_it = arrinfo.slices.begin();
-         while (ins_it != arrinfo.slices.end() && b.offset_bytes > ins_it->offset)
-            ++ins_it;
-
-         arrinfo.slices.insert(ins_it, {b.offset_bytes, b.count * b.array.elem_size()});
-      }
-
-      // validate the structure of the slices within each array
-      for (auto & arrinfo : arrays) {
-         auto block_size = arrinfo.block_size;
-         auto end_of_last_attrib = 0U;
-         for (auto & slice : arrinfo.slices) {
-            assert(slice.offset < block_size && "attribute data exceeds the expected 'block' size");
-            assert(slice.offset >= end_of_last_attrib && "attribute data overlaps another attribute's data");
-            auto end_of_attrib = slice.offset + slice.size;
-            assert(end_of_attrib <= block_size && "attribute data runs off the end of the block");
-            end_of_last_attrib = end_of_attrib;
-         }
-      }
-
-      return *this;
-   }
-
-   draw_helper_t & draw_helper_t::draw(DrawType type) {
-      if (attrib_bindings_.empty()) return *this;
-
-      // calculate how many verticies to render
-
-      auto block_count = [](attrib_binding const & b) {
-         auto block_size = b.block_size();
-         assert(b.array.byte_size() % block_size == 0);
-
-         return b.array.byte_size() / block_size;
-      };
-
-      auto min_block_count = block_count(attrib_bindings_.front());
-
-      for (auto it = attrib_bindings_.begin() + 1; it != attrib_bindings_.end(); ++it) {
-         auto c = block_count(*it);
-         if (c < min_block_count) min_block_count = c;
-      }
-
-      assert(min_block_count > 0);
-
-      return draw(type, 0, min_block_count);
-   }
-
-   draw_helper_t & draw_helper_t::draw(DrawType type, unsigned first, unsigned count) {
-      auto gl_val_type = [](array::Type t) {
-         switch (t) {
-         case array::Type::Byte: return GL_BYTE;
-         case array::Type::UByte: return GL_UNSIGNED_BYTE;
-         case array::Type::Short: return GL_SHORT;
-         case array::Type::UShort: return GL_UNSIGNED_SHORT;
-         case array::Type::Int: return GL_INT;
-         case array::Type::UInt: return GL_UNSIGNED_INT;
-         case array::Type::Float: return GL_FLOAT;
-         case array::Type::Double: return GL_DOUBLE;
-         default: throw error("unrecognised value type when drawing");
-         }
-      };
-
-      for (auto & b : attrib_bindings_) {
-         // TODO: validate array data
-         auto gl_type = gl_val_type(b.array.type());
-         int8_t * data = reinterpret_cast<int8_t*>(b.array.data()) + b.offset_bytes;
-
-         GL_VERIFY(glVertexAttribPointer(
-            b.attrib.location(), b.count, gl_type, false, b.stride, data));
-
-         GL_VERIFY(glEnableVertexAttribArray(b.attrib.location()));
-      }
-
-      auto gl_draw_type = [type] {
-         switch (type) {
-         case DrawType::Points: return GL_POINTS;
-         case DrawType::Lines: return GL_LINES;
-         case DrawType::LineLoop: return GL_LINE_LOOP;
-         case DrawType::Triangles: return GL_TRIANGLES;
-         case DrawType::TriangleStrip: return GL_TRIANGLE_STRIP;
-         case DrawType::TriangleFan: return GL_TRIANGLE_FAN;
-         default: throw error("unrecognised draw type when drawing");
-         }
-      }();
-
-      GL_VERIFY(glDrawArrays(gl_draw_type, first, count));
-
-      return *this;
+      // TODO: GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER
+      glBindBuffer(gl_type, state_->id_);
    }
 
 

@@ -150,6 +150,140 @@ namespace gl {
       std::shared_ptr<state> state_;
    };
 
+   class array_t {
+   public:
+      enum class AttribDataType { Byte, UByte, Short, UShort, Int, UInt, Float, Double };
+      template <typename T> static AttribDataType type_of();
+
+      template <typename T, unsigned N>
+      array_t(const T(&data)[N]) : array_t((void*)data, type_of<T>(), N, sizeof(T)) {}
+
+      array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size);
+
+      void * const data() const { return state_->data_; }
+      AttribDataType data_type() const { return state_->type_; }
+      unsigned count() const { return state_->count_; }
+      std::size_t elem_size() const { return state_->elem_size_; }
+      std::size_t byte_size() const { return state_->elem_size_ * state_->count_; }
+
+      friend bool operator==(array_t const & lhs, array_t const & rhs) { return lhs.data() == rhs.data(); }
+      friend bool operator!=(array_t const & lhs, array_t const & rhs) { return !(lhs == rhs); }
+
+   private:
+      struct state {
+         state(void* d, AttribDataType t, unsigned c, std::size_t sz) : data_(d), type_(t), count_(c), elem_size_(sz) { }
+         void * const data_; AttribDataType type_; unsigned count_; std::size_t elem_size_;
+      };
+
+      std::shared_ptr<state const> state_;
+   };
+
+   class buffer_t {
+   public:
+      enum Type { Vertex, Index };
+      buffer_t();
+
+      id_t id() const { return state_->id_; }
+      void use(Type type) const;
+
+      friend bool operator==(buffer_t const & lhs, buffer_t const & rhs) { return lhs.id() == rhs.id(); }
+      friend bool operator!=(buffer_t const & lhs, buffer_t const & rhs) { return !(lhs == rhs); }
+
+   private:
+      struct state {
+         state();
+         ~state();
+
+         id_t id_;
+      };
+
+      std::shared_ptr<state const> state_;
+   };
+
+
+   struct attrib_data {
+      attrib_data(attrib attrib, unsigned count, unsigned stride_bytes = 0, unsigned offset_bytes = 0)
+         : attrib(std::move(attrib)), count(count), stride_bytes(stride_bytes), offset_bytes(offset_bytes) {}
+
+      // estimate block size (stride) based on attrib specifications
+      unsigned calc_stride_bytes() const;
+
+      const attrib attrib;
+      const unsigned count;
+      const unsigned stride_bytes;
+      const unsigned offset_bytes;
+   };
+
+   struct array_pack_t {
+      array_t array;
+      std::vector<attrib_data> attribs;
+   };
+
+   struct buffer_pack_t {
+      buffer_t buffer;
+      std::vector<attrib_data> attribs;
+   };
+
+   buffer_pack_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs);
+   buffer_pack_t buffer(std::initializer_list<attrib_data> attribs);
+
+   unsigned num_vertices(array_pack_t const & b);
+   unsigned num_vertices(buffer_pack_t const & b);
+   void use(array_pack_t const & b);
+   void use(buffer_pack_t const & b);
+
+
+   enum class DrawType {
+      Points,
+      Lines, LineLoop,
+      Triangles, TriangleStrip, TriangleFan,
+   };
+
+   class draw_helper_t {
+   public:
+      draw_helper_t(draw_helper_t const &) = delete;
+      draw_helper_t & operator=(draw_helper_t const &) = delete;
+
+      draw_helper_t & with(array_t array, std::initializer_list<attrib_data> attribs);
+      //draw_helper_t & with(buffer_pack_t buffer_pack);
+
+      //draw_helper_t & validate_attribs(bool validate = true);
+
+      draw_helper_t & draw(DrawType type);
+      draw_helper_t & draw(DrawType type, unsigned first, unsigned count);
+
+   private:
+      friend class program;
+      draw_helper_t(program & prg) : prg_(prg) { }
+
+      program & prg_;
+
+      struct vertex_data_layout {
+         unsigned num_vertices() const { return model_->num_vertices(); }
+         void use() const { model_->use(); }
+
+         vertex_data_layout(vertex_data_layout && other) : model_(std::move(other.model_)) { }
+
+         template <typename T>
+         vertex_data_layout(T impl) : model_(new model<T>(std::move(impl))) {}
+         struct concept {
+            virtual ~concept() {}
+            virtual unsigned num_vertices() const = 0;
+            virtual void use() const = 0;
+         };
+         template <typename T>
+         struct model : public concept {
+            model(T data) : data_(std::move(data)) {}
+            virtual unsigned num_vertices() const { return gl::num_vertices(data_); }
+            virtual void use() const { gl::use(data_); }
+            T data_;
+         };
+
+         std::unique_ptr<concept> model_;
+      };
+      std::vector<vertex_data_layout> vertex_data_;
+   };
+
 	class program {
    public:
       program(shader s1, shader s2);
@@ -172,6 +306,8 @@ namespace gl {
       void attach(shader s);
 
       std::string compile_logs() const;
+
+      draw_helper_t pass();
 
    private:
       program();
@@ -216,62 +352,6 @@ namespace gl {
       context & ctx_;
    };
 
-   class array {
-   public:
-      enum Type { Byte, UByte, Short, UShort, Int, UInt, Float, Double };
-
-      template <typename T> static Type type_of();
-
-      array(void* data, Type type, unsigned count, std::size_t elem_size);
-
-      void * const data() const { return state_->data_; }
-      Type type() const { return state_->type_; }
-      unsigned count() const { return state_->count_; }
-      std::size_t elem_size() const { return state_->elem_size_; }
-      std::size_t byte_size() const { return state_->elem_size_ * state_->count_; }
-
-      struct state {
-         state(void* d, Type t, unsigned c, std::size_t sz) : data_(d), type_(t), count_(c), elem_size_(sz) { }
-         void * const data_; Type type_; unsigned count_; std::size_t elem_size_;
-      };
-
-      std::shared_ptr<state const> state_;
-   };
-
-
-   class buffer {
-   };
-
-   enum class DrawType {
-      Points,
-      Lines, LineLoop,
-      Triangles, TriangleStrip, TriangleFan,
-   };
-
-   class draw_helper_t {
-   public:
-      draw_helper_t(draw_helper_t const &) = delete;
-      draw_helper_t & operator=(draw_helper_t const &) = delete;
-
-      draw_helper_t & with_attrib(attrib a, array data, unsigned count, unsigned stride_bytes);
-      draw_helper_t & with_attrib(attrib a, array data, unsigned offset_bytes, unsigned count, unsigned stride_bytes);
-      draw_helper_t & validate_attribs(bool validate = true);
-
-      draw_helper_t & draw(DrawType type);
-      draw_helper_t & draw(DrawType type, unsigned first, unsigned count);
-
-   private:
-      friend class context;
-      draw_helper_t(context & ctx) : ctx_(ctx) { }
-
-      struct attrib_binding {
-         attrib attrib; array array; unsigned offset_bytes; unsigned count; unsigned stride;
-         unsigned block_size() const;
-      };
-      context & ctx_;
-      std::vector<attrib_binding const> attrib_bindings_;
-   };
-
 	class context {
    public:
       using key_callback_t = std::function < void(context &, Key, int, KeyAction, int) >; // key, scancode, action, mods
@@ -288,16 +368,9 @@ namespace gl {
       window const & win() const { return win_; }
       window & win() { return win_; }
 
-      template <typename T, unsigned N>
-      array new_array(const T(&data)[N]) { return new_array_impl((void*)data, array::type_of<T>(), N, sizeof(T)); }
-
-      draw_helper_t pass();
-
    private:
       friend class window;
       window win_;
-
-      array new_array_impl(void* data, array::Type type, unsigned count, std::size_t elem_size);
 
       struct impl;
       std::unique_ptr<impl> impl_;
