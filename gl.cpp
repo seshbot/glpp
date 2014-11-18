@@ -184,7 +184,7 @@ namespace {
    }
 
    
-   std::size_t attrib_primitive_bytes(gl::ValueType type) {
+   std::size_t attrib_atomic_val_bytes(gl::ValueType type) {
       switch (type) {
       case gl::ValueType::Int:
       case gl::ValueType::UInt:
@@ -230,7 +230,7 @@ namespace {
    }
 
 
-   GLuint gl_atomic_val_type(gl::ValueType type) {
+   GLuint attrib_atomic_gl_type(gl::ValueType type) {
       switch (type) {
       case gl::ValueType::Byte: return GL_BYTE;
       case gl::ValueType::UByte: return GL_UNSIGNED_BYTE;
@@ -256,16 +256,16 @@ namespace {
       }
    }
 
-   int gl_val_type(gl::array_t::AttribDataType t) {
+   int gl_val_type(gl::static_array_t::AttribDataType t) {
       switch (t) {
-      case gl::array_t::AttribDataType::Byte: return GL_BYTE;
-      case gl::array_t::AttribDataType::UByte: return GL_UNSIGNED_BYTE;
-      case gl::array_t::AttribDataType::Short: return GL_SHORT;
-      case gl::array_t::AttribDataType::UShort: return GL_UNSIGNED_SHORT;
-      case gl::array_t::AttribDataType::Int: return GL_INT;
-      case gl::array_t::AttribDataType::UInt: return GL_UNSIGNED_INT;
-      case gl::array_t::AttribDataType::Float: return GL_FLOAT;
-      case gl::array_t::AttribDataType::Double: return GL_DOUBLE;
+      case gl::static_array_t::AttribDataType::Byte: return GL_BYTE;
+      case gl::static_array_t::AttribDataType::UByte: return GL_UNSIGNED_BYTE;
+      case gl::static_array_t::AttribDataType::Short: return GL_SHORT;
+      case gl::static_array_t::AttribDataType::UShort: return GL_UNSIGNED_SHORT;
+      case gl::static_array_t::AttribDataType::Int: return GL_INT;
+      case gl::static_array_t::AttribDataType::UInt: return GL_UNSIGNED_INT;
+      case gl::static_array_t::AttribDataType::Float: return GL_FLOAT;
+      case gl::static_array_t::AttribDataType::Double: return GL_DOUBLE;
       default: throw gl::error("unrecognised data value type when drawing");
       }
    };
@@ -467,17 +467,17 @@ namespace gl
 
 
   /**
-   * buffer functions
+   * buffer management
    *
    */
 
    unsigned attrib_data::calc_stride_bytes() const{
       return stride_bytes != 0
          ? stride_bytes
-         : attrib_primitive_bytes(attrib.type()) * count;
+         : attrib_atomic_val_bytes(attrib.type()) * count;
    }
 
-   unsigned num_vertices(array_pack_t const & packed) {
+   unsigned num_vertices(array_spec_t const & packed) {
       auto block_count = [&](attrib_data const & b) {
          auto stride_bytes = b.calc_stride_bytes();
          assert(packed.array.byte_size() % stride_bytes == 0);
@@ -497,9 +497,9 @@ namespace gl
       return min_block_count;
    }
 
-   void use(array_pack_t const & packed) {
+   void use(array_spec_t const & packed) {
       for (auto & attrib_data : packed.attribs) {
-         auto gl_type = gl_atomic_val_type(attrib_data.attrib.type());
+		 auto gl_type = attrib_atomic_gl_type(attrib_data.attrib.type());
          int8_t * data = reinterpret_cast<int8_t*>(packed.array.data()) + attrib_data.offset_bytes;
 
          GL_VERIFY(glVertexAttribPointer(attrib_data.attrib.location(), attrib_data.count, gl_type, false, attrib_data.stride_bytes, data));
@@ -507,20 +507,67 @@ namespace gl
       }
    }
 
-   buffer_pack_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs) {
+
+   array_spec_builder_t::array_spec_builder_t(static_array_t array)
+      : spec_prototype_(array_spec_t{std::move(array), {}}) {
+   }
+
+   array_spec_builder_t::array_spec_builder_t(array_spec_builder_t && other)
+      : pos_bytes_(other.pos_bytes_)
+      , spec_prototype_(std::move(other.spec_prototype_)) {
+   }
+
+   array_spec_builder_t & array_spec_builder_t::operator=(array_spec_builder_t && other) {
+      std::swap(spec_prototype_, other.spec_prototype_);
+      std::swap(pos_bytes_, other.pos_bytes_);
+
+      return *this;
+   }
+
+   array_spec_builder_t & array_spec_builder_t::add(attrib attrib, unsigned count) {
+      auto slice_size = count * attrib_atomic_val_bytes(attrib.type());
+      spec_prototype_.attribs.push_back({ std::move(attrib), count, 0, pos_bytes_ });
+      pos_bytes_ += slice_size;
+
+      return *this;
+   }
+
+   array_spec_builder_t & array_spec_builder_t::skip(unsigned bytes) {
+      pos_bytes_ += bytes;
+
+      return *this;
+   }
+
+   array_spec_t array_spec_builder_t::spec() const {
+      decltype(spec_prototype_.attribs) attribs;
+
+      // prototype doesnt have correct stride
+      for (auto & d : spec_prototype_.attribs) {
+         attribs.push_back({ d.attrib, d.count, pos_bytes_, d.offset_bytes});
+      }
+
+      return{ spec_prototype_.array, std::move(attribs) };
+   }
+
+   array_spec_builder_t describe(static_array_t array) {
+      return{ array };
+   }
+
+
+   buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs) {
       return{ b, { std::begin(attribs), std::end(attribs) } };
    }
 
-   buffer_pack_t buffer(std::initializer_list<attrib_data> attribs) {
+   buffer_spec_t buffer(std::initializer_list<attrib_data> attribs) {
       return{ {}, { std::begin(attribs), std::end(attribs) } };
    }
 
-   unsigned num_vertices(buffer_pack_t const & b) {
+   unsigned num_vertices(buffer_spec_t const & b) {
       // TODO
       return 0;
    }
 
-   void use(buffer_pack_t const & b) {
+   void use(buffer_spec_t const & b) {
       // TODO
    }
 
@@ -530,8 +577,13 @@ namespace gl
    *
    */
 
-   draw_helper_t & draw_helper_t::with(array_t array, std::initializer_list<attrib_data> attribs) {
-      vertex_data_.push_back(array_pack_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
+   draw_helper_t & draw_helper_t::with(static_array_t array, std::initializer_list<attrib_data> attribs) {
+	   vertex_data_.push_back(array_spec_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
+      return *this;
+   }
+
+   draw_helper_t & draw_helper_t::with(array_spec_t array_spec) {
+      vertex_data_.push_back(std::move(array_spec));
       return *this;
    }
 
@@ -991,21 +1043,21 @@ namespace gl
 
 
   /**
-   * array_t
+   * static_array_t
    *
    */
 
-   template <> array_t::AttribDataType array_t::type_of<int8_t>() { return AttribDataType::Byte; }
-   template <> array_t::AttribDataType array_t::type_of<uint8_t>() { return AttribDataType::UByte; }
-   template <> array_t::AttribDataType array_t::type_of<int16_t>() { return AttribDataType::Short; }
-   template <> array_t::AttribDataType array_t::type_of<uint16_t>() { return AttribDataType::UShort; }
-   template <> array_t::AttribDataType array_t::type_of<int32_t>() { return AttribDataType::Int; }
-   template <> array_t::AttribDataType array_t::type_of<uint32_t>() { return AttribDataType::UInt; }
-   template <> array_t::AttribDataType array_t::type_of<float>() { return AttribDataType::Float; }
-   template <> array_t::AttribDataType array_t::type_of<double>() { return AttribDataType::Double; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<int8_t>() { return AttribDataType::Byte; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<uint8_t>() { return AttribDataType::UByte; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<int16_t>() { return AttribDataType::Short; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<uint16_t>() { return AttribDataType::UShort; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<int32_t>() { return AttribDataType::Int; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<uint32_t>() { return AttribDataType::UInt; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<float>() { return AttribDataType::Float; }
+   template <> static_array_t::AttribDataType static_array_t::type_of<double>() { return AttribDataType::Double; }
 
 
-   array_t::array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size)
+   static_array_t::static_array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size)
       : state_(std::make_shared<state>(data, data_type, count, elem_size)) {
    }
 

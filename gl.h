@@ -150,15 +150,15 @@ namespace gl {
       std::shared_ptr<state> state_;
    };
 
-   class array_t {
+   class static_array_t {
    public:
       enum class AttribDataType { Byte, UByte, Short, UShort, Int, UInt, Float, Double };
       template <typename T> static AttribDataType type_of();
 
       template <typename T, unsigned N>
-      array_t(const T(&data)[N]) : array_t((void*)data, type_of<T>(), N, sizeof(T)) {}
+      static_array_t(const T(&data)[N]) : static_array_t((void*)data, type_of<T>(), N, sizeof(T)) {}
 
-      array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size);
+      static_array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size);
 
       void * const data() const { return state_->data_; }
       AttribDataType data_type() const { return state_->type_; }
@@ -166,8 +166,8 @@ namespace gl {
       std::size_t elem_size() const { return state_->elem_size_; }
       std::size_t byte_size() const { return state_->elem_size_ * state_->count_; }
 
-      friend bool operator==(array_t const & lhs, array_t const & rhs) { return lhs.data() == rhs.data(); }
-      friend bool operator!=(array_t const & lhs, array_t const & rhs) { return !(lhs == rhs); }
+      friend bool operator==(static_array_t const & lhs, static_array_t const & rhs) { return lhs.data() == rhs.data(); }
+      friend bool operator!=(static_array_t const & lhs, static_array_t const & rhs) { return !(lhs == rhs); }
 
    private:
       struct state {
@@ -214,23 +214,56 @@ namespace gl {
       const unsigned offset_bytes;
    };
 
-   struct array_pack_t {
-      array_t array;
+   struct array_spec_t {
+      array_spec_t(static_array_t array, std::vector<attrib_data> attribs)
+         : array(std::move(array)), attribs(std::move(attribs)) {}
+      array_spec_t(array_spec_t const & other)
+         : array(other.array), attribs(std::begin(other.attribs), std::end(other.attribs)) {}
+      array_spec_t & operator=(array_spec_t const & other) {
+         array = other.array;
+
+         decltype(attribs) new_attribs = other.attribs;
+         attribs.swap(new_attribs);
+
+         return *this;
+      }
+
+      static_array_t array;
       std::vector<attrib_data> attribs;
    };
 
-   struct buffer_pack_t {
+   struct buffer_spec_t {
       buffer_t buffer;
       std::vector<attrib_data> attribs;
    };
 
-   buffer_pack_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs);
-   buffer_pack_t buffer(std::initializer_list<attrib_data> attribs);
+   class array_spec_builder_t {
+   public:
+      array_spec_builder_t(static_array_t array);
+      array_spec_builder_t(array_spec_builder_t &&);
+      array_spec_builder_t & operator=(array_spec_builder_t &&);
+	   array_spec_builder_t(array_spec_builder_t const &) = delete;
+	   array_spec_builder_t & operator=(array_spec_builder_t const &) = delete;
 
-   unsigned num_vertices(array_pack_t const & b);
-   unsigned num_vertices(buffer_pack_t const & b);
-   void use(array_pack_t const & b);
-   void use(buffer_pack_t const & b);
+	   array_spec_builder_t & add(attrib attrib, unsigned count);
+	   array_spec_builder_t & skip(unsigned bytes);
+
+      array_spec_t spec() const;
+
+   private:
+	   mutable unsigned pos_bytes_ = 0;
+      array_spec_t spec_prototype_;
+   };
+
+   array_spec_builder_t describe(static_array_t array);
+
+   buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs);
+   buffer_spec_t buffer(std::initializer_list<attrib_data> attribs);
+
+   unsigned num_vertices(array_spec_t const & b);
+   unsigned num_vertices(buffer_spec_t const & b);
+   void use(array_spec_t const & b);
+   void use(buffer_spec_t const & b);
 
 
    enum class DrawType {
@@ -239,12 +272,14 @@ namespace gl {
       Triangles, TriangleStrip, TriangleFan,
    };
 
+   class program;
    class draw_helper_t {
    public:
       draw_helper_t(draw_helper_t const &) = delete;
       draw_helper_t & operator=(draw_helper_t const &) = delete;
 
-      draw_helper_t & with(array_t array, std::initializer_list<attrib_data> attribs);
+      draw_helper_t & with(static_array_t array, std::initializer_list<attrib_data> attribs);
+      draw_helper_t & with(array_spec_t array_spec);
       //draw_helper_t & with(buffer_pack_t buffer_pack);
 
       //draw_helper_t & validate_attribs(bool validate = true);

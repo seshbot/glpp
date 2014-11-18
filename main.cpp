@@ -108,7 +108,9 @@ int main()
          0.0, 0.5, 0.0, 1.,
       };
 
-      auto vert_data = gl::array_t(vertexArray);
+      auto vert_buffer = gl::describe(vertexArray)
+         .add(a_position, 3)
+         .add(a_red_color, 1).spec();
 
       auto buf = gl::buffer({
             { a_position, 3 },
@@ -138,10 +140,7 @@ int main()
          u_time.set(static_cast<float>(gl::get_time()));
 
          program.pass()
-            .with(vert_data, {
-                  {a_position, 3, 16},
-                  {a_red_color, 1, 16, 12},
-               })
+            .with(vert_buffer)
             .draw(gl::DrawType::TriangleStrip);
 
          context.win().swap();
