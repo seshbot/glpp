@@ -108,14 +108,20 @@ int main()
          0.0, 0.5, 0.0, 1.,
       };
 
+      static const unsigned indices[] = {
+         0, 1, 2,
+         0, 2, 3,
+      };
+
       auto vert_buffer = gl::describe(vertexArray)
          .add(a_position, 3)
-         .add(a_red_color, 1).spec();
+         .add(a_red_color, 1).build();
 
-      auto buf = gl::buffer({
-            { a_position, 3 },
-            { a_red_color, 1 },
-      });
+      gl::buffer_t b(vertexArray, indices);
+
+      auto b_spec = gl::describe(b)
+         .add(a_position, 3)
+         .add(a_red_color, 1).build();
 
       while (!context.win().closing())
       {
@@ -140,8 +146,8 @@ int main()
          u_time.set(static_cast<float>(gl::get_time()));
 
          program.pass()
-            .with(vert_buffer)
-            .draw(gl::DrawType::TriangleStrip);
+            .with(b_spec)
+            .draw(gl::DrawMode::TriangleStrip);
 
          context.win().swap();
       }

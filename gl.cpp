@@ -255,20 +255,6 @@ namespace {
       default: throw gl::error("invalid data value type when drawing");
       }
    }
-
-   int gl_val_type(gl::static_array_t::AttribDataType t) {
-      switch (t) {
-      case gl::static_array_t::AttribDataType::Byte: return GL_BYTE;
-      case gl::static_array_t::AttribDataType::UByte: return GL_UNSIGNED_BYTE;
-      case gl::static_array_t::AttribDataType::Short: return GL_SHORT;
-      case gl::static_array_t::AttribDataType::UShort: return GL_UNSIGNED_SHORT;
-      case gl::static_array_t::AttribDataType::Int: return GL_INT;
-      case gl::static_array_t::AttribDataType::UInt: return GL_UNSIGNED_INT;
-      case gl::static_array_t::AttribDataType::Float: return GL_FLOAT;
-      case gl::static_array_t::AttribDataType::Double: return GL_DOUBLE;
-      default: throw gl::error("unrecognised data value type when drawing");
-      }
-   };
 }
 
 namespace gl
@@ -471,6 +457,51 @@ namespace gl
    *
    */
 
+   buffer_t::idx_array_t::idx_array_t(void* data, unsigned count, ValueType data_type, std::size_t byte_size)
+      : data(data), count(count), data_type(data_type), byte_size(byte_size) {
+      assert((data_type == ValueType::UInt || data_type == ValueType::UShort || data_type == ValueType::UByte) && "invalid index buffer type");
+   }
+
+
+   buffer_t::state::state(void* vertex_data, std::size_t vertex_data_byte_size)
+      : vertex_buffer_size_(vertex_data_byte_size) {
+      glGenBuffers(1, &vertex_id_);
+      glBindBuffer(GL_ARRAY_BUFFER, vertex_id_);
+      glBufferData(GL_ARRAY_BUFFER, vertex_data_byte_size, vertex_data, GL_STATIC_DRAW);
+   }
+
+   buffer_t::state::state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type)
+   : state(vertex_data, vertex_byte_size) {
+      index_data_type_ = index_data_type;
+      index_count_ = index_count;
+      glGenBuffers(1, &index_id_);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_id_);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_byte_size, index_data, GL_STATIC_DRAW);
+   }
+
+   buffer_t::state::~state() {
+      if (0 != vertex_id_) glDeleteBuffers(1, &vertex_id_);
+      if (0 != index_id_) glDeleteBuffers(1, &index_id_);
+   }
+
+
+   buffer_t::buffer_t(static_array_t vertex_data)
+      : state_(new state(vertex_data.data(), vertex_data.size())) {
+   }
+
+   buffer_t::buffer_t(static_array_t vertex_data, idx_array_t index_data)
+      : state_(new state(vertex_data.data(), vertex_data.size(), index_data.data, index_data.count, index_data.byte_size, index_data.data_type)) {
+   }
+
+   void buffer_t::use() const {
+      assert(0 != state_->vertex_id_ && "vertex buffer not initialised");
+      glBindBuffer(GL_ARRAY_BUFFER, state_->vertex_id_);
+      if (0 != state_->index_id_) {
+         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state_->index_id_);
+      }
+   }
+
+
    unsigned attrib_data::calc_stride_bytes() const{
       return stride_bytes != 0
          ? stride_bytes
@@ -480,9 +511,9 @@ namespace gl
    unsigned num_vertices(array_spec_t const & packed) {
       auto block_count = [&](attrib_data const & b) {
          auto stride_bytes = b.calc_stride_bytes();
-         assert(packed.array.byte_size() % stride_bytes == 0);
+         assert(packed.array.size() % stride_bytes == 0);
 
-         return packed.array.byte_size() / stride_bytes;
+         return packed.array.size() / stride_bytes;
       };
 
       auto min_block_count = block_count(packed.attribs.front());
@@ -506,6 +537,81 @@ namespace gl
          GL_VERIFY(glEnableVertexAttribArray(attrib_data.attrib.location()));
       }
    }
+
+
+   unsigned num_vertices(buffer_spec_t const & packed) {
+      auto block_count = [&](attrib_data const & b) {
+         auto stride_bytes = b.calc_stride_bytes();
+         assert(packed.buffer.vertex_buffer_size() % stride_bytes == 0);
+
+         return packed.buffer.vertex_buffer_size() / stride_bytes;
+      };
+
+      auto min_block_count = block_count(packed.attribs.front());
+
+      for (auto it = packed.attribs.begin() + 1; it != packed.attribs.end(); ++it) {
+         auto c = block_count(*it);
+         if (c < min_block_count) min_block_count = c;
+      }
+
+      assert(min_block_count > 0);
+
+      return min_block_count;
+   }
+
+   void use(buffer_spec_t const & packed) {
+      packed.buffer.use();
+      for (auto & attrib_data : packed.attribs) {
+         auto gl_type = attrib_atomic_gl_type(attrib_data.attrib.type());
+
+         GL_VERIFY(glVertexAttribPointer(
+            attrib_data.attrib.location(), attrib_data.count, gl_type,
+            false, attrib_data.stride_bytes, reinterpret_cast<void*>(attrib_data.offset_bytes)));
+
+         GL_VERIFY(glEnableVertexAttribArray(attrib_data.attrib.location()));
+      }
+   }
+
+   void draw(array_spec_t const & b, DrawMode type) {
+      return draw(b, type, 0, num_vertices(b));
+   }
+
+   void draw(buffer_spec_t const & b, DrawMode type) {
+      return draw(b, type, 0, num_vertices(b));
+   }
+
+   namespace {
+      GLenum gl_draw_mode(DrawMode mode) {
+         switch (mode) {
+         case DrawMode::Points: return GL_POINTS;
+         case DrawMode::Lines: return GL_LINES;
+         case DrawMode::LineLoop: return GL_LINE_LOOP;
+         case DrawMode::Triangles: return GL_TRIANGLES;
+         case DrawMode::TriangleStrip: return GL_TRIANGLE_STRIP;
+         case DrawMode::TriangleFan: return GL_TRIANGLE_FAN;
+         default: throw error("unrecognised draw type when drawing");
+         }
+      }
+   }
+
+   void draw(array_spec_t const & b, DrawMode mode, unsigned first, unsigned count) {
+      use(b);
+
+      GL_VERIFY(glDrawArrays(gl_draw_mode(mode), first, count));
+   }
+
+   void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count) {
+      use(b);
+
+      if (b.buffer.has_index_data()) {
+         //TODO: count should be number of indices!
+         GL_VERIFY(glDrawElements(gl_draw_mode(mode), b.buffer.index_count(), attrib_atomic_gl_type(b.buffer.index_data_type()), (GLvoid*)first));
+      }
+      else {
+         GL_VERIFY(glDrawArrays(gl_draw_mode(mode), first, count));
+      }
+   }
+
 
 
    array_spec_builder_t::array_spec_builder_t(static_array_t array)
@@ -538,7 +644,7 @@ namespace gl
       return *this;
    }
 
-   array_spec_t array_spec_builder_t::spec() const {
+   array_spec_t array_spec_builder_t::build() const {
       decltype(spec_prototype_.attribs) attribs;
 
       // prototype doesnt have correct stride
@@ -554,22 +660,64 @@ namespace gl
    }
 
 
-   buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs) {
-      return{ b, { std::begin(attribs), std::end(attribs) } };
+
+
+   buffer_spec_builder_t::buffer_spec_builder_t(buffer_t buffer)
+      : spec_prototype_(buffer_spec_t{ std::move(buffer), {} }) {
    }
 
-   buffer_spec_t buffer(std::initializer_list<attrib_data> attribs) {
-      return{ {}, { std::begin(attribs), std::end(attribs) } };
+   buffer_spec_builder_t::buffer_spec_builder_t(buffer_spec_builder_t && other)
+      : pos_bytes_(other.pos_bytes_)
+      , spec_prototype_(std::move(other.spec_prototype_)) {
    }
 
-   unsigned num_vertices(buffer_spec_t const & b) {
-      // TODO
-      return 0;
+   buffer_spec_builder_t & buffer_spec_builder_t::operator=(buffer_spec_builder_t && other) {
+      std::swap(spec_prototype_, other.spec_prototype_);
+      std::swap(pos_bytes_, other.pos_bytes_);
+
+      return *this;
    }
 
-   void use(buffer_spec_t const & b) {
-      // TODO
+   buffer_spec_builder_t & buffer_spec_builder_t::add(attrib attrib, unsigned count) {
+      auto slice_size = count * attrib_atomic_val_bytes(attrib.type());
+      spec_prototype_.attribs.push_back({ std::move(attrib), count, 0, pos_bytes_ });
+      pos_bytes_ += slice_size;
+
+      return *this;
    }
+
+   buffer_spec_builder_t & buffer_spec_builder_t::skip(unsigned bytes) {
+      pos_bytes_ += bytes;
+
+      return *this;
+   }
+
+   buffer_spec_t buffer_spec_builder_t::build() const {
+      decltype(spec_prototype_.attribs) attribs;
+
+      // prototype doesnt have correct stride
+      for (auto & d : spec_prototype_.attribs) {
+         attribs.push_back({ d.attrib, d.count, pos_bytes_, d.offset_bytes });
+      }
+
+      return{ spec_prototype_.buffer, std::move(attribs) };
+   }
+
+   buffer_spec_builder_t describe(buffer_t buffer) {
+      return{ buffer };
+   }
+
+
+
+
+
+   //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs) {
+   //   return{ b, { std::begin(attribs), std::end(attribs) } };
+   //}
+
+   //buffer_spec_t buffer(std::initializer_list<attrib_data> attribs) {
+   //   return{ {}, { std::begin(attribs), std::end(attribs) } };
+   //}
 
 
   /**
@@ -586,6 +734,12 @@ namespace gl
       vertex_data_.push_back(std::move(array_spec));
       return *this;
    }
+
+   draw_helper_t & draw_helper_t::with(buffer_spec_t buffer_spec) {
+      vertex_data_.push_back(std::move(buffer_spec));
+      return *this;
+   }
+
 
    //draw_helper_t & draw_helper_t::validate_attribs(bool validate) {
    //   if (!validate) return *this;
@@ -633,41 +787,17 @@ namespace gl
    //   return *this;
    //}
 
-   draw_helper_t & draw_helper_t::draw(DrawType type) {
-      if (vertex_data_.empty()) return *this;
 
-      // calculate how many verticies to render
-      auto min_block_count = vertex_data_.front().num_vertices();
 
-      for (auto it = vertex_data_.begin() + 1; it != vertex_data_.end(); ++it) {
-         auto c = it->num_vertices();
-         if (c < min_block_count) min_block_count = c;
-      }
-
-      assert(min_block_count > 0);
-
-      return draw(type, 0, min_block_count);
+   draw_helper_t & draw_helper_t::draw(DrawMode type) {
+      prg_.use();
+      for (auto & v : vertex_data_) v.draw(type);
+      return *this;
    }
 
-   draw_helper_t & draw_helper_t::draw(DrawType type, unsigned first, unsigned count) {
+   draw_helper_t & draw_helper_t::draw(DrawMode type, unsigned first, unsigned count) {
       prg_.use();
-
-      for (auto & v : vertex_data_) v.use();
-
-      auto gl_draw_type = [type] {
-         switch (type) {
-         case DrawType::Points: return GL_POINTS;
-         case DrawType::Lines: return GL_LINES;
-         case DrawType::LineLoop: return GL_LINE_LOOP;
-         case DrawType::Triangles: return GL_TRIANGLES;
-         case DrawType::TriangleStrip: return GL_TRIANGLE_STRIP;
-         case DrawType::TriangleFan: return GL_TRIANGLE_FAN;
-         default: throw error("unrecognised draw type when drawing");
-         }
-      }();
-
-      GL_VERIFY(glDrawArrays(gl_draw_type, first, count));
-
+      for (auto & v : vertex_data_) v.draw(type, first, count);
       return *this;
    }
 
@@ -1039,54 +1169,6 @@ namespace gl
 
    void context::destroy() {
       if (impl_ && impl_->window_) glfwDestroyWindow(impl_->window_);
-   }
-
-
-  /**
-   * static_array_t
-   *
-   */
-
-   template <> static_array_t::AttribDataType static_array_t::type_of<int8_t>() { return AttribDataType::Byte; }
-   template <> static_array_t::AttribDataType static_array_t::type_of<uint8_t>() { return AttribDataType::UByte; }
-   template <> static_array_t::AttribDataType static_array_t::type_of<int16_t>() { return AttribDataType::Short; }
-   template <> static_array_t::AttribDataType static_array_t::type_of<uint16_t>() { return AttribDataType::UShort; }
-   template <> static_array_t::AttribDataType static_array_t::type_of<int32_t>() { return AttribDataType::Int; }
-   template <> static_array_t::AttribDataType static_array_t::type_of<uint32_t>() { return AttribDataType::UInt; }
-   template <> static_array_t::AttribDataType static_array_t::type_of<float>() { return AttribDataType::Float; }
-   template <> static_array_t::AttribDataType static_array_t::type_of<double>() { return AttribDataType::Double; }
-
-
-   static_array_t::static_array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size)
-      : state_(std::make_shared<state>(data, data_type, count, elem_size)) {
-   }
-
-
-  /**
-   * buffer_t
-   *
-   */
-
-   buffer_t::buffer_t()
-      : state_(new state()) {
-   }
-
-   buffer_t::state::state() {
-      glGenBuffers(1, &id_);
-   }
-
-   buffer_t::state::~state() {
-      GL_VERIFY(glDeleteBuffers(1, &id_));
-   }
-
-   void buffer_t::use(Type type) const {
-      auto gl_type
-         = type == Vertex ? GL_ARRAY_BUFFER
-         : type == Index ? GL_ELEMENT_ARRAY_BUFFER
-         : throw error("unrecognised buffer type");
-
-      // TODO: GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER
-      glBindBuffer(gl_type, state_->id_);
    }
 
 

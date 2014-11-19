@@ -152,27 +152,23 @@ namespace gl {
 
    class static_array_t {
    public:
-      enum class AttribDataType { Byte, UByte, Short, UShort, Int, UInt, Float, Double };
-      template <typename T> static AttribDataType type_of();
-
       template <typename T, unsigned N>
-      static_array_t(const T(&data)[N]) : static_array_t((void*)data, type_of<T>(), N, sizeof(T)) {}
+      static_array_t(const T(&data)[N]) 
+         : static_array_t((void*)data, N * sizeof(T)) {}
 
-      static_array_t(void* data, AttribDataType data_type, unsigned count, std::size_t elem_size);
+      static_array_t(void* data, std::size_t byte_size)
+         : state_(std::make_shared<state>(data, byte_size)) { }
 
       void * const data() const { return state_->data_; }
-      AttribDataType data_type() const { return state_->type_; }
-      unsigned count() const { return state_->count_; }
-      std::size_t elem_size() const { return state_->elem_size_; }
-      std::size_t byte_size() const { return state_->elem_size_ * state_->count_; }
+      std::size_t size() const { return state_->byte_size_; }
 
       friend bool operator==(static_array_t const & lhs, static_array_t const & rhs) { return lhs.data() == rhs.data(); }
       friend bool operator!=(static_array_t const & lhs, static_array_t const & rhs) { return !(lhs == rhs); }
 
    private:
       struct state {
-         state(void* d, AttribDataType t, unsigned c, std::size_t sz) : data_(d), type_(t), count_(c), elem_size_(sz) { }
-         void * const data_; AttribDataType type_; unsigned count_; std::size_t elem_size_;
+         state(void* d, std::size_t sz) : data_(d), byte_size_(sz) { }
+         void * const data_; std::size_t byte_size_;
       };
 
       std::shared_ptr<state const> state_;
@@ -180,21 +176,45 @@ namespace gl {
 
    class buffer_t {
    public:
-      enum Type { Vertex, Index };
-      buffer_t();
+      struct idx_array_t {
+         template <unsigned N>
+         idx_array_t(const unsigned(&data)[N]) : idx_array_t((void*)data, N, ValueType::UInt, N * sizeof(unsigned)) {}
+         idx_array_t(void* data, unsigned count, ValueType data_type, std::size_t byte_size);
 
-      id_t id() const { return state_->id_; }
-      void use(Type type) const;
+         void* data;
+         unsigned count;
+         ValueType data_type;
+         std::size_t byte_size;
+      };
 
-      friend bool operator==(buffer_t const & lhs, buffer_t const & rhs) { return lhs.id() == rhs.id(); }
+      buffer_t(static_array_t vertex_data);
+      buffer_t(static_array_t vertex_data, idx_array_t indices);
+
+      std::size_t vertex_buffer_size() const { return state_->vertex_buffer_size_; }
+
+      id_t vertex_buffer_id() const { return state_->vertex_id_; }
+      id_t index_buffer_id() const { return state_->index_id_; }
+
+      bool has_index_data() const { return state_->index_id_ != 0; }
+      ValueType index_data_type() const { return state_->index_data_type_; }
+      unsigned index_count() const { return state_->index_count_; }
+
+      void use() const;
+
+      friend bool operator==(buffer_t const & lhs, buffer_t const & rhs) { return lhs.vertex_buffer_id() == rhs.vertex_buffer_id() && lhs.index_buffer_id() == rhs.index_buffer_id(); }
       friend bool operator!=(buffer_t const & lhs, buffer_t const & rhs) { return !(lhs == rhs); }
 
    private:
       struct state {
-         state();
+         state(void* vertex_data, std::size_t vertex_byte_size);
+         state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type);
          ~state();
 
-         id_t id_;
+         id_t vertex_id_ = 0;
+         id_t index_id_ = 0;
+         std::size_t vertex_buffer_size_;
+         ValueType index_data_type_ = Unknown;
+         unsigned index_count_ = 0;
       };
 
       std::shared_ptr<state const> state_;
@@ -208,10 +228,10 @@ namespace gl {
       // estimate block size (stride) based on attrib specifications
       unsigned calc_stride_bytes() const;
 
-      const attrib attrib;
-      const unsigned count;
-      const unsigned stride_bytes;
-      const unsigned offset_bytes;
+      attrib attrib;
+      unsigned count;
+      unsigned stride_bytes;
+      unsigned offset_bytes;
    };
 
    struct array_spec_t {
@@ -248,7 +268,7 @@ namespace gl {
 	   array_spec_builder_t & add(attrib attrib, unsigned count);
 	   array_spec_builder_t & skip(unsigned bytes);
 
-      array_spec_t spec() const;
+      array_spec_t build() const;
 
    private:
 	   mutable unsigned pos_bytes_ = 0;
@@ -257,20 +277,45 @@ namespace gl {
 
    array_spec_builder_t describe(static_array_t array);
 
-   buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs);
-   buffer_spec_t buffer(std::initializer_list<attrib_data> attribs);
+   class buffer_spec_builder_t {
+   public:
+      buffer_spec_builder_t(buffer_t buffer);
+      buffer_spec_builder_t(buffer_spec_builder_t &&);
+      buffer_spec_builder_t & operator=(buffer_spec_builder_t &&);
+      buffer_spec_builder_t(buffer_spec_builder_t const &) = delete;
+      buffer_spec_builder_t & operator=(buffer_spec_builder_t const &) = delete;
+
+      buffer_spec_builder_t & add(attrib attrib, unsigned count);
+      buffer_spec_builder_t & skip(unsigned bytes);
+
+      buffer_spec_t build() const;
+
+   private:
+      mutable unsigned pos_bytes_ = 0;
+      buffer_spec_t spec_prototype_;
+   };
+
+   buffer_spec_builder_t describe(buffer_t buffer);
+
+   //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs);
+   //buffer_spec_t buffer(std::initializer_list<attrib_data> attribs);
+
+
+   enum class DrawMode {
+      Points,
+      Lines, LineLoop,
+      Triangles, TriangleStrip, TriangleFan,
+   };
 
    unsigned num_vertices(array_spec_t const & b);
    unsigned num_vertices(buffer_spec_t const & b);
    void use(array_spec_t const & b);
    void use(buffer_spec_t const & b);
+   void draw(array_spec_t const & b, DrawMode mode);
+   void draw(buffer_spec_t const & b, DrawMode mode);
+   void draw(array_spec_t const & b, DrawMode mode, unsigned first, unsigned count);
+   void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count);
 
-
-   enum class DrawType {
-      Points,
-      Lines, LineLoop,
-      Triangles, TriangleStrip, TriangleFan,
-   };
 
    class program;
    class draw_helper_t {
@@ -280,12 +325,13 @@ namespace gl {
 
       draw_helper_t & with(static_array_t array, std::initializer_list<attrib_data> attribs);
       draw_helper_t & with(array_spec_t array_spec);
+      draw_helper_t & with(buffer_spec_t buffer_spec);
       //draw_helper_t & with(buffer_pack_t buffer_pack);
 
       //draw_helper_t & validate_attribs(bool validate = true);
 
-      draw_helper_t & draw(DrawType type);
-      draw_helper_t & draw(DrawType type, unsigned first, unsigned count);
+      draw_helper_t & draw(DrawMode mode);
+      draw_helper_t & draw(DrawMode mode, unsigned first, unsigned count);
 
    private:
       friend class program;
@@ -296,6 +342,8 @@ namespace gl {
       struct vertex_data_layout {
          unsigned num_vertices() const { return model_->num_vertices(); }
          void use() const { model_->use(); }
+         void draw(DrawMode type) const { model_->draw(type); }
+         void draw(DrawMode type, unsigned first, unsigned count) const { model_->draw(type, first, count); }
 
          vertex_data_layout(vertex_data_layout && other) : model_(std::move(other.model_)) { }
 
@@ -305,12 +353,16 @@ namespace gl {
             virtual ~concept() {}
             virtual unsigned num_vertices() const = 0;
             virtual void use() const = 0;
+            virtual void draw(DrawMode mode) const = 0;
+            virtual void draw(DrawMode mode, unsigned first, unsigned count) const = 0;
          };
          template <typename T>
          struct model : public concept {
             model(T data) : data_(std::move(data)) {}
             virtual unsigned num_vertices() const { return gl::num_vertices(data_); }
             virtual void use() const { gl::use(data_); }
+            virtual void draw(DrawMode mode) const { gl::draw(data_, mode); }
+            virtual void draw(DrawMode mode, unsigned first, unsigned count) const { gl::draw(data_, mode, first, count); }
             T data_;
          };
 
