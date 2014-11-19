@@ -178,7 +178,11 @@ namespace gl {
    public:
       struct idx_array_t {
          template <unsigned N>
-         idx_array_t(const unsigned(&data)[N]) : idx_array_t((void*)data, N, ValueType::UInt, N * sizeof(unsigned)) {}
+         idx_array_t(const uint32_t(&data)[N]) : idx_array_t((void*)data, N, ValueType::UInt, N * sizeof(uint32_t)) {}
+         template <unsigned N>
+         idx_array_t(const uint16_t(&data)[N]) : idx_array_t((void*)data, N, ValueType::UShort, N * sizeof(uint16_t)) {}
+         template <unsigned N>
+         idx_array_t(const uint8_t(&data)[N]) : idx_array_t((void*)data, N, ValueType::UByte, N * sizeof(uint8_t)) {}
          idx_array_t(void* data, unsigned count, ValueType data_type, std::size_t byte_size);
 
          void* data;
@@ -275,7 +279,7 @@ namespace gl {
       array_spec_t spec_prototype_;
    };
 
-   array_spec_builder_t describe(static_array_t array);
+   array_spec_builder_t describe_static(static_array_t array);
 
    class buffer_spec_builder_t {
    public:
@@ -295,7 +299,7 @@ namespace gl {
       buffer_spec_t spec_prototype_;
    };
 
-   buffer_spec_builder_t describe(buffer_t buffer);
+   buffer_spec_builder_t describe_buffer(buffer_t buffer);
 
    //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs);
    //buffer_spec_t buffer(std::initializer_list<attrib_data> attribs);
@@ -340,8 +344,6 @@ namespace gl {
       program & prg_;
 
       struct vertex_data_layout {
-         unsigned num_vertices() const { return model_->num_vertices(); }
-         void use() const { model_->use(); }
          void draw(DrawMode type) const { model_->draw(type); }
          void draw(DrawMode type, unsigned first, unsigned count) const { model_->draw(type, first, count); }
 
@@ -351,16 +353,12 @@ namespace gl {
          vertex_data_layout(T impl) : model_(new model<T>(std::move(impl))) {}
          struct concept {
             virtual ~concept() {}
-            virtual unsigned num_vertices() const = 0;
-            virtual void use() const = 0;
             virtual void draw(DrawMode mode) const = 0;
             virtual void draw(DrawMode mode, unsigned first, unsigned count) const = 0;
          };
          template <typename T>
          struct model : public concept {
             model(T data) : data_(std::move(data)) {}
-            virtual unsigned num_vertices() const { return gl::num_vertices(data_); }
-            virtual void use() const { gl::use(data_); }
             virtual void draw(DrawMode mode) const { gl::draw(data_, mode); }
             virtual void draw(DrawMode mode, unsigned first, unsigned count) const { gl::draw(data_, mode, first, count); }
             T data_;

@@ -186,6 +186,14 @@ namespace {
    
    std::size_t attrib_atomic_val_bytes(gl::ValueType type) {
       switch (type) {
+      case gl::ValueType::Byte:
+      case gl::ValueType::UByte:
+         return 1;
+
+      case gl::ValueType::Short:
+      case gl::ValueType::UShort:
+         return 2;
+
       case gl::ValueType::Int:
       case gl::ValueType::UInt:
       case gl::ValueType::Float:
@@ -572,12 +580,13 @@ namespace gl
       }
    }
 
-   void draw(array_spec_t const & b, DrawMode type) {
-      return draw(b, type, 0, num_vertices(b));
+   void draw(array_spec_t const & b, DrawMode mode) {
+      return draw(b, mode, 0, num_vertices(b));
    }
 
-   void draw(buffer_spec_t const & b, DrawMode type) {
-      return draw(b, type, 0, num_vertices(b));
+   void draw(buffer_spec_t const & b, DrawMode mode) {
+      unsigned count = b.buffer.has_index_data() ? b.buffer.index_count() : num_vertices(b);
+      return draw(b, mode, 0, count);
    }
 
    namespace {
@@ -604,8 +613,16 @@ namespace gl
       use(b);
 
       if (b.buffer.has_index_data()) {
-         //TODO: count should be number of indices!
-         GL_VERIFY(glDrawElements(gl_draw_mode(mode), b.buffer.index_count(), attrib_atomic_gl_type(b.buffer.index_data_type()), (GLvoid*)first));
+         assert(count <= b.buffer.index_count() && "index count greater than number of indices in buffer while drawing indexed buffer");
+         assert(first <= b.buffer.index_count() && "first index greater than total number of indices in buffer while drawing indexed buffer");
+         assert(first + count <= b.buffer.index_count() && "end index greater than total number of indices in buffer while drawing indexed buffer");
+
+         auto gl_mode = gl_draw_mode(mode);
+         auto gl_type = attrib_atomic_gl_type(b.buffer.index_data_type());
+         auto idx_count = count;
+         auto idx_start = reinterpret_cast<GLvoid*>(first * attrib_atomic_val_bytes(b.buffer.index_data_type()));
+
+         GL_VERIFY(glDrawElements(gl_mode, idx_count, gl_type, idx_start));
       }
       else {
          GL_VERIFY(glDrawArrays(gl_draw_mode(mode), first, count));
@@ -655,7 +672,7 @@ namespace gl
       return{ spec_prototype_.array, std::move(attribs) };
    }
 
-   array_spec_builder_t describe(static_array_t array) {
+   array_spec_builder_t describe_static(static_array_t array) {
       return{ array };
    }
 
@@ -703,7 +720,7 @@ namespace gl
       return{ spec_prototype_.buffer, std::move(attribs) };
    }
 
-   buffer_spec_builder_t describe(buffer_t buffer) {
+   buffer_spec_builder_t describe_buffer(buffer_t buffer) {
       return{ buffer };
    }
 

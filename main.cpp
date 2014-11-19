@@ -101,27 +101,26 @@ int main()
       auto a_red_color = program.attrib("red_colour");
 
       static const float vertexArray[] = {
-         0.0, 0.5, 0.0, 0.,
-         -0.5, 0.0, 0.0, .25,
-         0.0, -0.5, 0.0, .5,
-         0.5, 0.0, 0.0, .75,
-         0.0, 0.5, 0.0, 1.,
+         0.0, 0.5, 0.0, 0., 0.,
+         -0.5, 0.0, 0.0, .25, 0.,
+         0.0, -0.5, 0.0, .5, 0.,
+         0.5, 0.0, 0.0, .75, 0.,
+         0.0, 0.5, 0.0, 1., 0.,
       };
 
-      static const unsigned indices[] = {
+      static const unsigned short indices[] = {
          0, 1, 2,
          0, 2, 3,
       };
 
-      auto vert_buffer = gl::describe(vertexArray)
-         .add(a_position, 3)
-         .add(a_red_color, 1).build();
+      //auto vert_buffer = gl::describe_static(vertexArray)
+      //   .add(a_position, 3)
+      //   .add(a_red_color, 1).build();
 
-      gl::buffer_t b(vertexArray, indices);
-
-      auto b_spec = gl::describe(b)
+      auto vertex_buffer = gl::describe_buffer({ vertexArray, indices })
          .add(a_position, 3)
-         .add(a_red_color, 1).build();
+         .add(a_red_color, 1)
+         .skip(4).build();
 
       while (!context.win().closing())
       {
@@ -146,8 +145,8 @@ int main()
          u_time.set(static_cast<float>(gl::get_time()));
 
          program.pass()
-            .with(b_spec)
-            .draw(gl::DrawMode::TriangleStrip);
+            .with(vertex_buffer)
+            .draw(gl::DrawMode::Triangles);
 
          context.win().swap();
       }
