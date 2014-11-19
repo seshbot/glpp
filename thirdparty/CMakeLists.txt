@@ -49,3 +49,10 @@ endif ()
 set(GLM_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/glm-0.9.5.4 CACHE INTERNAL "")
 
 add_subdirectory(glm-0.9.5.4)
+
+#
+# SOIL2
+#
+
+add_subdirectory(soil2-20141119)
+set(SOIL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/soil2-20141119/src CACHE INTERNAL "")

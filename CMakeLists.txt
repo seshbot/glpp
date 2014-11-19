@@ -5,6 +5,7 @@ project (GlApp)
 add_subdirectory(thirdparty)
 
 include_directories(SYSTEM ${GLFW_SOURCE_DIR}/include ${GLFW_SOURCE_DIR}/deps)
+include_directories(SYSTEM ${SOIL_INCLUDES})
 include_directories(SYSTEM ${GLM_INCLUDES})
 if (WIN32)
     include_directories(SYSTEM ${ANGLE_INCLUDES})
@@ -25,7 +26,7 @@ add_executable(glapp WIN32 ${SOURCE} ${SHADERS})
 
 source_group(Shaders FILES ${SHADERS})
 
-target_link_libraries(glapp glfw ${OPENGL_GLU_LIBRARY} ${GLFW_LIBRARIES})
+target_link_libraries(glapp glfw soil ${OPENGL_GLU_LIBRARY} ${GLFW_LIBRARIES})
 if (WIN32)
     target_link_libraries(glapp ${ANGLE_LIBRARIES})
 else ()
@@ -37,4 +38,4 @@ add_custom_command(TARGET glapp POST_BUILD
         ${CMAKE_SOURCE_DIR}/shaders
         ${CMAKE_BINARY_DIR}/shaders)            # $<TARGET_FILE_DIR:glapp>/shaders)
 
-INSTALL(TARGETS glapp DESTINATION bin)
+install(TARGETS glapp DESTINATION bin)
