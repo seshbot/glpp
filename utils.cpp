@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <cstdarg>
+#include <stdarg.h>
 
 namespace utils
 {
@@ -28,12 +28,11 @@ namespace utils
       va_list args;
       va_start(args, format);
       char buffer[1024];
-
-      // TODO: use safe version of vsprintf
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-      std::vsprintf(buffer, format, args);
-#pragma warning( pop )
+#ifdef _WIN32
+      _vsnprintf_s(buffer, 1024, _TRUNCATE, format, args);
+#else
+      vsnprintf(buffer, 1024, fmt, v);
+#endif
       va_end(args);
 
       return buffer;
@@ -43,10 +42,11 @@ namespace utils
       va_list args;
       va_start(args, format);
       char buffer[1024];
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-      std::vsprintf(buffer, format, args);
-#pragma warning( pop )
+#ifdef _WIN32
+      _vsnprintf_s(buffer, 1024, _TRUNCATE, format, args);
+#else
+      vsnprintf(buffer, 1024, fmt, v);
+#endif
       va_end(args);
 
 #ifdef WIN32

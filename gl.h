@@ -49,6 +49,19 @@ namespace gl {
       std::string log_;
    };
 
+
+   struct texture_t {
+      texture_t(std::string const & filename, int tex_unit = 0);
+      texture_t(texture_t const &) = delete;
+      texture_t & operator=(texture_t const &) = delete;
+
+      int texture_unit() const { return tex_unit_; }
+
+      uint32_t tex_id_;
+      int tex_unit_;
+   };
+
+
    class shader {
    public:
       enum Type { Vertex, Fragment };
@@ -111,6 +124,7 @@ namespace gl {
       void set(glm::vec4 const & vec);
       void set(glm::vec3 const & vec);
       void set(glm::vec2 const & vec);
+      void set(texture_t const & tex);
 
       std::string const & name() const { return state_->name_; }
       int location() const { return state_->location_; }
@@ -385,6 +399,7 @@ namespace gl {
       std::vector<vertex_data_layout> vertex_data_;
    };
 
+
 	class program {
    public:
       program(shader s1, shader s2);
@@ -482,15 +497,16 @@ namespace gl {
 
    double get_time();
 
-   void glUniform(int location, glm::mat4 const & mat);
-   void glUniform(int location, glm::mat3 const & mat);
-   void glUniform(int location, glm::mat2 const & mat);
-   void glUniform(int location, glm::vec4 const & vec);
-   void glUniform(int location, glm::vec3 const & vec);
-   void glUniform(int location, glm::vec2 const & vec);
-   void glUniform(int location, float f);
-   void glUniform(int location, int i);
-   //void glUniform(GLint location, GLuint i);
+   void set_uniform(int location, glm::mat4 const & mat);
+   void set_uniform(int location, glm::mat3 const & mat);
+   void set_uniform(int location, glm::mat2 const & mat);
+   void set_uniform(int location, glm::vec4 const & vec);
+   void set_uniform(int location, glm::vec3 const & vec);
+   void set_uniform(int location, glm::vec2 const & vec);
+   void set_uniform(int location, float f);
+   void set_uniform(int location, int i);
+   void set_uniform(int location, texture_t const & tex);
+   //void set_uniform(GLint location, GLuint i);
 
 }
 

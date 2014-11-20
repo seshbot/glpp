@@ -10,6 +10,7 @@
 #  define USE_GLEW
 #endif
 
+#include <SOIL2/SOIL2.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -272,7 +273,30 @@ namespace gl
    }
 
 
-   /**
+  /**
+   * class texture
+   *
+   */
+
+   texture_t::texture_t(std::string const & filename, int tex_unit)
+      : tex_id_(SOIL_load_OGL_texture(filename.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS))
+      , tex_unit_(tex_unit) {
+      if (!tex_id_) {
+         throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
+      }
+
+      GL_VERIFY(glActiveTexture(GL_TEXTURE0 + tex_unit_));
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex_id_));
+
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+   }
+
+
+  /**
    * class shader
    *
    */
@@ -371,9 +395,10 @@ namespace gl
       template <> ValueType uniform_type<glm::mat2>() { return ValueType::FloatMat2; }
       template <> ValueType uniform_type<glm::mat3>() { return ValueType::FloatMat3; }
       template <> ValueType uniform_type<glm::mat4>() { return ValueType::FloatMat4; }
+      template <> ValueType uniform_type<texture_t>() { return ValueType::Sampler2d; }
 
       template <typename T>
-      bool set_uniform(uniform & u, T val, bool report_errors) {
+      bool set_uniform(uniform & u, T const & val, bool report_errors) {
          if (!u.is_valid()) {
             if (report_errors) {
                utils::log(utils::LOG_WARN, "cannot set uniform - either program does not contain '%s' or it has been invalidated\n",
@@ -392,7 +417,7 @@ namespace gl
             return false;
          }
 
-         gl::glUniform(u.location(), val);
+         gl::set_uniform(u.location(), val);
          return true;
       }
    }
@@ -434,6 +459,11 @@ namespace gl
 
    void uniform::set(glm::mat4 const & val) {
       auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(texture_t const & tex) {
+      auto success = set_uniform(*this, tex, !state_->error_);
       if (!success) state_->error_ = true;
    }
 
@@ -700,6 +730,17 @@ namespace gl
    }
 
    buffer_spec_builder_t & buffer_spec_builder_t::add(attrib attrib, unsigned count) {
+      if (!attrib.is_valid()) {
+         utils::log(utils::LOG_WARN, "adding an invalid attribute '%s' when rendering\n", attrib.name().c_str());
+
+         // guess how big it is
+         auto elem_size_guess
+            = attrib.type() == ValueType::Unknown ? 4
+            : attrib_atomic_val_bytes(attrib.type());
+
+         return skip_bytes(count * elem_size_guess);
+      }
+
       auto slice_size = count * attrib_atomic_val_bytes(attrib.type());
       spec_prototype_.attribs.push_back({ std::move(attrib), count, 0, pos_bytes_ });
       pos_bytes_ += slice_size;
@@ -1235,13 +1276,15 @@ namespace gl
       return glfwGetTime();
    }
 
-   void glUniform(int location, glm::mat4 const & mat) { GL_VERIFY(glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
-   void glUniform(int location, glm::mat3 const & mat) { GL_VERIFY(glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
-   void glUniform(int location, glm::mat2 const & mat) { GL_VERIFY(glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
-   void glUniform(int location, glm::vec4 const & vec) { GL_VERIFY(glUniform4f(location, vec.x, vec.y, vec.z, vec.w)); }
-   void glUniform(int location, glm::vec3 const & vec) { GL_VERIFY(glUniform3f(location, vec.x, vec.y, vec.z)); }
-   void glUniform(int location, glm::vec2 const & vec) { GL_VERIFY(glUniform2f(location, vec.x, vec.y)); }
-   void glUniform(int location, float f) { GL_VERIFY(glUniform1f(location, f)); }
-   void glUniform(int location, int i) { GL_VERIFY(glUniform1i(location, i)); }
-   //void glUniform(GLint location, GLuint i) { glUniform1ui(location, i); }
+   void set_uniform(int location, glm::mat4 const & mat) { GL_VERIFY(glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
+   void set_uniform(int location, glm::mat3 const & mat) { GL_VERIFY(glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
+   void set_uniform(int location, glm::mat2 const & mat) { GL_VERIFY(glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
+   void set_uniform(int location, glm::vec4 const & vec) { GL_VERIFY(glUniform4f(location, vec.x, vec.y, vec.z, vec.w)); }
+   void set_uniform(int location, glm::vec3 const & vec) { GL_VERIFY(glUniform3f(location, vec.x, vec.y, vec.z)); }
+   void set_uniform(int location, glm::vec2 const & vec) { GL_VERIFY(glUniform2f(location, vec.x, vec.y)); }
+   void set_uniform(int location, float f) { GL_VERIFY(glUniform1f(location, f)); }
+   void set_uniform(int location, int i) { GL_VERIFY(glUniform1i(location, i)); }
+   void set_uniform(int location, texture_t const & tex) { GL_VERIFY(glUniform1i(location, tex.texture_unit())); }
+
+   //void set_uniform(GLint location, GLuint i) { glUniform1ui(location, i); }
 }
