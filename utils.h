@@ -6,6 +6,7 @@
 namespace utils
 {
    std::string getcwd();
+   std::string fmt(const char * format, ...);
 
    enum LogType { LOG_INFO, LOG_WARN, LOG_ERROR };
    void log(LogType type, const char * format, ...);

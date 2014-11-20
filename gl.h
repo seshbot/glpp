@@ -16,9 +16,25 @@
 #include <glm/mat4x4.hpp>
 
 
+#ifdef DEBUG
+   void checkOpenGLError(const char* function, const char* file, int line);
+   void checkOpenGLError(const char* stmt, const char* function, const char* file, int line);
+
+#  define GL_VERIFY(stmt) do { stmt; checkOpenGLError(#stmt, __FUNCTION__, __FILE__, __LINE__); } while (0)
+#  define GL_CHECK() do { checkOpenGLError(__FUNCTION__, __FILE__, __LINE__); } while (0)
+#  define GL_IGNORE(stmt) do { GL_CHECK(); stmt; glGetError(); } while (0)
+#else
+#  define GL_VERIFY(stmt) stmt
+#  define GL_CHECK()
+#  define GL_IGNORE(stmt) stmt
+#endif
+
+
 namespace gl {
 	using id_t = unsigned int;
 	using name_t = std::string;
+
+   const char * openGlErrorString(id_t err);
 
    struct error : public std::runtime_error {
       error() : std::runtime_error("") { }
@@ -290,7 +306,7 @@ namespace gl {
       buffer_spec_builder_t & operator=(buffer_spec_builder_t const &) = delete;
 
       buffer_spec_builder_t & add(attrib attrib, unsigned count);
-      buffer_spec_builder_t & skip(unsigned bytes);
+      buffer_spec_builder_t & skip_bytes(unsigned bytes);
 
       buffer_spec_t build() const;
 

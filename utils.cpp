@@ -24,6 +24,21 @@ namespace utils
 #endif
    }
 
+   std::string fmt(const char * format, ...) {
+      va_list args;
+      va_start(args, format);
+      char buffer[1024];
+
+      // TODO: use safe version of vsprintf
+#pragma warning( push )
+#pragma warning( disable : 4996 )
+      std::vsprintf(buffer, format, args);
+#pragma warning( pop )
+      va_end(args);
+
+      return buffer;
+   }
+
    void log(LogType type, const char * format, ...) {
       va_list args;
       va_start(args, format);

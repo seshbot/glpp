@@ -44,6 +44,8 @@ namespace {
    };
 }
 
+#include <SOIL2/SOIL2.h>
+
 
 #ifdef WIN32
 int CALLBACK WinMain(
@@ -96,16 +98,19 @@ int main()
       
       auto program = create_program();
 
+      auto u_texture = program.uniform("texture");
       auto u_time = program.uniform("time");
+
       auto a_position = program.attrib("position");
       auto a_red_color = program.attrib("red_colour");
+      auto a_tex_coords = program.attrib("tex_coords");
 
       static const float vertexArray[] = {
-         0.0, 0.5, 0.0, 0., 0.,
-         -0.5, 0.0, 0.0, .25, 0.,
-         0.0, -0.5, 0.0, .5, 0.,
-         0.5, 0.0, 0.0, .75, 0.,
-         0.0, 0.5, 0.0, 1., 0.,
+         0.0, 0.5, 0.0, 0., 1., 0.,
+         -0.5, 0.0, 0.0, .25, 0., 0.,
+         0.0, -0.5, 0.0, .5, 0., 1.,
+         0.5, 0.0, 0.0, .75, 1., 1.,
+         0.0, 0.5, 0.0, 1., 0., 1.,
       };
 
       static const unsigned short indices[] = {
@@ -120,7 +125,42 @@ int main()
       auto vertex_buffer = gl::describe_buffer({ vertexArray, indices })
          .add(a_position, 3)
          .add(a_red_color, 1)
-         .skip(4).build();
+         .add(a_tex_coords, 2).build();
+
+
+
+      // configure how GL is to display images in general
+      GL_VERIFY(glEnable(GL_BLEND));
+      GL_VERIFY(glEnable(GL_TEXTURE_2D));
+      GL_VERIFY(glBlendFunc(GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA));
+
+      // GL can only handle 32 textures at a time
+      GL_VERIFY(glActiveTexture(GL_TEXTURE0));
+
+      //  get a GL name for our texture
+      uint32_t tex_id;
+      // glGenTextures(1, &tex_id);
+      tex_id = SOIL_load_OGL_texture("img_test.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+      if (!tex_id) {
+         throw gl::error(std::string("Could not load image: ") + SOIL_last_result());
+      }
+
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex_id));
+
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+
+      // Set uniform to #texture unit
+
+
+
+      // for masking (mask is a tex_id)
+      //glBlendFunc(GL_DST_COLOR, GL_ZERO);				// Blend Screen Color With Zero (Black)
+      //glBindTexture(GL_TEXTURE_2D, mask);
+
 
       while (!context.win().closing())
       {
@@ -143,6 +183,7 @@ int main()
          glClear(GL_COLOR_BUFFER_BIT);
 
          u_time.set(static_cast<float>(gl::get_time()));
+         u_texture.set(0);
 
          program.pass()
             .with(vertex_buffer)

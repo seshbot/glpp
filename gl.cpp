@@ -22,45 +22,17 @@
 #include "utils.h"
 
 
+void checkOpenGLError(const char* function, const char* file, int line) {
+   GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
+   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", gl::openGlErrorString(err), err, function, file, line);
+}
+
+void checkOpenGLError(const char* stmt, const char* function, const char* file, int line) {
+   GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
+   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", gl::openGlErrorString(err), err, stmt, function, file, line);
+}
+
 namespace {
-#ifdef _DEBUG
-   const char * openGlErrorString(GLenum err) {
-      switch (err) {
-      case 0x0500: return "GL_INVALID_ENUM";
-      case 0x0501: return "GL_INVALID_VALUE";
-      case 0x0502: return "GL_INVALID_OPERATION";
-      case 0x0503: return "GL_STACK_OVERFLOW";
-      case 0x0504: return "GL_STACK_UNDERFLOW";
-      case 0x0505: return "GL_OUT_OF_MEMORY";
-      case 0x0506: return "GL_INVALID_FRAMEBUFFER_OPERATION";
-      case 0x8031: return "GL_TABLE_TOO_LARGE1";
-      default: return "unrecognised";
-      }
-   }
-
-   void checkOpenGLError(const char* function, const char* file, int line)
-   {
-      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
-
-      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", openGlErrorString(err), err, function, file, line);
-   }
-
-   void checkOpenGLError(const char* stmt, const char* function, const char* file, int line)
-   {
-      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
-
-      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", openGlErrorString(err), err, stmt, function, file, line);
-   }
-
-#define GL_VERIFY(stmt) do { stmt; checkOpenGLError(#stmt, __FUNCTION__, __FILE__, __LINE__); } while (0)
-#define GL_CHECK() do { checkOpenGLError(__FUNCTION__, __FILE__, __LINE__); } while (0)
-#define GL_IGNORE(stmt) do { GL_CHECK(); stmt; glGetError(); } while (0)
-#else
-#define GL_VERIFY(stmt) stmt
-#define GL_CHECK()
-#define GL_IGNORE(stmt) stmt
-#endif
-
    std::string get_shader_info_log(gl::id_t shader_id)
    {
       GLint  length;
@@ -267,6 +239,38 @@ namespace {
 
 namespace gl
 {
+   /**
+    * utils
+    */
+
+   const char * openGlErrorString(GLenum err) {
+      switch (err) {
+      case 0x0500: return "GL_INVALID_ENUM";
+      case 0x0501: return "GL_INVALID_VALUE";
+      case 0x0502: return "GL_INVALID_OPERATION";
+      case 0x0503: return "GL_STACK_OVERFLOW";
+      case 0x0504: return "GL_STACK_UNDERFLOW";
+      case 0x0505: return "GL_OUT_OF_MEMORY";
+      case 0x0506: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+      case 0x8031: return "GL_TABLE_TOO_LARGE1";
+      default: return "unrecognised";
+      }
+   }
+
+   void checkOpenGLError(const char* function, const char* file, int line)
+   {
+      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
+
+      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", openGlErrorString(err), err, function, file, line);
+   }
+
+   void checkOpenGLError(const char* stmt, const char* function, const char* file, int line)
+   {
+      GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
+
+      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", openGlErrorString(err), err, stmt, function, file, line);
+   }
+
 
    /**
    * class shader
@@ -703,7 +707,7 @@ namespace gl
       return *this;
    }
 
-   buffer_spec_builder_t & buffer_spec_builder_t::skip(unsigned bytes) {
+   buffer_spec_builder_t & buffer_spec_builder_t::skip_bytes(unsigned bytes) {
       pos_bytes_ += bytes;
 
       return *this;
