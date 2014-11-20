@@ -352,24 +352,24 @@ namespace gl {
 
 
    class program;
-   class draw_helper_t {
+   class pass_t {
    public:
-      draw_helper_t(draw_helper_t const &) = delete;
-      draw_helper_t & operator=(draw_helper_t const &) = delete;
+      pass_t(pass_t const &) = delete;
+      pass_t & operator=(pass_t const &) = delete;
 
-      draw_helper_t & with(static_array_t array, std::initializer_list<attrib_data> attribs);
-      draw_helper_t & with(array_spec_t array_spec);
-      draw_helper_t & with(buffer_spec_t buffer_spec);
-      //draw_helper_t & with(buffer_pack_t buffer_pack);
+      pass_t & with(static_array_t array, std::initializer_list<attrib_data> attribs);
+      pass_t & with(array_spec_t array_spec);
+      pass_t & with(buffer_spec_t buffer_spec);
+      //pass_t & with(buffer_pack_t buffer_pack);
 
-      //draw_helper_t & validate_attribs(bool validate = true);
+      //pass_t & validate_attribs(bool validate = true);
 
-      draw_helper_t & draw(DrawMode mode);
-      draw_helper_t & draw(DrawMode mode, unsigned first, unsigned count);
+      pass_t & draw(DrawMode mode);
+      pass_t & draw(DrawMode mode, unsigned first, unsigned count);
 
    private:
       friend class program;
-      draw_helper_t(program & prg) : prg_(prg) { }
+      pass_t(program & prg) : prg_(prg) { }
 
       program & prg_;
 
@@ -423,7 +423,7 @@ namespace gl {
 
       std::string compile_logs() const;
 
-      draw_helper_t pass();
+      pass_t pass();
 
    private:
       program();

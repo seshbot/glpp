@@ -12,8 +12,8 @@
 #include "gl.h"
 
 namespace {
-   gl::shader vert_shader() { return gl::shader::create_from_file("shaders/2d.vert", gl::shader::Vertex); }
-   gl::shader frag_shader() { return gl::shader::create_from_file("shaders/2d.frag", gl::shader::Fragment); }
+   gl::shader vert_shader() { return gl::shader::create_from_file("../shaders/2d.vert", gl::shader::Vertex); }
+   gl::shader frag_shader() { return gl::shader::create_from_file("../shaders/2d.frag", gl::shader::Fragment); }
 
    gl::program create_program() {
       utils::log(utils::LOG_INFO, "compiling shader program... ");
@@ -98,39 +98,33 @@ int main()
 
       auto u_time = program.uniform("t");
       auto u_texture = program.uniform("texture");
+      auto u_depth = program.uniform("depth");
 
       auto a_position = program.attrib("p");
       auto a_tex_coords = program.attrib("tex_coords");
 
-      static const float vertexArray[] = {
-         0.0, 0.5, 0.0, 0., 1., 0.,
-         -0.5, 0.0, 0.0, .25, 0., 0.,
-         0.0, -0.5, 0.0, .5, 0., 1.,
-         0.5, 0.0, 0.0, .75, 1., 1.,
-         0.0, 0.5, 0.0, 1., 0., 1.,
+      static const float screen_verts[] = {
+         -1., 1., 0., 1.,
+         1., 1., 1., 1.,
+         -1., -1., 0., 0.,
+         1., -1., 1., 0.,
       };
 
-      static const unsigned short indices[] = {
-         0, 1, 2,
-         0, 2, 3,
+      static const unsigned short screen_indices[] = {
+         0, 2, 1,
+         1, 2, 3,
       };
 
-      //auto vert_buffer = gl::describe_static(vertexArray)
+      //auto vert_buffer = gl::describe_static(screen_verts)
       //   .add(a_position, 3)
       //   .add(a_red_color, 1).build();
 
-      auto vertex_buffer = gl::describe_buffer({ vertexArray, indices })
-         .add(a_position, 3)
-         .skip_bytes(4)
+      auto vertex_buffer = gl::describe_buffer({ screen_verts, screen_indices })
+         .add(a_position, 2)
          .add(a_tex_coords, 2).build();
 
-      gl::texture_t texture { "img_test.png" };
-      u_texture.set(texture);
-
-      // configure how GL is to display images in general
-      GL_VERIFY(glEnable(GL_BLEND));
-      //GL_VERIFY(glBlendFunc(GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA));
-
+      gl::texture_t bg_tex{ "bg_green.png" };
+      gl::texture_t grass_tex{ "32x32.png", 1 };
 
       // get a GL name for our texture
       // load data into texture
@@ -140,6 +134,8 @@ int main()
       // for masking (mask is a tex_id)
       //glBlendFunc(GL_DST_COLOR, GL_ZERO);				// Blend Screen Color With Zero (Black)
       //glBindTexture(GL_TEXTURE_2D, mask);
+
+      // https://open.gl/textures has a good run-down
 
       while (!context.win().closing())
       {
@@ -156,16 +152,29 @@ int main()
 
          auto dims = context.win().frame_buffer_dims();
 
-         glClearColor(.9f, .9f, .9f, 1.f);
+         //glClearColor(1.f, 1.f, 1.f, 1.f);
+         glClearColor(1.f, 0.f, 1.f, 1.f);
 
          glViewport(0, 0, dims.x, dims.y);
          glClear(GL_COLOR_BUFFER_BIT);
 
-         u_time.set(static_cast<float>(gl::get_time()));
+         //u_time.set(static_cast<float>(gl::get_time()));
+         u_texture.set(bg_tex);
+         u_depth.set(-1.f);
+         
+         glActiveTexture(bg_tex.texture_unit());
+         glBindTexture(GL_TEXTURE_2D, bg_tex.tex_id_);
 
          program.pass()
             .with(vertex_buffer)
             .draw(gl::DrawMode::Triangles);
+
+         //u_texture.set(grass_tex);
+         //u_depth.set(-1.5f);
+
+         //program.pass()
+         //   .with(vertex_buffer)
+         //   .draw(gl::DrawMode::Triangles);
 
          context.win().swap();
       }

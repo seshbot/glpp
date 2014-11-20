@@ -279,7 +279,7 @@ namespace gl
    */
 
    texture_t::texture_t(std::string const & filename, int tex_unit)
-      : tex_id_(SOIL_load_OGL_texture(filename.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS))
+      : tex_id_(SOIL_load_OGL_texture(filename.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y))
       , tex_unit_(tex_unit) {
       if (!tex_id_) {
          throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
@@ -289,7 +289,7 @@ namespace gl
       GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex_id_));
 
       GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 
       GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
       GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
@@ -731,6 +731,8 @@ namespace gl
 
    buffer_spec_builder_t & buffer_spec_builder_t::add(attrib attrib, unsigned count) {
       if (!attrib.is_valid()) {
+         // TODO: parse shader files to determine types (might be elided by compiler)
+
          utils::log(utils::LOG_WARN, "adding an invalid attribute '%s' when rendering\n", attrib.name().c_str());
 
          // guess how big it is
@@ -755,6 +757,8 @@ namespace gl
    }
 
    buffer_spec_t buffer_spec_builder_t::build() const {
+      // TODO: validate span divides into buffer nicely, warn if not
+
       decltype(spec_prototype_.attribs) attribs;
 
       // prototype doesnt have correct stride
@@ -770,9 +774,6 @@ namespace gl
    }
 
 
-
-
-
    //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs) {
    //   return{ b, { std::begin(attribs), std::end(attribs) } };
    //}
@@ -783,27 +784,27 @@ namespace gl
 
 
   /**
-   * draw_helper_t
+   * pass_t
    *
    */
 
-   draw_helper_t & draw_helper_t::with(static_array_t array, std::initializer_list<attrib_data> attribs) {
+   pass_t & pass_t::with(static_array_t array, std::initializer_list<attrib_data> attribs) {
 	   vertex_data_.push_back(array_spec_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
       return *this;
    }
 
-   draw_helper_t & draw_helper_t::with(array_spec_t array_spec) {
+   pass_t & pass_t::with(array_spec_t array_spec) {
       vertex_data_.push_back(std::move(array_spec));
       return *this;
    }
 
-   draw_helper_t & draw_helper_t::with(buffer_spec_t buffer_spec) {
+   pass_t & pass_t::with(buffer_spec_t buffer_spec) {
       vertex_data_.push_back(std::move(buffer_spec));
       return *this;
    }
 
 
-   //draw_helper_t & draw_helper_t::validate_attribs(bool validate) {
+   //pass_t & pass_t::validate_attribs(bool validate) {
    //   if (!validate) return *this;
 
    //   struct slice_info { unsigned offset; unsigned long size; };
@@ -850,14 +851,13 @@ namespace gl
    //}
 
 
-
-   draw_helper_t & draw_helper_t::draw(DrawMode type) {
+   pass_t & pass_t::draw(DrawMode type) {
       prg_.use();
       for (auto & v : vertex_data_) v.draw(type);
       return *this;
    }
 
-   draw_helper_t & draw_helper_t::draw(DrawMode type, unsigned first, unsigned count) {
+   pass_t & pass_t::draw(DrawMode type, unsigned first, unsigned count) {
       prg_.use();
       for (auto & v : vertex_data_) v.draw(type, first, count);
       return *this;
@@ -1083,7 +1083,7 @@ namespace gl
       return logs;
    }
 
-   draw_helper_t program::pass() {
+   pass_t program::pass() {
       return{ *this };
    }
 
@@ -1197,7 +1197,7 @@ namespace gl
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
       glfwWindowHint(GLFW_SAMPLES, 4);
-      glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+      glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
       GLFWwindow* window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
       if (!window) {
@@ -1208,6 +1208,9 @@ namespace gl
 
       window_key_callbacks_.set(window, *this, key_handler);
       glfwSetKeyCallback(window, key_callback);
+
+      GL_VERIFY(glEnable(GL_BLEND));
+      GL_VERIFY(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
       impl_.reset(new impl{ window });
    }
@@ -1276,6 +1279,7 @@ namespace gl
       return glfwGetTime();
    }
 
+   // TODO: ensure program is bound
    void set_uniform(int location, glm::mat4 const & mat) { GL_VERIFY(glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
    void set_uniform(int location, glm::mat3 const & mat) { GL_VERIFY(glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
    void set_uniform(int location, glm::mat2 const & mat) { GL_VERIFY(glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(mat))); }
