@@ -124,7 +124,7 @@ int main()
          .skip_bytes(4)
          .add(a_tex_coords, 2).build();
 
-      auto texture = gl::texture_t{ "img_test.png" };
+      gl::texture_t texture { "img_test.png" };
       u_texture.set(texture);
 
       // configure how GL is to display images in general

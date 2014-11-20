@@ -31,7 +31,7 @@ namespace utils
 #ifdef _WIN32
       _vsnprintf_s(buffer, 1024, _TRUNCATE, format, args);
 #else
-      vsnprintf(buffer, 1024, fmt, v);
+      vsnprintf(buffer, 1024, format, args);
 #endif
       va_end(args);
 
@@ -45,7 +45,7 @@ namespace utils
 #ifdef _WIN32
       _vsnprintf_s(buffer, 1024, _TRUNCATE, format, args);
 #else
-      vsnprintf(buffer, 1024, fmt, v);
+      vsnprintf(buffer, 1024, format, args);
 #endif
       va_end(args);
 
