@@ -50,17 +50,25 @@ namespace gl {
    };
 
 
-   struct texture_t {
-      texture_t(std::string const & filename, int tex_unit = 0);
-      texture_t(texture_t const &) = delete;
-      texture_t & operator=(texture_t const &) = delete;
+   class texture_t {
+   public:
+      texture_t(std::string const & filename);
 
-      int texture_unit() const { return tex_unit_; }
+      uint32_t id() const { return state_->id_; }
 
-      uint32_t tex_id_;
-      int tex_unit_;
+   private:
+      struct state {
+         state(std::string const & filename);
+         ~state();
+         uint32_t id_;
+      };
+
+      std::shared_ptr<state> state_;
    };
 
+   struct texture_unit_t {
+      int id;
+   };
 
    class shader {
    public:
@@ -124,7 +132,7 @@ namespace gl {
       void set(glm::vec4 const & vec);
       void set(glm::vec3 const & vec);
       void set(glm::vec2 const & vec);
-      void set(texture_t const & tex);
+      void set(texture_unit_t tex);
 
       std::string const & name() const { return state_->name_; }
       int location() const { return state_->location_; }
@@ -309,8 +317,6 @@ namespace gl {
       array_spec_t spec_prototype_;
    };
 
-   array_spec_builder_t describe_static(static_array_t array);
-
    class buffer_spec_builder_t {
    public:
       buffer_spec_builder_t(buffer_t buffer);
@@ -329,10 +335,8 @@ namespace gl {
       buffer_spec_t spec_prototype_;
    };
 
+   array_spec_builder_t describe_static(static_array_t array);
    buffer_spec_builder_t describe_buffer(buffer_t buffer);
-
-   //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs);
-   //buffer_spec_t buffer(std::initializer_list<attrib_data> attribs);
 
 
    enum class DrawMode {
@@ -360,7 +364,8 @@ namespace gl {
       pass_t & with(static_array_t array, std::initializer_list<attrib_data> attribs);
       pass_t & with(array_spec_t array_spec);
       pass_t & with(buffer_spec_t buffer_spec);
-      //pass_t & with(buffer_pack_t buffer_pack);
+
+      pass_t & with(texture_unit_t u, texture_t tex);
 
       //pass_t & validate_attribs(bool validate = true);
 
@@ -397,6 +402,7 @@ namespace gl {
          std::unique_ptr<concept> model_;
       };
       std::vector<vertex_data_layout> vertex_data_;
+      std::vector<std::pair<texture_unit_t,texture_t>> texture_bindings_;
    };
 
 
@@ -505,7 +511,7 @@ namespace gl {
    void set_uniform(int location, glm::vec2 const & vec);
    void set_uniform(int location, float f);
    void set_uniform(int location, int i);
-   void set_uniform(int location, texture_t const & tex);
+   void set_uniform(int location, texture_unit_t tex);
    //void set_uniform(GLint location, GLuint i);
 
 }

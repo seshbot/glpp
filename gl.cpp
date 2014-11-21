@@ -278,23 +278,24 @@ namespace gl
    *
    */
 
-   texture_t::texture_t(std::string const & filename, int tex_unit)
-      : tex_id_(SOIL_load_OGL_texture(filename.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y))
-      , tex_unit_(tex_unit) {
-      if (!tex_id_) {
-         throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
-      }
-
-      GL_VERIFY(glActiveTexture(GL_TEXTURE0 + tex_unit_));
-      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex_id_));
-
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+   texture_t::texture_t(std::string const & filename)
+      : state_(std::make_shared<state>(filename)) {
    }
 
+   texture_t::state::state(std::string const & filename)
+      : id_(SOIL_load_OGL_texture(
+      filename.c_str(),
+      SOIL_LOAD_AUTO,
+      SOIL_CREATE_NEW_ID,
+      SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y)) {
+      if (!id_) {
+         throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
+      }
+   }
+
+   texture_t::state::~state() {
+      glDeleteTextures(1, &id_);
+   }
 
   /**
    * class shader
@@ -395,7 +396,7 @@ namespace gl
       template <> ValueType uniform_type<glm::mat2>() { return ValueType::FloatMat2; }
       template <> ValueType uniform_type<glm::mat3>() { return ValueType::FloatMat3; }
       template <> ValueType uniform_type<glm::mat4>() { return ValueType::FloatMat4; }
-      template <> ValueType uniform_type<texture_t>() { return ValueType::Sampler2d; }
+      template <> ValueType uniform_type<texture_unit_t>() { return ValueType::Sampler2d; }
 
       template <typename T>
       bool set_uniform(uniform & u, T const & val, bool report_errors) {
@@ -462,7 +463,7 @@ namespace gl
       if (!success) state_->error_ = true;
    }
 
-   void uniform::set(texture_t const & tex) {
+   void uniform::set(texture_unit_t tex) {
       auto success = set_uniform(*this, tex, !state_->error_);
       if (!success) state_->error_ = true;
    }
@@ -803,6 +804,19 @@ namespace gl
       return *this;
    }
 
+   pass_t & pass_t::with(texture_unit_t u, texture_t tex) {
+      // verify no overlapping bindings
+      for (auto & tpair : texture_bindings_) {
+         if (tpair.first.id == u.id && (tpair.second.id() != tex.id())) {
+            utils::log(utils::LOG_WARN, "texture unit binding GL_TEXTURE%d being overwritten (tex %d -> %d)\n", u.id, tpair.second.id(), tex.id());
+         }
+      }
+
+      texture_bindings_.push_back({ u, tex });
+
+      return *this;
+   }
+
 
    //pass_t & pass_t::validate_attribs(bool validate) {
    //   if (!validate) return *this;
@@ -853,6 +867,23 @@ namespace gl
 
    pass_t & pass_t::draw(DrawMode type) {
       prg_.use();
+
+      // bind textures to the texture units used by this pass
+      for (auto & tpair : texture_bindings_) {
+         texture_unit_t const & tex_unit = tpair.first;
+         texture_t const & tex = tpair.second;
+         GL_VERIFY(glActiveTexture(GL_TEXTURE0 + tex_unit.id));
+         GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex.id()));
+
+         // TODO: make this stuff configurable via the with() call...
+         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
+         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+
+         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
+         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+      }
+
+      // draw the vertex buffers used in this pass
       for (auto & v : vertex_data_) v.draw(type);
       return *this;
    }
@@ -1045,7 +1076,7 @@ namespace gl
    }
 
    void program::use() const {
-      glUseProgram(id_);
+      GL_VERIFY(glUseProgram(id_));
    }
 
    void program::destroy() {
@@ -1288,11 +1319,8 @@ namespace gl
    void set_uniform(int location, glm::vec2 const & vec) { GL_VERIFY(glUniform2f(location, vec.x, vec.y)); }
    void set_uniform(int location, float f) { GL_VERIFY(glUniform1f(location, f)); }
    void set_uniform(int location, int i) { GL_VERIFY(glUniform1i(location, i)); }
-   void set_uniform(int location, texture_t const & tex) { 
-      GL_VERIFY(glUniform1i(location, tex.texture_unit()));
-      GL_VERIFY(glActiveTexture(GL_TEXTURE0 + tex.texture_unit()));
-      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex.tex_id_));
-   }
+   void set_uniform(int location, texture_unit_t tex) { GL_VERIFY(glUniform1i(location, tex.id)); }
 
    //void set_uniform(GLint location, GLuint i) { glUniform1ui(location, i); }
+
 }

@@ -124,7 +124,15 @@ int main()
          .add(a_tex_coords, 2).build();
 
       gl::texture_t bg_tex{ "bg_green.png" };
-      gl::texture_t grass_tex{ "32x32.png", 1 };
+      gl::texture_t grass_tex{ "32x32.png" };
+
+      // TODO:
+      // texture_unit_t & context::texture_unit(int)
+      // void uniform::set(texture_unit_t)
+      // texture_unit_t::texture_unit_t(texture_t)
+      //
+      // pass_t::use(texture_unit_t u, texture_t t) { u.activate(); u.bind(t); }
+
 
       // get a GL name for our texture
       // load data into texture
@@ -136,6 +144,25 @@ int main()
       //glBindTexture(GL_TEXTURE_2D, mask);
 
       // https://open.gl/textures has a good run-down
+
+
+
+      //////////GLuint frameBuffer;
+      //////////glGenFramebuffers(1, &frameBuffer);
+
+
+      //////////// attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
+      //////////// Your framebuffer can only be used as a render target if memory has been allocated to store the results
+
+      //////////// before using: 
+      //////////assert(glCheckFramebufferStatus(frameBuffer) == GL_FRAMEBUFFER_COMPLETE);
+      //////////glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+
+
+
+      //////////// before leaving
+      //////////glDeleteFramebuffers(1, &frameBuffer);
+
 
       while (!context.win().closing())
       {
@@ -160,22 +187,23 @@ int main()
 
          u_time.set(static_cast<float>(gl::get_time()));
 
-
+         gl::texture_unit_t texture0{ 0 };
+         u_texture.set(texture0);
 
          u_offset.set(-0.2f);
-         u_texture.set(bg_tex);
 
          program.pass()
             .with(vertex_buffer)
+            .with(texture0, bg_tex)
             .draw(gl::DrawMode::Triangles);
 
 
 
          u_offset.set(0.2f);
-         u_texture.set(grass_tex);
 
          program.pass()
             .with(vertex_buffer)
+            .with(texture0, grass_tex)
             .draw(gl::DrawMode::Triangles);
 
          context.win().swap();
