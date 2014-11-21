@@ -5,10 +5,12 @@
 #endif
 
 uniform sampler2D texture;
+uniform mediump float offset;
 
 varying mediump vec2 v_tex_coords;
 
 void main() {
    mediump vec4 c = texture2D(texture, v_tex_coords);
-   gl_FragColor = c; //vec4(c.r, c.g, c.b, 1.);
+   if (c.a == 0.) discard;
+   gl_FragColor = c;
 }

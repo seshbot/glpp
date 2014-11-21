@@ -98,7 +98,7 @@ int main()
 
       auto u_time = program.uniform("t");
       auto u_texture = program.uniform("texture");
-      auto u_depth = program.uniform("depth");
+      auto u_offset = program.uniform("offset");
 
       auto a_position = program.attrib("p");
       auto a_tex_coords = program.attrib("tex_coords");
@@ -158,23 +158,25 @@ int main()
          glViewport(0, 0, dims.x, dims.y);
          glClear(GL_COLOR_BUFFER_BIT);
 
-         //u_time.set(static_cast<float>(gl::get_time()));
+         u_time.set(static_cast<float>(gl::get_time()));
+
+
+
+         u_offset.set(-0.2f);
          u_texture.set(bg_tex);
-         u_depth.set(-1.f);
-         
-         glActiveTexture(bg_tex.texture_unit());
-         glBindTexture(GL_TEXTURE_2D, bg_tex.tex_id_);
 
          program.pass()
             .with(vertex_buffer)
             .draw(gl::DrawMode::Triangles);
 
-         //u_texture.set(grass_tex);
-         //u_depth.set(-1.5f);
 
-         //program.pass()
-         //   .with(vertex_buffer)
-         //   .draw(gl::DrawMode::Triangles);
+
+         u_offset.set(0.2f);
+         u_texture.set(grass_tex);
+
+         program.pass()
+            .with(vertex_buffer)
+            .draw(gl::DrawMode::Triangles);
 
          context.win().swap();
       }

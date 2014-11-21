@@ -1288,7 +1288,11 @@ namespace gl
    void set_uniform(int location, glm::vec2 const & vec) { GL_VERIFY(glUniform2f(location, vec.x, vec.y)); }
    void set_uniform(int location, float f) { GL_VERIFY(glUniform1f(location, f)); }
    void set_uniform(int location, int i) { GL_VERIFY(glUniform1i(location, i)); }
-   void set_uniform(int location, texture_t const & tex) { GL_VERIFY(glUniform1i(location, tex.texture_unit())); }
+   void set_uniform(int location, texture_t const & tex) { 
+      GL_VERIFY(glUniform1i(location, tex.texture_unit()));
+      GL_VERIFY(glActiveTexture(GL_TEXTURE0 + tex.texture_unit()));
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex.tex_id_));
+   }
 
    //void set_uniform(GLint location, GLuint i) { glUniform1ui(location, i); }
 }
