@@ -20,7 +20,8 @@ set(SOURCE
 	input.cpp input.h)
 
 set(SHADERS
-	shaders/2d.frag shaders/2d.vert)
+	shaders/2d.vert shaders/2d.frag
+    shaders/post.vert shaders/post.frag)
 
 add_executable(glapp WIN32 ${SOURCE} ${SHADERS})
 

@@ -14,5 +14,7 @@ varying mediump vec2 v_tex_coords;
 
 void main() {
    v_tex_coords = tex_coords;
-   gl_Position = vec4(p.x * .75 + offset, p.y * .75 + offset, offset, 1.);
+   mediump float offset_phase = 0.5 * sin(4. * t) + 0.5;
+   mediump float o = offset;// * offset_phase;
+   gl_Position = vec4(p.x * .75 + o , p.y * .75 + o, 0., 1.);
 }

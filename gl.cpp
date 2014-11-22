@@ -282,6 +282,10 @@ namespace gl
       : state_(std::make_shared<state>(filename)) {
    }
 
+   texture_t::texture_t(int width, int height)
+      : state_(std::make_shared<state>(width, height)) {
+   }
+
    texture_t::state::state(std::string const & filename)
       : id_(SOIL_load_OGL_texture(
       filename.c_str(),
@@ -291,6 +295,24 @@ namespace gl
       if (!id_) {
          throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
       }
+   }
+
+   texture_t::state::state(int width, int height) {
+      GL_VERIFY(glGenTextures(1, &id_));
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
+
+      GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+
+      // set texture parameters
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+
+      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, 0));
    }
 
    texture_t::state::~state() {
@@ -876,6 +898,7 @@ namespace gl
          GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex.id()));
 
          // TODO: make this stuff configurable via the with() call...
+         // TODO: or should this be initialised in texture creation?
          GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
          GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 
@@ -1322,5 +1345,57 @@ namespace gl
    void set_uniform(int location, texture_unit_t tex) { GL_VERIFY(glUniform1i(location, tex.id)); }
 
    //void set_uniform(GLint location, GLuint i) { glUniform1ui(location, i); }
+
+
+
+   frame_buffer_t::frame_buffer_t(window::dim_t dims)
+      : dims_(dims), colour_buffer_(dims.x, dims.y) {
+      GL_VERIFY(glGenFramebuffers(1, &fbo_id_));
+      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_));
+      
+      // attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
+      GL_VERIFY(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colour_buffer_.id(), 0));
+
+      // create render buffer for stencil and depth (we arent interested in reading it)
+      GL_VERIFY(glGenRenderbuffers(1, &rbo_id_));
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, rbo_id_));
+      GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y)); // GL_DEPTH24_STENCIL8
+      GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_id_)); // GL_DEPTH_STENCIL_ATTACHMENT
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+      check_fbo();
+
+      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+   }
+
+   frame_buffer_t::~frame_buffer_t() {
+      GL_VERIFY(glDeleteRenderbuffers(1, &rbo_id_));
+      GL_VERIFY(glDeleteFramebuffers(1, &fbo_id_));
+   }
+
+   void frame_buffer_t::bind() const { check_fbo(); GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_)); }
+   void frame_buffer_t::unbind() const { GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0)); }
+
+   void frame_buffer_t::check_fbo() const {
+      // Your framebuffer can only be used as a render target if memory has been allocated to store the results
+      auto status = GL_VERIFY(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+      if (status != GL_FRAMEBUFFER_COMPLETE) {
+         auto status_msg = [status] {
+            switch (status) {
+               //case GL_FRAMEBUFFER_UNDEFINED: return "GL_FRAMEBUFFER_UNDEFINED";
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT ";
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER ";
+            case GL_FRAMEBUFFER_UNSUPPORTED: return "GL_FRAMEBUFFER_UNSUPPORTED ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ";
+            default: return "UNRECOGNISED ENUM";
+            }
+         }();
+
+         utils::log(utils::LOG_ERROR, "framebuffer not initialised correctly: error 0x%x (%s)\n", status, status_msg);
+      }
+   }
 
 }

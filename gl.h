@@ -53,12 +53,14 @@ namespace gl {
    class texture_t {
    public:
       texture_t(std::string const & filename);
+      texture_t(int width, int height);
 
       uint32_t id() const { return state_->id_; }
 
    private:
       struct state {
          state(std::string const & filename);
+         state(int width, int height);
          ~state();
          uint32_t id_;
       };
@@ -474,6 +476,9 @@ namespace gl {
       context & ctx_;
    };
 
+   inline bool operator==(window::dim_t const & d1, window::dim_t const & d2) { return d1.x == d2.x && d1.y == d2.y; }
+   inline bool operator!=(window::dim_t const & d1, window::dim_t const & d2) { return !(d1 == d2); }
+
 	class context {
    public:
       using key_callback_t = std::function < void(context &, Key, int, KeyAction, int) >; // key, scancode, action, mods
@@ -514,6 +519,31 @@ namespace gl {
    void set_uniform(int location, texture_unit_t tex);
    //void set_uniform(GLint location, GLuint i);
 
+
+
+   class frame_buffer_t {
+   public:
+      frame_buffer_t(frame_buffer_t const &) = delete;
+      frame_buffer_t & operator=(frame_buffer_t const &) = delete;
+
+      frame_buffer_t(gl::window::dim_t dims);
+      ~frame_buffer_t();
+
+      gl::window::dim_t dims() const { return dims_; }
+
+      void bind() const;
+      void unbind() const;
+
+      gl::texture_t & texture() { return colour_buffer_; }
+
+   private:
+      void check_fbo() const;
+
+      window::dim_t dims_;
+      id_t fbo_id_;
+      id_t rbo_id_; // render buffer for stencil/depth
+      gl::texture_t colour_buffer_;
+   };
 }
 
 
