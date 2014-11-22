@@ -208,9 +208,9 @@ int main()
             fbo->bind();
          }
 
-         u_time.set(static_cast<float>(gl::get_time()));
-
          prg_2d.use();
+
+         u_time.set(static_cast<float>(gl::get_time()));
 
          gl::texture_unit_t texture0{ 0 };
          u_texture.set(texture0);
