@@ -16,5 +16,5 @@ void main() {
 
    mediump float tint_fact = 0.5 * sin(4. * t) + 0.5;
    mediump vec4 tint = vec4(0., tint_fact, 0., 1.);
-   gl_FragColor = tint;
+   gl_FragColor = c * tint;
 }

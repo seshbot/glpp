@@ -118,7 +118,7 @@ int main()
       auto prg_post = create_program("post");
 
       auto u_post_texture = prg_post.uniform("texture");
-      auto u_post_factor = prg_post.uniform("factor");
+      auto u_post_time = prg_post.uniform("t");
       auto a_post_position = prg_post.attrib("p");
       auto a_post_tex_coords = prg_post.attrib("tex_coords");
 
@@ -240,7 +240,7 @@ int main()
 
             prg_post.use();
             u_post_texture.set(texture0);
-            u_post_factor.set((float)((float)buf[1] / 255.f));
+            u_post_time.set((float)gl::get_time());
 
             prg_post.pass()
                .with(post_screen_vertices)
