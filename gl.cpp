@@ -15,6 +15,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <vector>
+#include <algorithm>
 #include <utility>
 #include <atomic>
 #include <mutex>
@@ -286,18 +287,28 @@ namespace gl
       : state_(std::make_shared<state>(width, height)) {
    }
 
-   texture_t::state::state(std::string const & filename)
-      : id_(SOIL_load_OGL_texture(
-      filename.c_str(),
-      SOIL_LOAD_AUTO,
-      SOIL_CREATE_NEW_ID,
-      SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y)) {
+   texture_t::state::state(std::string const & filename) {
+      int width;
+      int height;
+      int channels;
+
+      id_ = SOIL_load_OGL_texture_and_details(
+         filename.c_str(),
+         SOIL_LOAD_AUTO,
+         SOIL_CREATE_NEW_ID,
+         SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y,
+         &width, &height, &channels);
+
       if (!id_) {
          throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
       }
+
+      width_ = width;
+      height_ = height;
    }
 
-   texture_t::state::state(int width, int height) {
+   texture_t::state::state(int width, int height)
+   : width_(width), height_(height) {
       GL_VERIFY(glGenTextures(1, &id_));
       GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
 
@@ -319,11 +330,98 @@ namespace gl
       glDeleteTextures(1, &id_);
    }
 
+   void texture_t::save(std::string const & filename) const {
+      std::vector<uint8_t> buffer(4 * state_->width_ * state_->height_);
+
+      GL_VERIFY(glReadPixels(0, 0, state_->width_, state_->height_, GL_RGBA, GL_UNSIGNED_BYTE, &buffer[0]));
+
+      auto format = [&filename] {
+         auto ext = filename.substr(filename.length() - 4);
+         if (ext == ".png") return SOIL_SAVE_TYPE_PNG;
+         if (ext == ".tga") return SOIL_SAVE_TYPE_TGA;
+         if (ext == ".bmp") return SOIL_SAVE_TYPE_BMP;
+         if (ext == ".dds") return SOIL_SAVE_TYPE_DDS;
+         utils::log(utils::LOG_WARN, "unrecognised extension '%s' when saving %s, defaulting to PNG\n", ext.c_str(), filename.c_str());
+         return SOIL_SAVE_TYPE_PNG;
+      }();
+
+      SOIL_save_image(
+         filename.c_str(), format,
+         state_->width_, state_->height_, 4, // TODO: channels?
+         buffer.data());
+   }
+
+
+  /**
+   * class frame_buffer_t
+   *
+   */
+
+   frame_buffer_t::frame_buffer_t(dim_t dims)
+      : dims_(dims), colour_buffer_(dims.x, dims.y) {
+      GL_VERIFY(glGenFramebuffers(1, &fbo_id_));
+      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_));
+
+      // attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
+      GL_VERIFY(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colour_buffer_.id(), 0));
+
+      // create render buffer for stencil and depth (we arent interested in reading it)
+      GL_VERIFY(glGenRenderbuffers(1, &rbo_id_));
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, rbo_id_));
+      GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y)); // GL_DEPTH24_STENCIL8
+      GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_id_)); // GL_DEPTH_STENCIL_ATTACHMENT
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+      check_fbo();
+
+      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+   }
+
+   frame_buffer_t::~frame_buffer_t() {
+      GL_VERIFY(glDeleteRenderbuffers(1, &rbo_id_));
+      GL_VERIFY(glDeleteFramebuffers(1, &fbo_id_));
+   }
+
+   void frame_buffer_t::bind() const { check_fbo(); GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_)); }
+   void frame_buffer_t::unbind() const { GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0)); }
+
+   void frame_buffer_t::check_fbo() const {
+      // Your framebuffer can only be used as a render target if memory has been allocated to store the results
+      auto status = GL_VERIFY(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+      if (status != GL_FRAMEBUFFER_COMPLETE) {
+         auto status_msg = [status] {
+            switch (status) {
+               //case GL_FRAMEBUFFER_UNDEFINED: return "GL_FRAMEBUFFER_UNDEFINED";
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT ";
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER ";
+            case GL_FRAMEBUFFER_UNSUPPORTED: return "GL_FRAMEBUFFER_UNSUPPORTED ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ";
+               //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ";
+            default: return "UNRECOGNISED ENUM";
+            }
+         }();
+
+         utils::log(utils::LOG_ERROR, "framebuffer not initialised correctly: error 0x%x (%s)\n", status, status_msg);
+      }
+   }
+
+   id_t current_frame_buffer() {
+      int fbo;
+      GL_VERIFY(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo));
+      return fbo;
+   }
+
+   void bind_frame_buffer(id_t new_fbo) {
+      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, new_fbo));
+   }
+
+
   /**
    * class shader
    *
    */
-
 
    shader_compile_error::shader_compile_error(std::string source_name, shader_compile_error const & parent)
       : error(parent.what()) {
@@ -810,32 +908,50 @@ namespace gl
    * pass_t
    *
    */
+   pass_t::pass_t(program & prg) 
+      : state_(std::make_shared<state>(prg)) {
+   }
 
    pass_t & pass_t::with(static_array_t array, std::initializer_list<attrib_data> attribs) {
-	   vertex_data_.push_back(array_spec_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
+      state_->vertex_data_.push_back(array_spec_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
       return *this;
    }
 
    pass_t & pass_t::with(array_spec_t array_spec) {
-      vertex_data_.push_back(std::move(array_spec));
+      state_->vertex_data_.push_back(std::move(array_spec));
       return *this;
    }
 
    pass_t & pass_t::with(buffer_spec_t buffer_spec) {
-      vertex_data_.push_back(std::move(buffer_spec));
+      state_->vertex_data_.push_back(std::move(buffer_spec));
       return *this;
    }
 
-   pass_t & pass_t::with(texture_unit_t u, texture_t tex) {
-      // verify no overlapping bindings
-      for (auto & tpair : texture_bindings_) {
-         if (tpair.first.id == u.id && (tpair.second.id() != tex.id())) {
-            utils::log(utils::LOG_WARN, "texture unit binding GL_TEXTURE%d being overwritten (tex %d -> %d)\n", u.id, tpair.second.id(), tex.id());
-         }
+   pass_t & pass_t::invoke_uniform_action(std::string const & name, uniform_action_t action) {
+      // overwrite if existing
+      for (auto & upair : state_->uniform_actions_) {
+         if (upair.first.name() != name) continue;
+
+         upair.second = action;
+         return *this;
       }
 
-      texture_bindings_.push_back({ u, tex });
+      // no binding exists, add to end
+      state_->uniform_actions_.push_back({ state_->prg_.uniform(name), action });
+      return *this;
+   }
 
+   pass_t & pass_t::set_texture_unit(texture_unit_t u, texture_t tex) {
+      // overwrite if existing
+      for (auto & tpair : state_->texture_bindings_) {
+         if (tpair.first.id != u.id) continue;
+
+         tpair.second = tex;
+         return *this;
+      }
+
+      // no binding exists, add to end
+      state_->texture_bindings_.push_back({ u, tex });
       return *this;
    }
 
@@ -888,14 +1004,15 @@ namespace gl
 
 
    pass_t & pass_t::draw(DrawMode type) {
-      prg_.use();
+      state_->prg_.use();
 
-      // bind textures to the texture units used by this pass
-      for (auto & tpair : texture_bindings_) {
-         texture_unit_t const & tex_unit = tpair.first;
-         texture_t const & tex = tpair.second;
-         GL_VERIFY(glActiveTexture(GL_TEXTURE0 + tex_unit.id));
-         GL_VERIFY(glBindTexture(GL_TEXTURE_2D, tex.id()));
+      for (auto & upair : state_->uniform_actions_) {
+         upair.second(upair.first); // invoke action
+      }
+
+      auto activate_texture = [](texture_unit_t const & u, texture_t const & t) {
+         GL_VERIFY(glActiveTexture(GL_TEXTURE0 + u.id));
+         GL_VERIFY(glBindTexture(GL_TEXTURE_2D, t.id()));
 
          // TODO: make this stuff configurable via the with() call...
          // TODO: or should this be initialised in texture creation?
@@ -904,17 +1021,92 @@ namespace gl
 
          GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
          GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+      };
+
+      // bind textures to the texture units used by this pass
+      for (auto & tpair : state_->texture_bindings_) {
+         texture_unit_t const & tex_unit = tpair.first;
+         texture_t const & tex = tpair.second;
+
+         activate_texture(tex_unit, tex);
+      }
+
+      if (!state_->texture_bindings_without_tex_units_.empty()) {
+         std::vector<int> allocated_texture_units;
+         auto add_texture_unit = [&](texture_unit_t const & u) {
+            auto id = u.id;
+            auto insert_it = std::upper_bound(std::begin(allocated_texture_units), std::end(allocated_texture_units), id);
+            allocated_texture_units.insert(insert_it, id);
+         };
+         auto allocate_texture_unit = [&]() -> texture_unit_t {
+            auto it = std::begin(allocated_texture_units);
+            auto itEnd = std::end(allocated_texture_units);
+            for (auto i = 0; i < 60; i++) {
+               // find unallocated (the list is sorted)
+               if (it == itEnd || *it != i) {
+                  texture_unit_t u{ i };
+                  add_texture_unit(u); // track so we dont re-allocate later
+                  return u;
+               }
+               ++it;
+            }
+            throw error("logic error finding unallocated texture unit");
+         };
+
+         for (auto & tpair : state_->texture_bindings_) {
+            add_texture_unit(tpair.first);
+         }
+
+         // allocate and bind unallocated textures
+         for (auto & tpair : state_->texture_bindings_without_tex_units_) {
+            auto tex_unit = allocate_texture_unit();
+            texture_t const & tex = tpair.second;
+
+            tpair.first.set(tex_unit);
+            activate_texture(tex_unit, tex);
+         }
       }
 
       // draw the vertex buffers used in this pass
-      for (auto & v : vertex_data_) v.draw(type);
+      for (auto & v : state_->vertex_data_) v.draw(type);
+
       return *this;
    }
 
    pass_t & pass_t::draw(DrawMode type, unsigned first, unsigned count) {
-      prg_.use();
-      for (auto & v : vertex_data_) v.draw(type, first, count);
+      state_->prg_.use();
+      for (auto & v : state_->vertex_data_) v.draw(type, first, count);
       return *this;
+   }
+
+   namespace {
+      struct fbo_bind_guard_t {
+         fbo_bind_guard_t()
+         : fbo_(current_frame_buffer()) {
+         }
+
+         ~fbo_bind_guard_t() {
+            bind_frame_buffer(fbo_);
+         }
+
+         id_t fbo_;
+      };
+   }
+
+   pass_t & pass_t::draw_to(frame_buffer_t & fbo, DrawMode mode) {
+      fbo_bind_guard_t bind_guard;
+      fbo.bind();
+      return draw(mode);
+   }
+
+   pass_t & pass_t::draw_to(frame_buffer_t & fbo, DrawMode mode, unsigned first, unsigned count) {
+      fbo_bind_guard_t bind_guard;
+      fbo.bind();
+      return draw(mode, first, count);
+   }
+
+   uniform pass_t::uniform(std::string const & name) {
+      return state_->prg_.uniform(name);
    }
 
 
@@ -1171,13 +1363,13 @@ namespace gl
       glfwPollEvents();
    }
 
-   window::dim_t window::window_dims() const {
+   dim_t window::window_dims() const {
       int width, height;
       glfwGetWindowSize(ctx_.impl_->window_, &width, &height);
       return{ width, height };
    }
 
-   window::dim_t window::frame_buffer_dims() const {
+   dim_t window::frame_buffer_dims() const {
       int width, height;
       glfwGetFramebufferSize(ctx_.impl_->window_, &width, &height);
       return{ width, height };
@@ -1345,57 +1537,4 @@ namespace gl
    void set_uniform(int location, texture_unit_t tex) { GL_VERIFY(glUniform1i(location, tex.id)); }
 
    //void set_uniform(GLint location, GLuint i) { glUniform1ui(location, i); }
-
-
-
-   frame_buffer_t::frame_buffer_t(window::dim_t dims)
-      : dims_(dims), colour_buffer_(dims.x, dims.y) {
-      GL_VERIFY(glGenFramebuffers(1, &fbo_id_));
-      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_));
-      
-      // attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
-      GL_VERIFY(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colour_buffer_.id(), 0));
-
-      // create render buffer for stencil and depth (we arent interested in reading it)
-      GL_VERIFY(glGenRenderbuffers(1, &rbo_id_));
-      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, rbo_id_));
-      GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y)); // GL_DEPTH24_STENCIL8
-      GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_id_)); // GL_DEPTH_STENCIL_ATTACHMENT
-      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-
-      check_fbo();
-
-      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-   }
-
-   frame_buffer_t::~frame_buffer_t() {
-      GL_VERIFY(glDeleteRenderbuffers(1, &rbo_id_));
-      GL_VERIFY(glDeleteFramebuffers(1, &fbo_id_));
-   }
-
-   void frame_buffer_t::bind() const { check_fbo(); GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_)); }
-   void frame_buffer_t::unbind() const { GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0)); }
-
-   void frame_buffer_t::check_fbo() const {
-      // Your framebuffer can only be used as a render target if memory has been allocated to store the results
-      auto status = GL_VERIFY(glCheckFramebufferStatus(GL_FRAMEBUFFER));
-      if (status != GL_FRAMEBUFFER_COMPLETE) {
-         auto status_msg = [status] {
-            switch (status) {
-               //case GL_FRAMEBUFFER_UNDEFINED: return "GL_FRAMEBUFFER_UNDEFINED";
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT ";
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER ";
-            case GL_FRAMEBUFFER_UNSUPPORTED: return "GL_FRAMEBUFFER_UNSUPPORTED ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ";
-            default: return "UNRECOGNISED ENUM";
-            }
-         }();
-
-         utils::log(utils::LOG_ERROR, "framebuffer not initialised correctly: error 0x%x (%s)\n", status, status_msg);
-      }
-   }
-
 }

@@ -32,7 +32,10 @@
 
 namespace gl {
 	using id_t = unsigned int;
-	using name_t = std::string;
+
+   struct dim_t { int x; int y; };
+   inline bool operator==(dim_t const & d1, dim_t const & d2) { return d1.x == d2.x && d1.y == d2.y; }
+   inline bool operator!=(dim_t const & d1, dim_t const & d2) { return !(d1 == d2); }
 
    const char * openGlErrorString(id_t err);
 
@@ -57,12 +60,16 @@ namespace gl {
 
       uint32_t id() const { return state_->id_; }
 
+      void save(std::string const & filename) const;
+
    private:
       struct state {
          state(std::string const & filename);
          state(int width, int height);
          ~state();
          uint32_t id_;
+         int width_;
+         int height_;
       };
 
       std::shared_ptr<state> state_;
@@ -71,6 +78,33 @@ namespace gl {
    struct texture_unit_t {
       int id;
    };
+
+   class frame_buffer_t {
+   public:
+      frame_buffer_t(frame_buffer_t const &) = delete;
+      frame_buffer_t & operator=(frame_buffer_t const &) = delete;
+
+      frame_buffer_t(gl::dim_t dims);
+      ~frame_buffer_t();
+
+      gl::dim_t dims() const { return dims_; }
+
+      void bind() const;
+      void unbind() const;
+
+      gl::texture_t & texture() { return colour_buffer_; }
+
+   private:
+      void check_fbo() const;
+
+      dim_t dims_;
+      id_t fbo_id_;
+      id_t rbo_id_; // render buffer for stencil/depth
+      gl::texture_t colour_buffer_;
+   };
+
+   id_t current_frame_buffer();
+   void bind_frame_buffer(id_t new_fbo);
 
    class shader {
    public:
@@ -359,26 +393,41 @@ namespace gl {
 
    class program;
    class pass_t {
+      using uniform_action_t = std::function < void(uniform & u) > ;
+
    public:
-      pass_t(pass_t const &) = delete;
-      pass_t & operator=(pass_t const &) = delete;
+      template <typename T>
+      pass_t & set_uniform(std::string const & name, T val) {
+         return invoke_uniform_action(name, [val](gl::uniform & u){ u.set(val); });
+      }
+
+      template <>
+      pass_t & pass_t::set_uniform<texture_t>(std::string const & name, texture_t val) {
+         state_->texture_bindings_without_tex_units_.push_back({ uniform(name), val });
+         return *this;
+      }
+
+      pass_t & invoke_uniform_action(std::string const & name, uniform_action_t action);
+
+      pass_t & set_texture_unit(texture_unit_t u, texture_t tex);
 
       pass_t & with(static_array_t array, std::initializer_list<attrib_data> attribs);
       pass_t & with(array_spec_t array_spec);
       pass_t & with(buffer_spec_t buffer_spec);
-
-      pass_t & with(texture_unit_t u, texture_t tex);
 
       //pass_t & validate_attribs(bool validate = true);
 
       pass_t & draw(DrawMode mode);
       pass_t & draw(DrawMode mode, unsigned first, unsigned count);
 
-   private:
-      friend class program;
-      pass_t(program & prg) : prg_(prg) { }
+      pass_t & draw_to(frame_buffer_t & fbo, DrawMode mode);
+      pass_t & draw_to(frame_buffer_t & fbo, DrawMode mode, unsigned first, unsigned count);
 
-      program & prg_;
+   private:
+      gl::uniform uniform(std::string const & name);
+
+      friend class program;
+      pass_t(program & prg);
 
       struct vertex_data_layout {
          void draw(DrawMode type) const { model_->draw(type); }
@@ -403,8 +452,17 @@ namespace gl {
 
          std::unique_ptr<concept> model_;
       };
-      std::vector<vertex_data_layout> vertex_data_;
-      std::vector<std::pair<texture_unit_t,texture_t>> texture_bindings_;
+
+      struct state {
+         state(program & prg) : prg_(prg) {}
+         program & prg_;
+         std::vector<vertex_data_layout> vertex_data_;
+         std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
+         std::vector<std::pair<gl::uniform, texture_t>> texture_bindings_without_tex_units_;
+         std::vector<std::pair<gl::uniform, uniform_action_t>> uniform_actions_;
+      };
+
+      std::shared_ptr<state> state_;
    };
 
 
@@ -460,7 +518,6 @@ namespace gl {
 
       void swap();
 
-      struct dim_t { int x; int y; };
       dim_t window_dims() const;
       dim_t frame_buffer_dims() const;
 
@@ -476,8 +533,6 @@ namespace gl {
       context & ctx_;
    };
 
-   inline bool operator==(window::dim_t const & d1, window::dim_t const & d2) { return d1.x == d2.x && d1.y == d2.y; }
-   inline bool operator!=(window::dim_t const & d1, window::dim_t const & d2) { return !(d1 == d2); }
 
 	class context {
    public:
@@ -518,32 +573,6 @@ namespace gl {
    void set_uniform(int location, int i);
    void set_uniform(int location, texture_unit_t tex);
    //void set_uniform(GLint location, GLuint i);
-
-
-
-   class frame_buffer_t {
-   public:
-      frame_buffer_t(frame_buffer_t const &) = delete;
-      frame_buffer_t & operator=(frame_buffer_t const &) = delete;
-
-      frame_buffer_t(gl::window::dim_t dims);
-      ~frame_buffer_t();
-
-      gl::window::dim_t dims() const { return dims_; }
-
-      void bind() const;
-      void unbind() const;
-
-      gl::texture_t & texture() { return colour_buffer_; }
-
-   private:
-      void check_fbo() const;
-
-      window::dim_t dims_;
-      id_t fbo_id_;
-      id_t rbo_id_; // render buffer for stencil/depth
-      gl::texture_t colour_buffer_;
-   };
 }
 
 

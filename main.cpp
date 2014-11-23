@@ -68,14 +68,14 @@ int main()
 
    try {
       bool should_reload_program = false;
-      bool use_fbo = false;
+      bool should_save = false;
       auto key_handler = [&](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
          if (key == gl::KEY_ESCAPE && action == gl::KEY_ACTION_PRESS)
             ctx.win().set_should_close();
          if (key == gl::KEY_R && action == gl::KEY_ACTION_PRESS)
             should_reload_program = true;
-         if (key == gl::KEY_F && action == gl::KEY_ACTION_PRESS)
-            use_fbo = !use_fbo;
+         if (key == gl::KEY_S && action == gl::KEY_ACTION_PRESS)
+            should_save = true;
       };
 
       gl::context context { key_handler };
@@ -103,10 +103,6 @@ int main()
 
       auto prg_2d = create_program("2d");
 
-      auto u_time = prg_2d.uniform("t");
-      auto u_texture = prg_2d.uniform("texture");
-      auto u_offset = prg_2d.uniform("offset");
-
       auto a_position = prg_2d.attrib("p");
       auto a_tex_coords = prg_2d.attrib("tex_coords");
 
@@ -117,8 +113,6 @@ int main()
 
       auto prg_post = create_program("post");
 
-      auto u_post_texture = prg_post.uniform("texture");
-      auto u_post_time = prg_post.uniform("t");
       auto a_post_position = prg_post.attrib("p");
       auto a_post_tex_coords = prg_post.attrib("tex_coords");
 
@@ -175,9 +169,27 @@ int main()
 
       // https://github.com/adobe/angle adobe wrapper??
 
+      auto set_time_cb = [](gl::uniform & u){u.set(static_cast<float>(gl::get_time())); };
 
-      std::unique_ptr<gl::frame_buffer_t> fbo;
-      
+      auto bg_pass = prg_2d.pass()
+         .with(screen_vertices)
+         .set_uniform("texture", bg_tex)
+         .set_uniform("offset", -0.25f)
+         .invoke_uniform_action("t", set_time_cb);
+
+      auto fg_pass = prg_2d.pass()
+         .with(screen_vertices)
+         .set_uniform("texture", grass_tex)
+         .set_uniform("offset", 0.25f)
+         .invoke_uniform_action("t", set_time_cb);
+
+      auto fbo = std::make_unique<gl::frame_buffer_t>(context.win().frame_buffer_dims());
+
+      auto post_pass = prg_post.pass()
+         .with(post_screen_vertices)
+         .set_uniform("texture", fbo->texture())
+         .invoke_uniform_action("t", set_time_cb);
+
       while (!context.win().closing())
       {
          if (should_reload_program) {
@@ -198,63 +210,21 @@ int main()
             fbo = std::make_unique<gl::frame_buffer_t>(dims);
          }
 
-         //glClearColor(1.f, 1.f, 1.f, 1.f);
          glClearColor(1.f, 0.f, 1.f, 1.f);
          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
          glViewport(0, 0, dims.x, dims.y);
 
+         bg_pass.draw_to(*fbo, gl::DrawMode::Triangles);
+         fg_pass.draw_to(*fbo, gl::DrawMode::Triangles);
+         post_pass.draw(gl::DrawMode::Triangles);
 
-         if (use_fbo) {
-            fbo->bind();
-         }
-
-         prg_2d.use();
-
-         u_time.set(static_cast<float>(gl::get_time()));
-
-         gl::texture_unit_t texture0{ 0 };
-         u_texture.set(texture0);
-
-         u_offset.set(-0.25f);
-
-         prg_2d.pass()
-            .with(screen_vertices)
-            .with(texture0, bg_tex)
-            .draw(gl::DrawMode::Triangles);
-
-         u_offset.set(0.25f);
-
-         prg_2d.pass()
-            .with(screen_vertices)
-            .with(texture0, grass_tex)
-            .draw(gl::DrawMode::Triangles);
-
-         uint8_t buf[4];
-         GL_VERIFY(glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, buf));
-         //utils::log(utils::LOG_INFO, "rgb: 0x%02x%02x%02x\n", buf[0], buf[1], buf[2]);
-
-         if (use_fbo) {
-            fbo->unbind();
-
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            prg_post.use();
-            u_post_texture.set(texture0);
-            u_post_time.set((float)gl::get_time());
-
-            prg_post.pass()
-               .with(post_screen_vertices)
-               .with(texture0, fbo->texture())
-               .draw(gl::DrawMode::Triangles);
+         if (should_save) {
+            fbo->texture().save("test.png");
+            should_save = false;
          }
 
          context.win().swap();
       }
-
-      prg_post.destroy();
-      prg_2d.destroy();
-      context.destroy();
-      gl::shutdown();
 
       exit(EXIT_SUCCESS);
    }
@@ -271,4 +241,6 @@ int main()
       gl::shutdown();
       exit(EXIT_FAILURE);
    }
+
+   gl::shutdown();
 }

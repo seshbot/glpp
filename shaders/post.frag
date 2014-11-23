@@ -14,3 +14,4 @@ void main() {
 
    gl_FragColor = texture2D(texture, vec2(v_tex_coords.x + xoff, v_tex_coords.y));
 }
+ 
