@@ -7,6 +7,8 @@
 #  define USE_GLEW
 #endif
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <cstdlib>
 #include "utils.h"
 #include "gl.h"
@@ -68,14 +70,11 @@ int main()
 
    try {
       bool should_reload_program = false;
-      bool should_save = false;
       auto key_handler = [&](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
          if (key == gl::KEY_ESCAPE && action == gl::KEY_ACTION_PRESS)
             ctx.win().set_should_close();
          if (key == gl::KEY_R && action == gl::KEY_ACTION_PRESS)
             should_reload_program = true;
-         if (key == gl::KEY_S && action == gl::KEY_ACTION_PRESS)
-            should_save = true;
       };
 
       gl::context context { key_handler };
@@ -103,6 +102,7 @@ int main()
       //
 
       auto prg_2d = create_program("2d");
+      auto prg_sprite = create_program("sprite");
       auto prg_post = create_program("post");
 
 
@@ -122,15 +122,9 @@ int main()
          1, 2, 3,
       };
 
-      auto screen_vertices = gl::describe_buffer({ screen_verts, screen_indices })
-         .add(prg_2d.attrib("p"), 2)
-         .add(prg_2d.attrib("tex_coords"), 2).build();
-
-      auto post_screen_vertices = gl::describe_buffer({ screen_verts, screen_indices })
-         .add(prg_post.attrib("p"), 2)
-         .add(prg_post.attrib("tex_coords"), 2).build();
-
-      gl::texture_t bg_tex{ "bg_green.png" };
+      auto screen_vertices_spec = gl::describe_buffer({ screen_verts, screen_indices })
+         .attrib("p", 2)
+         .attrib("tex_coords", 2);
       
       // get a GL name for our texture
       // load data into texture
@@ -147,18 +141,20 @@ int main()
          u.set(glm::vec2{ dims.x, dims.y });
       };
 
+
+      auto set_proj_cb = [](gl::uniform & u){u.set(static_cast<float>(gl::get_time())); };
       auto bg_pass = prg_2d.pass()
-         .with(screen_vertices)
-         .set_uniform("texture", bg_tex)
-         .set_uniform("offset", 0.f)
-         .invoke_uniform_action("t", set_time_cb);
+         .with(screen_vertices_spec)
+         .set_uniform("proj", glm::ortho(-1.f, 1.f, -1.f, 1.f))
+         .set_uniform("texture", gl::texture_t{ "bg_green.png" });
 
       auto fbo = std::make_unique<gl::frame_buffer_t>(context.win().frame_buffer_dims());
 
       auto post_pass = prg_post.pass()
-         .with(post_screen_vertices)
+         .with(screen_vertices_spec)
          .set_uniform("texture", fbo->texture())
          .invoke_uniform_action("t", set_time_cb);
+
 
       while (!context.win().closing())
       {
@@ -186,11 +182,6 @@ int main()
 
          bg_pass.draw_to(*fbo, gl::DrawMode::Triangles);
          post_pass.draw(gl::DrawMode::Triangles);
-
-         if (should_save) {
-            fbo->texture().save("test.png");
-            should_save = false;
-         }
 
          context.win().swap();
       }

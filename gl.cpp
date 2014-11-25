@@ -804,108 +804,72 @@ namespace gl
 
 
 
-   array_spec_builder_t::array_spec_builder_t(static_array_t array)
-      : spec_prototype_(array_spec_t{std::move(array), {}}) {
-   }
-
-   array_spec_builder_t::array_spec_builder_t(array_spec_builder_t && other)
-      : pos_bytes_(other.pos_bytes_)
-      , spec_prototype_(std::move(other.spec_prototype_)) {
-   }
-
-   array_spec_builder_t & array_spec_builder_t::operator=(array_spec_builder_t && other) {
-      std::swap(spec_prototype_, other.spec_prototype_);
-      std::swap(pos_bytes_, other.pos_bytes_);
-
-      return *this;
-   }
-
-   array_spec_builder_t & array_spec_builder_t::add(attrib attrib, unsigned count) {
-      auto slice_size = count * attrib_atomic_val_bytes(attrib.type());
-      spec_prototype_.attribs.push_back({ std::move(attrib), count, 0, pos_bytes_ });
-      pos_bytes_ += slice_size;
-
-      return *this;
-   }
-
-   array_spec_builder_t & array_spec_builder_t::skip(unsigned bytes) {
-      pos_bytes_ += bytes;
-
-      return *this;
-   }
-
-   array_spec_t array_spec_builder_t::build() const {
-      decltype(spec_prototype_.attribs) attribs;
-
-      // prototype doesnt have correct stride
-      for (auto & d : spec_prototype_.attribs) {
-         attribs.push_back({ d.attrib, d.count, pos_bytes_, d.offset_bytes});
-      }
-
-      return{ spec_prototype_.array, std::move(attribs) };
-   }
-
-   array_spec_builder_t describe_static(static_array_t array) {
-      return{ array };
-   }
-
-
-
-
    buffer_spec_builder_t::buffer_spec_builder_t(buffer_t buffer)
-      : spec_prototype_(buffer_spec_t{ std::move(buffer), {} }) {
+      : state_(std::make_shared<state>(std::move(buffer))) {
    }
 
-   buffer_spec_builder_t::buffer_spec_builder_t(buffer_spec_builder_t && other)
-      : pos_bytes_(other.pos_bytes_)
-      , spec_prototype_(std::move(other.spec_prototype_)) {
-   }
-
-   buffer_spec_builder_t & buffer_spec_builder_t::operator=(buffer_spec_builder_t && other) {
-      std::swap(spec_prototype_, other.spec_prototype_);
-      std::swap(pos_bytes_, other.pos_bytes_);
+   buffer_spec_builder_t buffer_spec_builder_t::attrib(std::string attrib_name, unsigned count) {
+      state_->slices_.push_back({ attrib_name, count });
 
       return *this;
    }
 
-   buffer_spec_builder_t & buffer_spec_builder_t::add(attrib attrib, unsigned count) {
-      if (!attrib.is_valid()) {
-         // TODO: parse shader files to determine types (might be elided by compiler)
+   buffer_spec_builder_t buffer_spec_builder_t::skip_bytes(unsigned bytes) {
+      state_->slices_.push_back({ "", bytes });
 
-         utils::log(utils::LOG_WARN, "adding an invalid attribute '%s' when rendering\n", attrib.name().c_str());
+      return *this;
+   }
 
-         // guess how big it is
-         auto elem_size_guess
-            = attrib.type() == ValueType::Unknown ? 4
-            : attrib_atomic_val_bytes(attrib.type());
+   buffer_spec_t buffer_spec_builder_t::build(program & prg) const {
+      buffer_spec_t::attribs_type attribs_sans_stride;
 
-         return skip_bytes(count * elem_size_guess);
+      unsigned pos_bytes = 0;
+
+      for (auto & s : state_->slices_) {
+         // process 'skip bytes' requests
+         if (s.attrib_name == "") {
+            // count is in bytes in this case
+            pos_bytes += s.count;
+            continue;
+         }
+
+         // assume slice is an attrib specification
+         auto attrib = prg.attrib(s.attrib_name);
+
+         if (!attrib.is_valid()) {
+            // TODO: parse shader files to determine types (might be elided by compiler)
+
+            utils::log(utils::LOG_WARN, "adding an invalid attribute '%s' when rendering\n", attrib.name().c_str());
+
+            // guess how big it is
+            auto elem_size_guess
+               = attrib.type() == ValueType::Unknown ? 4
+               : attrib_atomic_val_bytes(attrib.type());
+
+            pos_bytes += s.count * elem_size_guess;
+            continue;
+         }
+
+         // assume slice is valid
+         auto slice_size = s.count * attrib_atomic_val_bytes(attrib.type());
+         attribs_sans_stride.push_back({ std::move(attrib), s.count, 0, pos_bytes });
+         pos_bytes += slice_size;
       }
 
-      auto slice_size = count * attrib_atomic_val_bytes(attrib.type());
-      spec_prototype_.attribs.push_back({ std::move(attrib), count, 0, pos_bytes_ });
-      pos_bytes_ += slice_size;
-
-      return *this;
-   }
-
-   buffer_spec_builder_t & buffer_spec_builder_t::skip_bytes(unsigned bytes) {
-      pos_bytes_ += bytes;
-
-      return *this;
-   }
-
-   buffer_spec_t buffer_spec_builder_t::build() const {
-      // TODO: validate span divides into buffer nicely, warn if not
-
-      decltype(spec_prototype_.attribs) attribs;
-
+      buffer_spec_t::attribs_type attribs;
       // prototype doesnt have correct stride
-      for (auto & d : spec_prototype_.attribs) {
-         attribs.push_back({ d.attrib, d.count, pos_bytes_, d.offset_bytes });
+      for (auto & a : attribs_sans_stride) {
+         attribs.push_back({ a.attrib, a.count, pos_bytes, a.offset_bytes });
       }
 
-      return{ spec_prototype_.buffer, std::move(attribs) };
+      // validate span divides into buffer nicely, warn if not
+
+      if (0 != state_->buffer_.vertex_buffer_size() % pos_bytes) {
+         utils::log(utils::LOG_WARN, "vertex buffer is not a multiple of the vertex data size!");
+         assert(false && "vertex buffer is not a multiple of the vertex data size!");
+      }
+
+      return{ state_->buffer_, std::move(attribs) };
    }
 
    buffer_spec_builder_t describe_buffer(buffer_t buffer) {
@@ -943,6 +907,10 @@ namespace gl
    pass_t & pass_t::with(buffer_spec_t buffer_spec) {
       state_->vertex_data_.push_back(std::move(buffer_spec));
       return *this;
+   }
+
+   pass_t & pass_t::with(buffer_spec_builder_t const & builder) {
+      return with(builder.build(state_->prg_));
    }
 
    pass_t & pass_t::invoke_uniform_action(std::string const & name, uniform_action_t action) {
@@ -1099,27 +1067,32 @@ namespace gl
 
    namespace {
       struct fbo_bind_guard_t {
-         fbo_bind_guard_t()
-         : fbo_(current_frame_buffer()) {
+         fbo_bind_guard_t(frame_buffer_t & fbo)
+         : fbo_(current_frame_buffer())
+         , do_bind_(fbo_ != fbo.id()) {
+            if (do_bind_) {
+               fbo.bind();
+            }
          }
 
          ~fbo_bind_guard_t() {
-            bind_frame_buffer(fbo_);
+            if (do_bind_) {
+               bind_frame_buffer(fbo_);
+            }
          }
 
          id_t fbo_;
+         bool do_bind_;
       };
    }
 
    pass_t & pass_t::draw_to(frame_buffer_t & fbo, DrawMode mode) {
-      fbo_bind_guard_t bind_guard;
-      fbo.bind();
+      fbo_bind_guard_t bind_guard(fbo);
       return draw(mode);
    }
 
    pass_t & pass_t::draw_to(frame_buffer_t & fbo, DrawMode mode, unsigned first, unsigned count) {
-      fbo_bind_guard_t bind_guard;
-      fbo.bind();
+      fbo_bind_guard_t bind_guard(fbo);
       return draw(mode, first, count);
    }
 

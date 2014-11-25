@@ -15,14 +15,14 @@ endif ()
 
 set(SOURCE
 	main.cpp
-	utils.cpp utils.h
-	gl.cpp    gl.h
-	input.cpp input.h)
+	utils.cpp   utils.h
+	gl.cpp      gl.h
+	input.cpp   input.h)
 
 set(SHADERS
 	shaders/2d.vert shaders/2d.frag
     shaders/post.vert shaders/post.frag
-    shaders/prime.vert shaders/prime.frag)
+    shaders/sprite.vert shaders/sprite.frag)
 
 add_executable(glapp WIN32 CMakeLists.txt ${SOURCE} ${SHADERS})
 

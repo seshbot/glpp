@@ -90,6 +90,7 @@ namespace gl {
       frame_buffer_t(gl::dim_t dims);
       ~frame_buffer_t();
 
+      id_t id() const { return fbo_id_; }
       gl::dim_t dims() const { return dims_; }
 
       void bind() const;
@@ -334,47 +335,38 @@ namespace gl {
    };
 
    struct buffer_spec_t {
+      using attribs_type = std::vector<attrib_info>;
+
       buffer_t buffer;
-      std::vector<attrib_info> attribs;
+      attribs_type attribs;
    };
 
-   class array_spec_builder_t {
-   public:
-      array_spec_builder_t(static_array_t array);
-      array_spec_builder_t(array_spec_builder_t &&);
-      array_spec_builder_t & operator=(array_spec_builder_t &&);
-	   array_spec_builder_t(array_spec_builder_t const &) = delete;
-	   array_spec_builder_t & operator=(array_spec_builder_t const &) = delete;
-
-	   array_spec_builder_t & add(attrib attrib, unsigned count);
-	   array_spec_builder_t & skip(unsigned bytes);
-
-      array_spec_t build() const;
-
-   private:
-	   mutable unsigned pos_bytes_ = 0;
-      array_spec_t spec_prototype_;
-   };
-
+   class program;
    class buffer_spec_builder_t {
    public:
       buffer_spec_builder_t(buffer_t buffer);
-      buffer_spec_builder_t(buffer_spec_builder_t &&);
-      buffer_spec_builder_t & operator=(buffer_spec_builder_t &&);
-      buffer_spec_builder_t(buffer_spec_builder_t const &) = delete;
-      buffer_spec_builder_t & operator=(buffer_spec_builder_t const &) = delete;
 
-      buffer_spec_builder_t & add(attrib attrib, unsigned count);
-      buffer_spec_builder_t & skip_bytes(unsigned bytes);
+      buffer_spec_builder_t attrib(std::string attrib_name, unsigned count);
+      buffer_spec_builder_t skip_bytes(unsigned bytes);
 
-      buffer_spec_t build() const;
+      buffer_spec_t build(program & prg) const;
 
    private:
-      mutable unsigned pos_bytes_ = 0;
-      buffer_spec_t spec_prototype_;
+      struct slice_info {
+         std::string attrib_name; // "" means skip count bytes
+         unsigned count;
+      };
+
+      struct state {
+         state(buffer_t buffer) : buffer_(std::move(buffer)) {}
+
+         buffer_t buffer_;
+         std::vector<slice_info> slices_;
+      };
+
+      std::shared_ptr<state> state_;
    };
 
-   array_spec_builder_t describe_static(static_array_t array);
    buffer_spec_builder_t describe_buffer(buffer_t buffer);
 
 
@@ -417,6 +409,7 @@ namespace gl {
       pass_t & with(static_array_t array, std::initializer_list<attrib_info> attribs);
       pass_t & with(array_spec_t array_spec);
       pass_t & with(buffer_spec_t buffer_spec);
+      pass_t & with(buffer_spec_builder_t const & buffer_spec_builder);
 
       //pass_t & validate_attribs(bool validate = true);
 
