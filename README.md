@@ -72,7 +72,7 @@ auto post_pass = prg_post.pass()
   .set_uniform("texture", fbo->texture())
   .set_uniform("time", [](gl::uniform & u) { u.set((float)gl::get_time()); });
   
-
+// main application loop
 while (!context.win().closing())
 {
   GL_VERIFY(glClearColor(1.f, 0.f, 1.f, 1.f));
@@ -81,6 +81,7 @@ while (!context.win().closing())
   auto dims = context.win().frame_buffer_dims();
   GL_VERIFY(glViewport(0, 0, dims.x, dims.y));
 
+  // rendering is very simple! (notice the call to draw_to() for FBO targeting)
   bg_pass.draw_to(*fbo, gl::DrawMode::Triangles);
   post_pass.draw(gl::DrawMode::Triangles);
 
@@ -92,7 +93,6 @@ while (!context.win().closing())
 
 gl::shutdown();
 ```
-
 Building
 --------
 To compile you should be able to write: 
