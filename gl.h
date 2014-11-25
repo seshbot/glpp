@@ -60,6 +60,9 @@ namespace gl {
 
       uint32_t id() const { return state_->id_; }
 
+      int width() const { return state_->width_; }
+      int height() const { return state_->height_; }
+
       void save(std::string const & filename) const;
 
    private:

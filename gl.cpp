@@ -290,6 +290,8 @@ namespace gl
    texture_t::state::state(std::string const & filename) {
       int width;
       int height;
+      int resized_width;
+      int resized_height;
       int channels;
 
       id_ = SOIL_load_OGL_texture_and_details(
@@ -297,7 +299,7 @@ namespace gl
          SOIL_LOAD_AUTO,
          SOIL_CREATE_NEW_ID,
          SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y,
-         &width, &height, &channels);
+         &width, &height, &resized_width, &resized_height, &channels);
 
       if (!id_) {
          throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
@@ -305,6 +307,19 @@ namespace gl
 
       width_ = width;
       height_ = height;
+
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
+
+      // set texture parameters
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+      GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+
+      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, 0));
    }
 
    texture_t::state::state(int width, int height)
@@ -435,13 +450,16 @@ namespace gl
 
    shader::shader(std::string const & source, shader::Type type)
       : id_(glCreateShader(to_glenum(type)))
+      , type_(type)
    {
+      GL_CHECK();
+
       const char * srcdata = source.c_str();
-      glShaderSource(id_, 1, &srcdata, NULL);
-      glCompileShader(id_);
+      GL_VERIFY(glShaderSource(id_, 1, &srcdata, NULL));
+      GL_VERIFY(glCompileShader(id_));
 
       GLint success;
-      glGetShaderiv(id_, GL_COMPILE_STATUS, &success);
+      GL_VERIFY(glGetShaderiv(id_, GL_COMPILE_STATUS, &success));
       if (success != GL_TRUE) {
          throw shader_compile_error(id_);
          // TODO: delete shader?
@@ -1117,6 +1135,7 @@ namespace gl
 
    program::program()
       : id_(glCreateProgram()) {
+      GL_CHECK();
    }
 
    program::program(shader s1, shader s2)
@@ -1155,7 +1174,7 @@ namespace gl
    }
 
    void program::reload(shader s1, shader s2) {
-      for (auto & s : shaders_) glDetachShader(id_, s.id());
+      for (auto & s : shaders_) GL_VERIFY(glDetachShader(id_, s.id()));
       shaders_.clear();
 
       attach(std::move(s1));
@@ -1191,28 +1210,34 @@ namespace gl
          return old_attribs.end();
       };
 
-      glLinkProgram(id_);
+      GL_VERIFY(glLinkProgram(id_));
 
       use();
 
       GLint num_uniforms;
-      glGetProgramiv(id_, GL_ACTIVE_UNIFORMS, &num_uniforms);
+      GL_VERIFY(glGetProgramiv(id_, GL_ACTIVE_UNIFORMS, &num_uniforms));
 
       for (auto idx = 0; idx < num_uniforms; idx++) {
          int size;
          unsigned int gl_type;
          char name[513];
 
-         glGetActiveUniform(id_, idx, 512, nullptr, &size, &gl_type, name);
-         assert(idx == glGetUniformLocation(id_, name));
+         GL_VERIFY(glGetActiveUniform(id_, idx, 512, nullptr, &size, &gl_type, name));
+         auto location = GL_VERIFY(glGetUniformLocation(id_, name));
+         if (location == -1) {
+            utils::log(utils::LOG_WARN, "uniform '%s' location unknown\n", name);
+         }
+         else {
+            assert(idx == location);
+         }
 
          auto type = gl_to_value_type(gl_type);
          auto it = find_uniform_with_name(name);
          if (it == old_uniforms.end()) {
-            uniforms_.push_back({ name, idx, size, type });
+            uniforms_.push_back({ name, location, size, type });
          }
          else {
-            it->reset(idx, size, type);
+            it->reset(location, size, type);
             uniforms_.push_back(*it);
             old_uniforms.erase(it);
          }
@@ -1226,16 +1251,22 @@ namespace gl
          unsigned int gl_type;
          char name[513];
 
-         glGetActiveAttrib(id_, idx, 512, nullptr, &size, &gl_type, name);
-         assert(idx == glGetAttribLocation(id_, name));
+         GL_VERIFY(glGetActiveAttrib(id_, idx, 512, nullptr, &size, &gl_type, name));
+         auto location = GL_VERIFY(glGetAttribLocation(id_, name));
+         if (location == -1) {
+            utils::log(utils::LOG_WARN, "attribute '%s' location unknown\n", name);
+         }
+         else {
+            assert(idx == location);
+         }
 
          auto type = gl_to_value_type(gl_type);
          auto it = find_attrib_with_name(name);
          if (it == old_attribs.end()) {
-            attribs_.push_back({ name, idx, size, type });
+            attribs_.push_back({ name, location, size, type });
          }
          else {
-            it->reset(idx, size, type);
+            it->reset(location, size, type);
             attribs_.push_back(*it);
             old_attribs.erase(it);
          }

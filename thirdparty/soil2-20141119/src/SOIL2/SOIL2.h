@@ -176,7 +176,8 @@ unsigned int
       int force_channels,
       unsigned int reuse_texture_ID,
       unsigned int flags,
-      int* width, int* height, int* channels
+      int* orig_width, int* orig_height,
+      int* resized_width, int* resized_height, int* channels
    );
 
 

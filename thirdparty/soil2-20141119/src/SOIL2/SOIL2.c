@@ -368,10 +368,11 @@ unsigned int
       unsigned int flags
    )
 {
-   int width, height, channels;
+   int orig_width, orig_height, channels;
+   int resized_width, resized_height;
    return SOIL_load_OGL_texture_and_details(
       filename, force_channels, reuse_texture_ID, flags,
-      &width, &height, &channels);
+      &orig_width, &orig_height, &resized_width, &resized_height, &channels);
 }
 
 unsigned int
@@ -380,8 +381,9 @@ unsigned int
 		const char *filename,
 		int force_channels,
 		unsigned int reuse_texture_ID,
-		unsigned int flags,
-      int* width, int* height, int* channels
+      unsigned int flags,
+      int* orig_width, int* orig_height,
+      int* resized_width, int* resized_height, int* channels
 	)
 {
 	/*	variables	*/
@@ -423,7 +425,7 @@ unsigned int
 	}
 
 	/*	try to load the image	*/
-	img = SOIL_load_image( filename, width, height, channels, force_channels );
+	img = SOIL_load_image( filename, orig_width, orig_height, channels, force_channels );
 	/*	channels holds the original number of channels, which may have been forced	*/
 	if( (force_channels >= 1) && (force_channels <= 4) )
 	{
@@ -436,8 +438,10 @@ unsigned int
 		return 0;
 	}
 	/*	OK, make it a texture!	*/
+   *resized_width = *orig_width;
+   *resized_height = *orig_height;
 	tex_id = SOIL_internal_create_OGL_texture(
-			img, width, height, *channels,
+         img, resized_width, resized_height, *channels,
 			reuse_texture_ID, flags,
 			GL_TEXTURE_2D, GL_TEXTURE_2D,
 			GL_MAX_TEXTURE_SIZE );
