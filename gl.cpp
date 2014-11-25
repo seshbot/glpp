@@ -683,14 +683,14 @@ namespace gl
    }
 
 
-   unsigned attrib_data::calc_stride_bytes() const{
+   unsigned attrib_info::calc_stride_bytes() const{
       return stride_bytes != 0
          ? stride_bytes
          : attrib_atomic_val_bytes(attrib.type()) * count;
    }
 
    unsigned num_vertices(array_spec_t const & packed) {
-      auto block_count = [&](attrib_data const & b) {
+      auto block_count = [&](attrib_info const & b) {
          auto stride_bytes = b.calc_stride_bytes();
          assert(packed.array.size() % stride_bytes == 0);
 
@@ -710,18 +710,18 @@ namespace gl
    }
 
    void use(array_spec_t const & packed) {
-      for (auto & attrib_data : packed.attribs) {
-		 auto gl_type = attrib_atomic_gl_type(attrib_data.attrib.type());
-         int8_t * data = reinterpret_cast<int8_t*>(packed.array.data()) + attrib_data.offset_bytes;
+      for (auto & attrib_info : packed.attribs) {
+         auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
+         int8_t * data = reinterpret_cast<int8_t*>(packed.array.data()) + attrib_info.offset_bytes;
 
-         GL_VERIFY(glVertexAttribPointer(attrib_data.attrib.location(), attrib_data.count, gl_type, false, attrib_data.stride_bytes, data));
-         GL_VERIFY(glEnableVertexAttribArray(attrib_data.attrib.location()));
+         GL_VERIFY(glVertexAttribPointer(attrib_info.attrib.location(), attrib_info.count, gl_type, false, attrib_info.stride_bytes, data));
+         GL_VERIFY(glEnableVertexAttribArray(attrib_info.attrib.location()));
       }
    }
 
 
    unsigned num_vertices(buffer_spec_t const & packed) {
-      auto block_count = [&](attrib_data const & b) {
+      auto block_count = [&](attrib_info const & b) {
          auto stride_bytes = b.calc_stride_bytes();
          assert(packed.buffer.vertex_buffer_size() % stride_bytes == 0);
 
@@ -742,14 +742,14 @@ namespace gl
 
    void use(buffer_spec_t const & packed) {
       packed.buffer.use();
-      for (auto & attrib_data : packed.attribs) {
-         auto gl_type = attrib_atomic_gl_type(attrib_data.attrib.type());
+      for (auto & attrib_info : packed.attribs) {
+         auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
 
          GL_VERIFY(glVertexAttribPointer(
-            attrib_data.attrib.location(), attrib_data.count, gl_type,
-            false, attrib_data.stride_bytes, reinterpret_cast<void*>(attrib_data.offset_bytes)));
+            attrib_info.attrib.location(), attrib_info.count, gl_type,
+            false, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
 
-         GL_VERIFY(glEnableVertexAttribArray(attrib_data.attrib.location()));
+         GL_VERIFY(glEnableVertexAttribArray(attrib_info.attrib.location()));
       }
    }
 
@@ -913,11 +913,11 @@ namespace gl
    }
 
 
-   //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_data> attribs) {
+   //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_info> attribs) {
    //   return{ b, { std::begin(attribs), std::end(attribs) } };
    //}
 
-   //buffer_spec_t buffer(std::initializer_list<attrib_data> attribs) {
+   //buffer_spec_t buffer(std::initializer_list<attrib_info> attribs) {
    //   return{ {}, { std::begin(attribs), std::end(attribs) } };
    //}
 
@@ -930,7 +930,7 @@ namespace gl
       : state_(std::make_shared<state>(prg)) {
    }
 
-   pass_t & pass_t::with(static_array_t array, std::initializer_list<attrib_data> attribs) {
+   pass_t & pass_t::with(static_array_t array, std::initializer_list<attrib_info> attribs) {
       state_->vertex_data_.push_back(array_spec_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
       return *this;
    }

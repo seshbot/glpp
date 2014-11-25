@@ -302,8 +302,8 @@ namespace gl {
    };
 
 
-   struct attrib_data {
-      attrib_data(attrib attrib, unsigned count, unsigned stride_bytes = 0, unsigned offset_bytes = 0)
+   struct attrib_info {
+      attrib_info(attrib attrib, unsigned count, unsigned stride_bytes = 0, unsigned offset_bytes = 0)
          : attrib(std::move(attrib)), count(count), stride_bytes(stride_bytes), offset_bytes(offset_bytes) {}
 
       // estimate block size (stride) based on attrib specifications
@@ -316,7 +316,7 @@ namespace gl {
    };
 
    struct array_spec_t {
-      array_spec_t(static_array_t array, std::vector<attrib_data> attribs)
+      array_spec_t(static_array_t array, std::vector<attrib_info> attribs)
          : array(std::move(array)), attribs(std::move(attribs)) {}
       array_spec_t(array_spec_t const & other)
          : array(other.array), attribs(std::begin(other.attribs), std::end(other.attribs)) {}
@@ -330,12 +330,12 @@ namespace gl {
       }
 
       static_array_t array;
-      std::vector<attrib_data> attribs;
+      std::vector<attrib_info> attribs;
    };
 
    struct buffer_spec_t {
       buffer_t buffer;
-      std::vector<attrib_data> attribs;
+      std::vector<attrib_info> attribs;
    };
 
    class array_spec_builder_t {
@@ -414,7 +414,7 @@ namespace gl {
 
       pass_t & set_texture_unit(texture_unit_t u, texture_t tex);
 
-      pass_t & with(static_array_t array, std::initializer_list<attrib_data> attribs);
+      pass_t & with(static_array_t array, std::initializer_list<attrib_info> attribs);
       pass_t & with(array_spec_t array_spec);
       pass_t & with(buffer_spec_t buffer_spec);
 
