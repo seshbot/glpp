@@ -931,7 +931,7 @@ namespace gl
       return with(builder.build(state_->prg_));
    }
 
-   pass_t & pass_t::invoke_uniform_action(std::string const & name, uniform_action_t action) {
+   pass_t & pass_t::set_uniform_action(std::string const & name, uniform_action_t action) {
       // overwrite if existing
       for (auto & upair : state_->uniform_actions_) {
          if (upair.first.name() != name) continue;

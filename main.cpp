@@ -47,13 +47,186 @@ namespace {
       }
    };
 
+   //
+   // game classes
+   //
 
+   // turns key presses into a directional vector. consumed by entity controller
+   class player_controls_t {
+   public:
+      enum class dir { none = 0, up = 1, down = 2, left = 4, right = 8 };
 
+      player_controls_t() : dir_flags_(0), direction_(0., 0.) {
+      }
 
-   struct sprite_state_t {
-      virtual ~sprite_state_t() {}
+      void handle_key_action(gl::Key key, gl::KeyAction action) {
+         auto key_dir = [key] {
+            switch (key) {
+            case gl::KEY_A: case gl::KEY_LEFT: return dir::left;
+            case gl::KEY_S: case gl::KEY_DOWN: return dir::down;
+            case gl::KEY_D: case gl::KEY_RIGHT: return dir::right;
+            case gl::KEY_W: case gl::KEY_UP: return dir::up;
+            default: return dir::none;
+            }
+         }();
 
-      virtual int current_state() const = 0;
+         if (key_dir == dir::none) return;
+         if (action == gl::KEY_ACTION_PRESS) dir_flags_ |= static_cast<uint16_t>(key_dir);
+         if (action == gl::KEY_ACTION_RELEASE) dir_flags_ &= ~static_cast<uint16_t>(key_dir);
+
+         float horiz_vec = 0.;
+         if (dir_flags_ & static_cast<uint16_t>(dir::left)) horiz_vec -= 1.f;
+         if (dir_flags_ & static_cast<uint16_t>(dir::right)) horiz_vec += 1.f;
+         float vert_vec = 0.;
+         if (dir_flags_ & static_cast<uint16_t>(dir::up)) vert_vec += 1.f;
+         if (dir_flags_ & static_cast<uint16_t>(dir::down)) vert_vec -= 1.f;
+
+         auto dir = glm::vec2(horiz_vec, vert_vec);
+         direction_ = glm::length(dir) == 0. ? dir : glm::normalize(dir);
+      }
+
+      bool is_moving() const { return dir_flags_ != 0; }
+
+      glm::vec2 const & direction() const { return direction_; }
+
+   private:
+      std::uint16_t dir_flags_;
+      glm::vec2 direction_;
+   };
+
+   // holds geometric (pos, dir) info of a game entity
+   class game_entity_t {
+   public:
+      game_entity_t() : state_(std::make_shared<state>()) {}
+
+      glm::mat4 transform() const {
+         float x = 400.f + pos().x;
+         float y = 300.f + pos().y;
+
+         auto moved = glm::translate(glm::mat4{}, glm::vec3{ x, y, 0. });
+
+         if (dir().x < 0) return glm::scale(moved, glm::vec3{ -1., 1., 1. });
+         return moved;
+      }
+
+      glm::vec2 const & dir() const { return state_->dir_; }
+      glm::vec2 const & pos() const { return state_->pos_; }
+
+      bool is_moving() const { return glm::length(dir()) > 0.1; }
+
+      void set_dir(glm::vec2 const & dir) { state_->dir_ = dir; }
+      void set_pos(glm::vec2 const & pos) { state_->pos_ = pos; }
+
+      void update(double time_since_last) {
+         auto & _ = *state_;
+         _.pos_ += _.dir_ * (static_cast<float>(time_since_last)* _.speed_per_sec_);
+
+         if (_.pos_.x < -400.) _.pos_.x = -400.;
+         if (_.pos_.x > 400.) _.pos_.x = 400.;
+         if (_.pos_.y < -300.) _.pos_.y = -300.;
+         if (_.pos_.y > 300.) _.pos_.y = 300.;
+      }
+
+   private:
+      struct state {
+         state() : speed_per_sec_(400.) {}
+
+         float speed_per_sec_;
+         glm::vec2 pos_;
+         glm::vec2 dir_;
+
+      };
+
+      std::shared_ptr<state> state_;
+   };
+
+   // updates an entity based on various inputs (user input or AI)
+   class game_entity_controller_t {
+   public:
+      game_entity_controller_t(game_entity_t entity)
+         : state_(new state(std::move(entity), default_plan())) {}
+      game_entity_controller_t(game_entity_t entity, player_controls_t const & controls)
+         : state_(new state(std::move(entity), player_plan(controls))) {}
+
+      game_entity_t const & entity() { return state_->entity_; }
+
+      void update(double time_since_last) {
+         auto & _ = *state_;
+         _.plan_->update(time_since_last, _.entity_);
+      }
+
+   private:
+      struct plan_t {
+         virtual ~plan_t() {}
+         virtual void update(double time_since_last, game_entity_t & entity) = 0;
+      };
+
+      static std::unique_ptr<plan_t> default_plan() {
+         struct plan : public plan_t {
+            virtual void update(double time_since_last, game_entity_t & entity) {
+               entity.update(time_since_last);
+            }
+         };
+         return std::unique_ptr<plan_t>(new plan);
+      }
+
+      static std::unique_ptr<plan_t> player_plan(player_controls_t const & controls) {
+         struct plan : public plan_t {
+            plan(player_controls_t const & controls) : controls_(controls) {}
+            virtual void update(double time_since_last, game_entity_t & entity) {
+               entity.set_dir(controls_.direction());
+               entity.update(time_since_last);
+            }
+            player_controls_t const & controls_;
+         };
+         return std::unique_ptr<plan_t>(new plan(controls));
+      }
+
+      struct state {
+         state(game_entity_t entity, std::unique_ptr<plan_t> plan)
+            : entity_(std::move(entity))
+            , plan_(std::move(plan))
+         {}
+
+         game_entity_t entity_;
+         std::unique_ptr<plan_t> plan_;
+      };
+
+      std::shared_ptr<state> state_;
+   };
+
+   // syncs a sprite representation based on the state of an entity (play walk animation when entity is moving)
+   class game_entity_sprite_binding_t {
+   public:
+      using update_sprite_f = std::function < void(double, gl::sprite_t &, game_entity_t &) >;
+
+      template <typename FuncT>
+      game_entity_sprite_binding_t(gl::sprite_t sprite, game_entity_t entity, FuncT func)
+         : state_(std::make_shared<state>(std::move(sprite), std::move(entity), func)) {
+      }
+
+      gl::sprite_t const & sprite() const { return state_->sprite_; }
+      game_entity_t const & entity() const { return state_->entity_; }
+
+      void update(double t) {
+         state_->update_func_(t, state_->sprite_, state_->entity_);
+      }
+
+   private:
+      struct state {
+         template <typename FuncT>
+         state(gl::sprite_t sprite, game_entity_t entity, FuncT func)
+            : sprite_(std::move(sprite))
+            , entity_(std::move(entity))
+            , update_func_(func) {
+         }
+
+         gl::sprite_t sprite_;
+         game_entity_t entity_;
+         update_sprite_f update_func_;
+      };
+
+      std::shared_ptr<state> state_;
    };
 }
 
@@ -79,58 +252,8 @@ int main()
       exit(EXIT_FAILURE);
    }
 
-   struct player_t : public sprite_state_t {
-      enum class dir { none = 0, up = 1, down = 2, left = 4, right = 8};
 
-      player_t() : dir_flags_(0), pos_(0., 0.) {
-      }
-
-      virtual int current_state() const {
-         if (!is_moving()) return 0;
-         return 1;
-      }
-
-      void handle_key_action(gl::Key key, gl::KeyAction action) {
-         auto key_dir = [key] {
-            switch (key) {
-            case gl::KEY_A: case gl::KEY_LEFT: return dir::left;
-            case gl::KEY_S: case gl::KEY_DOWN: return dir::down;
-            case gl::KEY_D: case gl::KEY_RIGHT: return dir::right;
-            case gl::KEY_W: case gl::KEY_UP: return dir::up;
-            default: return dir::none;
-            }
-         }();
-
-         if (key_dir == dir::none) return;
-         if (action == gl::KEY_ACTION_PRESS) dir_flags_ |= static_cast<uint16_t>(key_dir);
-         if (action == gl::KEY_ACTION_RELEASE) dir_flags_ &= ~static_cast<uint16_t>(key_dir);
-      }
-
-      void update(double time_since_last) {
-         static float pace_per_sec = 200.;
-         float right_pace = 0.;
-         if (dir_flags_ & static_cast<uint16_t>(dir::left)) right_pace -= pace_per_sec;
-         if (dir_flags_ & static_cast<uint16_t>(dir::right)) right_pace += pace_per_sec;
-         float up_pace = 0.;
-         if (dir_flags_ & static_cast<uint16_t>(dir::up)) up_pace += pace_per_sec;
-         if (dir_flags_ & static_cast<uint16_t>(dir::down)) up_pace -= pace_per_sec;
-
-         if (right_pace != 0.) pos_.x += right_pace * static_cast<float>(time_since_last);
-         if (up_pace != 0.) pos_.y += up_pace * static_cast<float>(time_since_last);
-
-         if (pos_.x < -400.) pos_.x = -400.;
-         if (pos_.x > 400.) pos_.x = 400.;
-         if (pos_.y < -300.) pos_.y = -300.;
-         if (pos_.y > 300.) pos_.y = 300.;
-      }
-
-      bool is_moving() const { return dir_flags_ != 0; }
-
-      std::uint16_t dir_flags_;
-      glm::vec2 pos_;
-   };
-
-   player_t player;
+   player_controls_t controls;
 
    try {
       bool should_reload_program = false;
@@ -143,7 +266,7 @@ int main()
          if (key == gl::KEY_N && action == gl::KEY_ACTION_PRESS)
             should_next = true;
 
-         player.handle_key_action(key, action);
+         controls.handle_key_action(key, action);
       };
 
       gl::context context { key_handler };
@@ -164,6 +287,45 @@ int main()
 #endif
 
       utils::log(utils::LOG_INFO, "%s\n", context.info().c_str());
+
+
+      //
+      // load sprite data
+      //
+
+      gl::sprite_sheet sprites({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
+         { { 0, 420 }, { 66, 92 } },
+         { { 66, 419 }, { 66, 92 } },
+         { { 133, 420 }, { 66, 92 } },
+         { { 0, 326 }, { 66, 92 } },
+         { { 133, 420 }, { 66, 92 } },
+         { { 66, 420 }, { 66, 92 } },
+      });
+
+      auto create_player_sprite = [&sprites]()->gl::sprite_t {
+         return{
+            { sprites, { 0 } },
+            { sprites, { 1, 2, 3, 4, 5 } }
+         };
+      };
+
+
+      //
+      // load game data
+      //
+
+      auto player_entity = game_entity_t{};
+
+      std::vector<game_entity_controller_t> entity_controllers;
+      entity_controllers.emplace_back(player_entity, controls);
+
+      std::vector<game_entity_sprite_binding_t> sprite_bindings;
+      sprite_bindings.emplace_back(create_player_sprite(), player_entity, [](double t, gl::sprite_t & s, game_entity_t & e){
+         if (!e.is_moving()) s.set_animation_idx(0);
+         else s.set_animation_idx(1);
+
+         s.update(t);
+      });
 
 
       // 
@@ -215,110 +377,12 @@ int main()
          .with(screen_vertices_spec)
          .set_uniform("texture", gl::texture_t{ "bg_green.png" });
 
-      auto fbo = std::make_unique<gl::frame_buffer_t>(context.win().frame_buffer_dims());
+      auto fbo = std::unique_ptr<gl::frame_buffer_t>(new gl::frame_buffer_t(context.win().frame_buffer_dims()));
 
       auto post_pass = prg_post.pass()
          .with(screen_vertices_spec)
          .set_uniform("texture", fbo->texture())
-         .invoke_uniform_action("t", set_time_cb);
-
-
-
-
-      class sprite_sheet {
-      public:
-         struct sprite_ref {
-            int state;
-            glm::ivec2 position;
-            glm::ivec2 dimensions;
-         };
-
-         sprite_sheet(gl::texture_t texture, std::initializer_list<sprite_ref> frames)
-            : texture_(texture) {
-            for (auto & s : frames) {
-               auto & state_info = states_[s.state];
-               if (s.dimensions.x > state_info.sprite_width) state_info.sprite_width = s.dimensions.x;
-               if (s.dimensions.y > state_info.sprite_height) state_info.sprite_height = s.dimensions.y;
-               state_info.sprite_count++;
-
-               state_info.frames.push_back(s);
-            }
-         }
-
-         gl::texture_t texture() const { return texture_; }
-
-         std::size_t sprite_count(int state) const { return states_.find(state)->second.sprite_count; }
-         glm::ivec2 const & sprite_pos(int state, int idx) const { return states_.find(state)->second.frames.at(idx).position; }
-         glm::ivec2 const & sprite_dims(int state, int idx) const { return states_.find(state)->second.frames.at(idx).dimensions; }
-
-      private:
-         gl::texture_t texture_;
-
-         struct sprite_state_info {
-            sprite_state_info() : sprite_width(0), sprite_height(0), sprite_count(0) {}
-
-            int sprite_width;
-            int sprite_height;
-            std::size_t sprite_count;
-
-            std::vector<sprite_ref> frames;
-         };
-
-         std::map<int, sprite_state_info> states_;
-      };
-
-      class sprite_t {
-      public:
-         sprite_t(sprite_sheet const & sprites, sprite_state_t const & sprite_state)
-            : sprites_(sprites)
-            , sprite_state_(sprite_state)
-            , time_per_frame_(.1)
-            , time_acc_(.0)
-            , last_state_(sprite_state_.current_state())
-            , idx_(0)
-         {}
-
-         void update(double time_since_last) {
-            auto current_state = sprite_state_.current_state();
-            if (current_state != last_state_) {
-               utils::log(utils::LOG_INFO, "transitioned from state %d -> %d\n", last_state_, current_state);
-               idx_ = 0;
-               time_acc_ = time_since_last;
-
-               last_state_ = current_state;
-               return;
-            }
-
-            time_acc_ += time_since_last;
-            while (time_acc_ > time_per_frame_) {
-               idx_++;
-               idx_ = idx_ % sprites_.sprite_count(current_state);
-               time_acc_ -= time_per_frame_;
-            }
-         }
-
-         int frame_count() const { return sprites_.sprite_count(sprite_state_.current_state()); }
-
-         int idx() const { return idx_; }
-         void set_idx(int idx) { idx_ = idx; }
-
-         glm::ivec2 const & pos() const {
-            return sprites_.sprite_pos(last_state_, idx());
-         }
-
-         glm::ivec2 const & dims() const {
-            return sprites_.sprite_dims(last_state_, idx());
-         }
-
-      private:
-         sprite_sheet const & sprites_;
-         sprite_state_t const & sprite_state_;
-         double time_per_frame_;
-         double time_acc_;
-         int last_state_;
-         int idx_;
-      };
-
+         .set_uniform_action("t", set_time_cb);
 
       static const float sprite_verts[] = {
          -35., 93., 0., 1.,
@@ -336,38 +400,18 @@ int main()
          .attrib("p", 2)
          .attrib("tex_coords", 2);
 
-      auto set_model = [&player](gl::uniform & u) {
-         float t = (float)gl::get_time();
-         float x = 400.f + player.pos_.x; // *std::sin(t);
-         float y = 300.f + player.pos_.y; // *std::cos(3.f * t);
-         u.set(glm::translate(glm::mat4{}, glm::vec3{ x, y, 0. }));
-      };
-
-      sprite_sheet sprites({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
-         { 0, { 0, 420 }, { 66, 92 } },
-         { 1, { 66, 419 }, { 66, 92 } },
-         { 1, { 133, 420 }, { 66, 92 } },
-         { 1, { 0, 326 }, { 66, 92 } },
-         { 1, { 133, 420 }, { 66, 92 } },
-         { 1, { 66, 420 }, { 66, 92 } },
-      });
-      sprite_t sprite(sprites,  player);
-
-      auto set_sprite_xy = [&sprite](gl::uniform & u) { u.set(sprite.pos()); };
-      auto set_sprite_wh = [&sprite](gl::uniform & u) { u.set(sprite.dims()); };
-
       auto sprite_tex = sprites.texture();
 
       auto prg_sprite = create_program("sprite");
       auto sprite_pass = prg_sprite.pass()
          .with(sprite_vertices_spec)
-         .invoke_uniform_action("model", set_model)
          .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600.))
-         .invoke_uniform_action("sprite_xy", set_sprite_xy)
-         .invoke_uniform_action("sprite_wh", set_sprite_wh)
          .set_uniform("texture_wh", glm::vec2(sprite_tex.width(), sprite_tex.height()))
          .set_uniform("texture", sprite_tex);
 
+      //
+      // game loop
+      //
 
       double last_tick = gl::get_time();
 
@@ -386,33 +430,41 @@ int main()
             should_reload_program = false;
          }
 
-         if (should_next) {
-            auto new_idx = (sprite.idx() + 1) % sprite.frame_count();
-            sprite.set_idx(new_idx);
-            auto const & pos = sprite.pos();
+         //if (should_next) {
+         //   auto & sprite = player_entity.sprite();
+         //   auto new_idx = (sprite.idx() + 1) % sprite.current_frame_count();
+         //   player_entity.sprite().set_idx(new_idx);
 
-            utils::log(utils::LOG_INFO, "sprite[%d].pos == [%d,%d]\n", new_idx, (int)pos.x, (int)pos.y);
+         //   utils::log(utils::LOG_INFO, "sprite[%d]\n", new_idx);
 
-            should_next = false;
-         }
+         //   should_next = false;
+         //}
 
          auto dims = context.win().frame_buffer_dims();
 
          if (!fbo || fbo->dims() != dims) {
-            fbo = std::make_unique<gl::frame_buffer_t>(dims);
+            fbo = std::unique_ptr<gl::frame_buffer_t>(new gl::frame_buffer_t(dims));
          }
 
          double this_tick = gl::get_time();
          double time_since_last_tick = this_tick - last_tick;
-         sprite.update(time_since_last_tick);
-         player.update(time_since_last_tick);
+
+         for (auto & e : entity_controllers) { e.update(time_since_last_tick); }
+         for (auto & b : sprite_bindings) { b.update(time_since_last_tick); }
 
          glClearColor(.7f, .87f, .63f, 1.);
          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
          glViewport(0, 0, dims.x, dims.y);
 
          bg_pass.draw_to(*fbo, gl::DrawMode::Triangles);
-         sprite_pass.draw_to(*fbo, gl::DrawMode::Triangles);
+
+         for (auto & s : sprite_bindings) {
+            sprite_pass
+               .set_uniform("model", s.entity().transform())
+               .set_uniform("sprite_xy", s.sprite().current_frame().position)
+               .set_uniform("sprite_wh", s.sprite().current_frame().dimensions)
+               .draw_to(*fbo, gl::DrawMode::Triangles);
+         }
          post_pass.draw(gl::DrawMode::Triangles);
 
          last_tick = this_tick;
