@@ -399,12 +399,6 @@ namespace gl {
          return set_uniform_action(name, [val](gl::uniform & u){ u.set(val); });
       }
 
-      template <>
-      pass_t & set_uniform<texture_t>(std::string const & name, texture_t val) {
-         state_->texture_bindings_without_tex_units_.push_back({ uniform(name), val });
-         return *this;
-      }
-
       pass_t & set_uniform_action(std::string const & name, uniform_action_t action);
 
       pass_t & set_texture_unit(texture_unit_t u, texture_t tex);
@@ -463,6 +457,9 @@ namespace gl {
 
       std::shared_ptr<state> state_;
    };
+
+   template <>
+   pass_t & pass_t::set_uniform<texture_t>(std::string const & name, texture_t val);
 
 
 	class program {

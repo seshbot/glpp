@@ -931,6 +931,12 @@ namespace gl
       return with(builder.build(state_->prg_));
    }
 
+   template <>
+   pass_t & pass_t::set_uniform<texture_t>(std::string const & name, texture_t val) {
+      state_->texture_bindings_without_tex_units_.push_back({ uniform(name), val });
+      return *this;
+   }
+
    pass_t & pass_t::set_uniform_action(std::string const & name, uniform_action_t action) {
       // overwrite if existing
       for (auto & upair : state_->uniform_actions_) {
@@ -1217,9 +1223,6 @@ namespace gl
          auto location = GL_VERIFY(glGetUniformLocation(id_, name));
          if (location == -1) {
             utils::log(utils::LOG_WARN, "uniform '%s' location unknown\n", name);
-         }
-         else {
-            assert(idx == location);
          }
 
          auto type = gl_to_value_type(gl_type);
