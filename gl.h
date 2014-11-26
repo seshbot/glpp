@@ -400,7 +400,7 @@ namespace gl {
       }
 
       template <>
-      pass_t & pass_t::set_uniform<texture_t>(std::string const & name, texture_t val) {
+      pass_t & set_uniform<texture_t>(std::string const & name, texture_t val) {
          state_->texture_bindings_without_tex_units_.push_back({ uniform(name), val });
          return *this;
       }
