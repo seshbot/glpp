@@ -172,6 +172,9 @@ namespace gl {
       void set(glm::vec4 const & vec);
       void set(glm::vec3 const & vec);
       void set(glm::vec2 const & vec);
+      void set(glm::ivec4 const & vec);
+      void set(glm::ivec3 const & vec);
+      void set(glm::ivec2 const & vec);
       void set(texture_unit_t tex);
 
       std::string const & name() const { return state_->name_; }
@@ -565,6 +568,9 @@ namespace gl {
    void set_uniform(int location, glm::vec4 const & vec);
    void set_uniform(int location, glm::vec3 const & vec);
    void set_uniform(int location, glm::vec2 const & vec);
+   void set_uniform(int location, glm::ivec4 const & vec);
+   void set_uniform(int location, glm::ivec3 const & vec);
+   void set_uniform(int location, glm::ivec2 const & vec);
    void set_uniform(int location, float f);
    void set_uniform(int location, int i);
    void set_uniform(int location, texture_unit_t tex);

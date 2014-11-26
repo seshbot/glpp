@@ -528,6 +528,9 @@ namespace gl
       ValueType uniform_type();
       template <> ValueType uniform_type<int>() { return ValueType::Int; }
       template <> ValueType uniform_type<float>() { return ValueType::Float; }
+      template <> ValueType uniform_type<glm::ivec2>() { return ValueType::IntVec2; }
+      template <> ValueType uniform_type<glm::ivec3>() { return ValueType::IntVec3; }
+      template <> ValueType uniform_type<glm::ivec4>() { return ValueType::IntVec4; }
       template <> ValueType uniform_type<glm::vec2>() { return ValueType::FloatVec2; }
       template <> ValueType uniform_type<glm::vec3>() { return ValueType::FloatVec3; }
       template <> ValueType uniform_type<glm::vec4>() { return ValueType::FloatVec4; }
@@ -582,6 +585,21 @@ namespace gl
    }
 
    void uniform::set(glm::vec4 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::ivec2 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::ivec3 const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(glm::ivec4 const & val) {
       auto success = set_uniform(*this, val, !state_->error_);
       if (!success) state_->error_ = true;
    }
@@ -1536,6 +1554,9 @@ namespace gl
    void set_uniform(int location, glm::vec4 const & vec) { GL_VERIFY(glUniform4f(location, vec.x, vec.y, vec.z, vec.w)); }
    void set_uniform(int location, glm::vec3 const & vec) { GL_VERIFY(glUniform3f(location, vec.x, vec.y, vec.z)); }
    void set_uniform(int location, glm::vec2 const & vec) { GL_VERIFY(glUniform2f(location, vec.x, vec.y)); }
+   void set_uniform(int location, glm::ivec4 const & vec) { GL_VERIFY(glUniform4i(location, vec.x, vec.y, vec.z, vec.w)); }
+   void set_uniform(int location, glm::ivec3 const & vec) { GL_VERIFY(glUniform3i(location, vec.x, vec.y, vec.z)); }
+   void set_uniform(int location, glm::ivec2 const & vec) { GL_VERIFY(glUniform2i(location, vec.x, vec.y)); }
    void set_uniform(int location, float f) { GL_VERIFY(glUniform1f(location, f)); }
    void set_uniform(int location, int i) { GL_VERIFY(glUniform1i(location, i)); }
    void set_uniform(int location, texture_unit_t tex) { GL_VERIFY(glUniform1i(location, tex.id)); }
