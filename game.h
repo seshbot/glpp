@@ -14,6 +14,8 @@
 
 
 namespace game {
+   using entity_id_t = std::size_t;
+
    // holds geometric (pos, dir) info of a game entity
    class entity_t {
    public:
@@ -52,33 +54,46 @@ namespace game {
    };
 
    // tracks entities and their sprites
-   struct game_t {
-      using id_t = std::size_t;
-
+   class entities_t {
+   public:
       using entity_update_func = std::function < void(double, game::entity_t &) >;
-      using sprite_update_func = std::function < void(double, game::entity_t const &, gl::sprite_t &) >;
-      using sprite_iterate_func = std::function < void(game::entity_t const &, gl::sprite_t const &) >;
 
-      id_t add_entity(game::entity_t e, entity_update_func update);
-      void add_sprite(id_t entity_id, gl::sprite_t sprite, sprite_update_func update);
-
-      game::entity_t const & entity(id_t id) const;
+      entity_id_t add_entity(game::entity_t e, entity_update_func update);
+      game::entity_t const & entity(entity_id_t id) const;
 
       void update(double time_since_last);
 
-      void for_each_sprite(sprite_iterate_func func);
-
+   private:
       struct entity_controller {
          entity_controller(game::entity_t e, entity_update_func u);
          game::entity_t entity;
          entity_update_func update;
       };
+
+      std::vector<entity_controller> entity_controllers_;
+   };
+
+   class sprites_t{
+   public:
+      sprites_t(entities_t const & entities) : entities_(entities) {}
+
+      using sprite_update_func = std::function < void(double, game::entity_t const &, gl::sprite_t &) >;
+      using sprite_iterate_func = std::function < void(game::entity_t const &, gl::sprite_t const &) >;
+
+      void add_sprite(entity_id_t entity_id, gl::sprite_t sprite, sprite_update_func update);
+      void for_each_sprite(sprite_iterate_func func);
+
+      void update(double time_since_last);
+
+   private:
+      game::entity_t const & entity(entity_id_t id) const;
+
       struct sprite_controller {
-         sprite_controller(id_t e_id, gl::sprite_t s, sprite_update_func u);
+         sprite_controller(entity_id_t e_id, gl::sprite_t s, sprite_update_func u);
          sprite_controller(sprite_controller && o);
          sprite_controller & operator=(sprite_controller && o);
 
-         id_t entity_id;
+         entity_id_t entity_id;
          gl::sprite_t sprite;
          sprite_update_func update;
 
@@ -87,7 +102,7 @@ namespace game {
          sprite_controller & operator=(sprite_controller &) = delete;
       };
 
-      std::vector<entity_controller> entity_controllers_;
+      entities_t const & entities_;
       std::vector<sprite_controller> sprite_controllers_;
    };
 

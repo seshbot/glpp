@@ -34,43 +34,61 @@ namespace game {
 
 
    //
-   //
+   // entities_t
    //
 
-
-   game_t::id_t game_t::add_entity(entity_t e, entity_update_func update) {
+   entity_id_t entities_t::add_entity(entity_t e, entity_update_func update) {
       entity_controllers_.emplace_back(std::move(e), update);
       return entity_controllers_.size() - 1;
    }
 
-   void game_t::add_sprite(id_t entity_id, gl::sprite_t sprite, sprite_update_func update) {
+   entity_t const & entities_t::entity(entity_id_t id) const { return entity_controllers_.at(id).entity; }
+
+   void entities_t::update(double time_since_last) {
+      for (auto & c : entity_controllers_) {
+         c.update(time_since_last, c.entity);
+      }
+   }
+
+   entities_t::entity_controller::entity_controller(entity_t e, entity_update_func u)
+      : entity(std::move(e)), update(u) {
+   }
+
+
+   //
+   // sprites_t
+   //
+
+   void sprites_t::add_sprite(entity_id_t entity_id, gl::sprite_t sprite, sprite_update_func update) {
       sprite_controllers_.emplace_back(entity_id, std::move(sprite), update);
    }
 
-   game::entity_t const & game_t::entity(id_t id) const { return entity_controllers_.at(id).entity; }
-
-   void game_t::update(double time_since_last) {
-      for (auto & c : entity_controllers_) { c.update(time_since_last, c.entity); }
-      for (auto & c : sprite_controllers_) { c.update(time_since_last, entity(c.entity_id), c.sprite); }
+   void sprites_t::update(double time_since_last) {
+      for (auto & c : sprite_controllers_) {
+         c.update(time_since_last, entity(c.entity_id), c.sprite);
+      }
    }
 
-   void game_t::for_each_sprite(sprite_iterate_func func) {
-      for (auto & c : sprite_controllers_) func(entity(c.entity_id), c.sprite);
+   void sprites_t::for_each_sprite(sprite_iterate_func func) {
+      for (auto & c : sprite_controllers_) {
+         func(entity(c.entity_id), c.sprite);
+      }
    }
 
-   game_t::entity_controller::entity_controller(entity_t e, entity_update_func u)
-      : entity(std::move(e)), update(u) {}
+   entity_t const & sprites_t::entity(entity_id_t id) const {
+      return entities_.entity(id);
+   }
 
-   game_t::sprite_controller::sprite_controller(id_t e_id, gl::sprite_t s, sprite_update_func u)
+   sprites_t::sprite_controller::sprite_controller(entity_id_t e_id, gl::sprite_t s, sprite_update_func u)
       : entity_id(e_id), sprite(std::move(s)), update(u) {
    }
 
-   game_t::sprite_controller::sprite_controller(sprite_controller && o)
+   sprites_t::sprite_controller::sprite_controller(sprite_controller && o)
       : sprite(std::move(o.sprite))
       , update(o.update) {
    }
 
-   game_t::sprite_controller & game_t::sprite_controller::operator=(game_t::sprite_controller && o) {
+   sprites_t::sprite_controller & sprites_t::sprite_controller::operator=(sprites_t::sprite_controller && o) {
       sprite = std::move(o.sprite);
       update = std::move(o.update);
       return *this;

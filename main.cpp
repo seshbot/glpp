@@ -157,7 +157,7 @@ int main()
       // load sprite data
       //
 
-      gl::sprite_sheet sprites({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
+      gl::sprite_sheet sprite_sheet({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
          { { 0, 420 }, { 66, 92 } },
          { { 66, 419 }, { 66, 92 } },
          { { 133, 420 }, { 66, 92 } },
@@ -171,7 +171,8 @@ int main()
       // load game data
       //
 
-      game::game_t game;
+      game::entities_t entities;
+      game::sprites_t sprites(entities);
 
       auto player_controller = [&controls](double t, game::entity_t & e) {
          e.set_dir(controls.direction());
@@ -186,15 +187,15 @@ int main()
          s.update(t);
       };
 
-      auto create_player_sprite = [&sprites]()->gl::sprite_t {
+      auto create_player_sprite = [&sprite_sheet]()->gl::sprite_t {
          return{
-            { sprites, { 0 } },
-            { sprites, { 1, 2, 3, 4, 5 } }
+            { sprite_sheet, { 0 } },
+            { sprite_sheet, { 1, 2, 3, 4, 5 } }
          };
       };
 
-      auto player_entity_id = game.add_entity({}, player_controller);
-      game.add_sprite(player_entity_id, create_player_sprite(), player_sprite_controller);
+      auto player_entity_id = entities.add_entity({}, player_controller);
+      sprites.add_sprite(player_entity_id, create_player_sprite(), player_sprite_controller);
 
 
       // 
@@ -269,7 +270,7 @@ int main()
          .attrib("p", 2)
          .attrib("tex_coords", 2);
 
-      auto sprite_tex = sprites.texture();
+      auto sprite_tex = sprite_sheet.texture();
 
       auto prg_sprite = create_program("sprite");
       auto sprite_pass = prg_sprite.pass()
@@ -318,7 +319,8 @@ int main()
          double this_tick = gl::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
-         game.update(time_since_last_tick);
+         entities.update(time_since_last_tick);
+         sprites.update(time_since_last_tick);
 
          glClearColor(.7f, .87f, .63f, 1.);
          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -327,7 +329,7 @@ int main()
          fbo->bind();
          bg_pass.draw(gl::DrawMode::Triangles);
 
-         game.for_each_sprite([&sprite_pass](game::entity_t const & entity, gl::sprite_t const & sprite) {
+         sprites.for_each_sprite([&sprite_pass](game::entity_t const & entity, gl::sprite_t const & sprite) {
             sprite_pass
                .set_uniform("model", entity.transform())
                .set_uniform("sprite_xy", sprite.current_frame().position)
