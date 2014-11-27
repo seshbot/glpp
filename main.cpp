@@ -94,8 +94,8 @@ namespace {
    };
 
 
-   struct sprite_render_t : public gl::pass_t::render_callback {
-      sprite_render_t(game::sprites_t const & sprites)
+   struct sprite_render_callback_t : public gl::pass_t::render_callback {
+      sprite_render_callback_t(game::sprites_t const & sprites)
          : idx_(0), sprites_(sprites) {
       }
 
@@ -104,11 +104,8 @@ namespace {
 
          auto & e = sprites_.entity_at(idx_);// entities.entity(player_entity_id);
          auto & s = sprites_.sprite_at(idx_);// sprites.entity_sprite(player_entity_id);
-         static glm::mat4 prev;
-         auto xfm = e.transform();
-         if (prev != xfm) { utils::log(utils::LOG_INFO, "changed\n"); prev = xfm; }
 
-         p.uniform("model").set(xfm);
+         p.uniform("model").set(e.transform());
          p.uniform("sprite_xy").set(s.current_frame().position);
          p.uniform("sprite_wh").set(s.current_frame().dimensions);
 
@@ -355,7 +352,7 @@ int main()
 
          fbo->bind();
          bg_pass.draw(gl::DrawMode::Triangles);
-         sprite_pass.draw_batch(sprite_render_t{sprites}, gl::DrawMode::Triangles);
+         sprite_pass.draw_batch(sprite_render_callback_t{ sprites }, gl::DrawMode::Triangles);
          fbo->unbind();
 
          post_pass.draw(gl::DrawMode::Triangles);
