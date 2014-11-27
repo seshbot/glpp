@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdexcept>
 #include <functional>
+#include <iterator>
 #include <memory>
 
 #include "input.h"
@@ -398,17 +399,18 @@ namespace gl {
          template <typename IteratorT, typename FuncT>
          batch_callback(IteratorT itBegin, IteratorT itEnd, FuncT callback) {
             struct model : public concept {
+               using value_type = typename std::iterator_traits<IteratorT>::value_type;
                model(IteratorT itBegin, IteratorT itEnd, FuncT callback)
                   : it_(itBegin), itEnd_(itEnd), callback_(callback) {}
 
                virtual bool prepare_next(program & p) const {
-                  callback_(p, *it);
-                  return ++it != itEnd;
+                  callback_(p, *it_);
+                  return ++it_ != itEnd_;
                }
 
                mutable IteratorT it_;
-               IteratorT itEnd;
-               std::function<void(program &, T &)> callback_
+               IteratorT itEnd_;
+               std::function<void(program &, value_type &)> callback_;
             };
 
             model_ = std::make_shared<model>(itBegin, itEnd, callback);
