@@ -17,7 +17,8 @@ set(SOURCE
 	main.cpp
 	utils.cpp   utils.h
 	gl.cpp      gl.h
-	input.cpp   input.h)
+	input.cpp   input.h
+	game.cpp    game.h)
 
 set(SHADERS
 	shaders/2d.vert shaders/2d.frag

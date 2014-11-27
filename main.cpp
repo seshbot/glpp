@@ -7,12 +7,14 @@
 #  define USE_GLEW
 #endif
 
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <cstdlib>
 #include <map>
 #include "utils.h"
 #include "gl.h"
+#include "game.h"
+
+// TODO: remove this
+#include <glm/gtc/matrix_transform.hpp>
 
 
 namespace {
@@ -47,19 +49,20 @@ namespace {
       }
    };
 
-   //
-   // game classes
-   //
 
    // turns key presses into a directional vector. consumed by entity controller
    class player_controls_t {
    public:
-      enum class dir { none = 0, up = 1, down = 2, left = 4, right = 8 };
-
-      player_controls_t() : dir_flags_(0), direction_(0., 0.) {
+      player_controls_t()
+         : dir_flags_(0), direction_(0., 0.) {
       }
 
+      bool is_moving() const { return dir_flags_ != 0; }
+      glm::vec2 const & direction() const { return direction_; }
+
       void handle_key_action(gl::Key key, gl::KeyAction action) {
+         enum class dir { none = 0, up = 1, down = 2, left = 4, right = 8 };
+
          auto key_dir = [key] {
             switch (key) {
             case gl::KEY_A: case gl::KEY_LEFT: return dir::left;
@@ -85,148 +88,9 @@ namespace {
          direction_ = glm::length(dir) == 0. ? dir : glm::normalize(dir);
       }
 
-      bool is_moving() const { return dir_flags_ != 0; }
-
-      glm::vec2 const & direction() const { return direction_; }
-
    private:
       std::uint16_t dir_flags_;
       glm::vec2 direction_;
-   };
-
-   // holds geometric (pos, dir) info of a game entity
-   class game_entity_t {
-   public:
-      game_entity_t() : state_(std::make_shared<state>()) {}
-
-      glm::mat4 transform() const {
-         float x = 400.f + pos().x;
-         float y = 300.f + pos().y;
-
-         auto moved = glm::translate(glm::mat4{}, glm::vec3{ x, y, 0. });
-
-         if (dir().x < 0) return glm::scale(moved, glm::vec3{ -1., 1., 1. });
-         return moved;
-      }
-
-      glm::vec2 const & dir() const { return state_->dir_; }
-      glm::vec2 const & pos() const { return state_->pos_; }
-
-      bool is_moving() const { return glm::length(dir()) > 0.1; }
-
-      void set_dir(glm::vec2 const & dir) { state_->dir_ = dir; }
-      void set_pos(glm::vec2 const & pos) { state_->pos_ = pos; }
-
-      void update(double time_since_last) {
-         auto & _ = *state_;
-         _.pos_ += _.dir_ * (static_cast<float>(time_since_last)* _.speed_per_sec_);
-
-         if (_.pos_.x < -400.) _.pos_.x = -400.;
-         if (_.pos_.x > 400.) _.pos_.x = 400.;
-         if (_.pos_.y < -300.) _.pos_.y = -300.;
-         if (_.pos_.y > 300.) _.pos_.y = 300.;
-      }
-
-   private:
-      struct state {
-         state() : speed_per_sec_(400.) {}
-
-         float speed_per_sec_;
-         glm::vec2 pos_;
-         glm::vec2 dir_;
-
-      };
-
-      std::shared_ptr<state> state_;
-   };
-
-   // updates an entity based on various inputs (user input or AI)
-   class game_entity_controller_t {
-   public:
-      game_entity_controller_t(game_entity_t entity)
-         : state_(new state(std::move(entity), default_plan())) {}
-      game_entity_controller_t(game_entity_t entity, player_controls_t const & controls)
-         : state_(new state(std::move(entity), player_plan(controls))) {}
-
-      game_entity_t const & entity() { return state_->entity_; }
-
-      void update(double time_since_last) {
-         auto & _ = *state_;
-         _.plan_->update(time_since_last, _.entity_);
-      }
-
-   private:
-      struct plan_t {
-         virtual ~plan_t() {}
-         virtual void update(double time_since_last, game_entity_t & entity) = 0;
-      };
-
-      static std::unique_ptr<plan_t> default_plan() {
-         struct plan : public plan_t {
-            virtual void update(double time_since_last, game_entity_t & entity) {
-               entity.update(time_since_last);
-            }
-         };
-         return std::unique_ptr<plan_t>(new plan);
-      }
-
-      static std::unique_ptr<plan_t> player_plan(player_controls_t const & controls) {
-         struct plan : public plan_t {
-            plan(player_controls_t const & controls) : controls_(controls) {}
-            virtual void update(double time_since_last, game_entity_t & entity) {
-               entity.set_dir(controls_.direction());
-               entity.update(time_since_last);
-            }
-            player_controls_t const & controls_;
-         };
-         return std::unique_ptr<plan_t>(new plan(controls));
-      }
-
-      struct state {
-         state(game_entity_t entity, std::unique_ptr<plan_t> plan)
-            : entity_(std::move(entity))
-            , plan_(std::move(plan))
-         {}
-
-         game_entity_t entity_;
-         std::unique_ptr<plan_t> plan_;
-      };
-
-      std::shared_ptr<state> state_;
-   };
-
-   // syncs a sprite representation based on the state of an entity (play walk animation when entity is moving)
-   class game_entity_sprite_binding_t {
-   public:
-      using update_sprite_f = std::function < void(double, gl::sprite_t &, game_entity_t &) >;
-
-      template <typename FuncT>
-      game_entity_sprite_binding_t(gl::sprite_t sprite, game_entity_t entity, FuncT func)
-         : state_(std::make_shared<state>(std::move(sprite), std::move(entity), func)) {
-      }
-
-      gl::sprite_t const & sprite() const { return state_->sprite_; }
-      game_entity_t const & entity() const { return state_->entity_; }
-
-      void update(double t) {
-         state_->update_func_(t, state_->sprite_, state_->entity_);
-      }
-
-   private:
-      struct state {
-         template <typename FuncT>
-         state(gl::sprite_t sprite, game_entity_t entity, FuncT func)
-            : sprite_(std::move(sprite))
-            , entity_(std::move(entity))
-            , update_func_(func) {
-         }
-
-         gl::sprite_t sprite_;
-         game_entity_t entity_;
-         update_sprite_f update_func_;
-      };
-
-      std::shared_ptr<state> state_;
    };
 }
 
@@ -302,6 +166,26 @@ int main()
          { { 66, 420 }, { 66, 92 } },
       });
 
+
+      //
+      // load game data
+      //
+
+      game::game_t game;
+
+      auto player_controller = [&controls](double t, game::entity_t & e) {
+         e.set_dir(controls.direction());
+         e.set_vel(controls.direction() * (static_cast<float>(t) * 400.f));
+         e.update(t);
+      };
+
+      auto player_sprite_controller = [&controls](double t, game::entity_t const & e, gl::sprite_t & s) {
+         if (!e.is_moving()) s.set_animation_idx(0);
+         else s.set_animation_idx(1);
+
+         s.update(t);
+      };
+
       auto create_player_sprite = [&sprites]()->gl::sprite_t {
          return{
             { sprites, { 0 } },
@@ -309,23 +193,8 @@ int main()
          };
       };
 
-
-      //
-      // load game data
-      //
-
-      auto player_entity = game_entity_t{};
-
-      std::vector<game_entity_controller_t> entity_controllers;
-      entity_controllers.emplace_back(player_entity, controls);
-
-      std::vector<game_entity_sprite_binding_t> sprite_bindings;
-      sprite_bindings.emplace_back(create_player_sprite(), player_entity, [](double t, gl::sprite_t & s, game_entity_t & e){
-         if (!e.is_moving()) s.set_animation_idx(0);
-         else s.set_animation_idx(1);
-
-         s.update(t);
-      });
+      auto player_entity_id = game.add_entity({}, player_controller);
+      game.add_sprite(player_entity_id, create_player_sprite(), player_sprite_controller);
 
 
       // 
@@ -449,22 +318,25 @@ int main()
          double this_tick = gl::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
-         for (auto & e : entity_controllers) { e.update(time_since_last_tick); }
-         for (auto & b : sprite_bindings) { b.update(time_since_last_tick); }
+         game.update(time_since_last_tick);
 
          glClearColor(.7f, .87f, .63f, 1.);
          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
          glViewport(0, 0, dims.x, dims.y);
 
-         bg_pass.draw_to(*fbo, gl::DrawMode::Triangles);
+         fbo->bind();
+         bg_pass.draw(gl::DrawMode::Triangles);
 
-         for (auto & s : sprite_bindings) {
+         game.for_each_sprite([&sprite_pass](game::entity_t const & entity, gl::sprite_t const & sprite) {
             sprite_pass
-               .set_uniform("model", s.entity().transform())
-               .set_uniform("sprite_xy", s.sprite().current_frame().position)
-               .set_uniform("sprite_wh", s.sprite().current_frame().dimensions)
-               .draw_to(*fbo, gl::DrawMode::Triangles);
-         }
+               .set_uniform("model", entity.transform())
+               .set_uniform("sprite_xy", sprite.current_frame().position)
+               .set_uniform("sprite_wh", sprite.current_frame().dimensions)
+               .draw(gl::DrawMode::Triangles);
+         });
+
+         fbo->unbind();
+
          post_pass.draw(gl::DrawMode::Triangles);
 
          last_tick = this_tick;
