@@ -63,15 +63,14 @@ namespace game {
       sprite_controllers_.emplace_back(entity_id, std::move(sprite), update);
    }
 
+   gl::sprite_t const & sprites_t::entity_sprite(entity_id_t entity_id) const {
+      for (auto & c : sprite_controllers_) if (c.entity_id == entity_id) return c.sprite;
+      throw std::runtime_error((std::string("sprite not found for entity ") + std::to_string(entity_id)).c_str());
+   }
+
    void sprites_t::update(double time_since_last) {
       for (auto & c : sprite_controllers_) {
          c.update(time_since_last, entity(c.entity_id), c.sprite);
-      }
-   }
-
-   void sprites_t::for_each_sprite(sprite_iterate_func func) {
-      for (auto & c : sprite_controllers_) {
-         func(entity(c.entity_id), c.sprite);
       }
    }
 

@@ -1029,7 +1029,7 @@ namespace gl
       return *this;
    }
 
-   pass_t & pass_t::draw_batch(batch_callback const & cb, DrawMode mode) {
+   pass_t & pass_t::draw_batch(render_callback const & cb, DrawMode mode) {
       prepare_draw();
 
       while (cb.prepare_next(state_->prg_)) {
@@ -1039,7 +1039,7 @@ namespace gl
       return *this;
    }
 
-   pass_t & pass_t::draw_batch(batch_callback const & cb, DrawMode mode, unsigned first, unsigned count) {
+   pass_t & pass_t::draw_batch(render_callback const & cb, DrawMode mode, unsigned first, unsigned count) {
       prepare_draw();
 
       while (cb.prepare_next(state_->prg_)) {

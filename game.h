@@ -78,16 +78,14 @@ namespace game {
       sprites_t(entities_t const & entities) : entities_(entities) {}
 
       using sprite_update_func = std::function < void(double, game::entity_t const &, gl::sprite_t &) >;
-      using sprite_iterate_func = std::function < void(game::entity_t const &, gl::sprite_t const &) >;
 
       void add_sprite(entity_id_t entity_id, gl::sprite_t sprite, sprite_update_func update);
-      gl::sprite_t const & entity_sprite(entity_id_t entity_id) const {
-         for (auto & c : sprite_controllers_) if (c.entity_id == entity_id) return c.sprite;
-         throw std::runtime_error((std::string("sprite not found for entity ") + std::to_string(entity_id)).c_str());
-      }
-      void for_each_sprite(sprite_iterate_func func);
-
+      gl::sprite_t const & entity_sprite(entity_id_t entity_id) const;
       void update(double time_since_last);
+
+      std::size_t size() const { return sprite_controllers_.size(); }
+      game::entity_t const & entity_at(std::size_t idx) const { return entity(sprite_controllers_.at(idx).entity_id); }
+      gl::sprite_t const & sprite_at(std::size_t idx) const { return sprite_controllers_.at(idx).sprite; }
 
    private:
       game::entity_t const & entity(entity_id_t id) const;

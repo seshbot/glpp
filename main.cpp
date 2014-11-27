@@ -92,6 +92,33 @@ namespace {
       std::uint16_t dir_flags_;
       glm::vec2 direction_;
    };
+
+
+   struct sprite_render_t : public gl::pass_t::render_callback {
+      sprite_render_t(game::sprites_t const & sprites)
+         : idx_(0), sprites_(sprites) {
+      }
+
+      virtual bool prepare_next(gl::program & p) const {
+         if (idx_ == sprites_.size()) return false;
+
+         auto & e = sprites_.entity_at(idx_);// entities.entity(player_entity_id);
+         auto & s = sprites_.sprite_at(idx_);// sprites.entity_sprite(player_entity_id);
+         static glm::mat4 prev;
+         auto xfm = e.transform();
+         if (prev != xfm) { utils::log(utils::LOG_INFO, "changed\n"); prev = xfm; }
+
+         p.uniform("model").set(xfm);
+         p.uniform("sprite_xy").set(s.current_frame().position);
+         p.uniform("sprite_wh").set(s.current_frame().dimensions);
+
+         idx_++;
+         return true;
+      }
+
+      mutable std::size_t idx_;
+      game::sprites_t const & sprites_;
+   };
 }
 
 
@@ -277,6 +304,7 @@ int main()
          .set_uniform("texture_wh", glm::vec2(sprite_tex.width(), sprite_tex.height()))
          .set_uniform("texture", sprite_tex);
 
+
       //
       // game loop
       //
@@ -312,6 +340,7 @@ int main()
 
          if (!fbo || fbo->dims() != dims) {
             fbo = std::unique_ptr<gl::frame_buffer_t>(new gl::frame_buffer_t(dims));
+            post_pass.set_uniform("texture", fbo->texture());
          }
 
          double this_tick = gl::get_time();
@@ -326,27 +355,7 @@ int main()
 
          fbo->bind();
          bg_pass.draw(gl::DrawMode::Triangles);
-
-         bool drawn = false;
-         sprite_pass
-            .draw_batch([&](gl::program & p) {
-               auto & e = entities.entity(player_entity_id);
-               auto & s = sprites.entity_sprite(player_entity_id);
-               p.uniform("model").set(e.transform());
-               p.uniform("sprite_xy").set(s.current_frame().position);
-               p.uniform("sprite_wh").set(s.current_frame().dimensions);
-               auto drawn_once = drawn;
-               drawn = true;
-               return !drawn_once;
-            }, gl::DrawMode::Triangles);
-         //sprites.for_each_sprite([&sprite_pass](game::entity_t const & entity, gl::sprite_t const & sprite) {
-         //   sprite_pass
-         //      .set_uniform("model", entity.transform())
-         //      .set_uniform("sprite_xy", sprite.current_frame().position)
-         //      .set_uniform("sprite_wh", sprite.current_frame().dimensions)
-         //      .draw(gl::DrawMode::Triangles);
-         //});
-
+         sprite_pass.draw_batch(sprite_render_t{sprites}, gl::DrawMode::Triangles);
          fbo->unbind();
 
          post_pass.draw(gl::DrawMode::Triangles);
