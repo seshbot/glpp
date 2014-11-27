@@ -1013,7 +1013,47 @@ namespace gl
    //}
 
 
-   pass_t & pass_t::draw(DrawMode type) {
+   pass_t & pass_t::draw(DrawMode mode) {
+      prepare_draw();
+
+      // draw the vertex buffers used in this pass
+      for (auto & v : state_->vertex_data_) v.draw(mode);
+
+      return *this;
+   }
+
+   pass_t & pass_t::draw(DrawMode mode, unsigned first, unsigned count) {
+      prepare_draw();
+
+      for (auto & v : state_->vertex_data_) v.draw(mode, first, count);
+      return *this;
+   }
+
+   pass_t & pass_t::draw_batch(batch_callback const & cb, DrawMode mode) {
+      prepare_draw();
+
+      while (cb.prepare_next(state_->prg_)) {
+         for (auto & v : state_->vertex_data_) v.draw(mode);
+      }
+
+      return *this;
+   }
+
+   pass_t & pass_t::draw_batch(batch_callback const & cb, DrawMode mode, unsigned first, unsigned count) {
+      prepare_draw();
+
+      while (cb.prepare_next(state_->prg_)) {
+         for (auto & v : state_->vertex_data_) v.draw(mode, first, count);
+      }
+
+      return *this;
+   }
+
+   uniform pass_t::uniform(std::string const & name) {
+      return state_->prg_.uniform(name);
+   }
+
+   void pass_t::prepare_draw() {
       state_->prg_.use();
 
       for (auto & upair : state_->uniform_actions_) {
@@ -1076,52 +1116,6 @@ namespace gl
             activate_texture(tex_unit, tex);
          }
       }
-
-      // draw the vertex buffers used in this pass
-      for (auto & v : state_->vertex_data_) v.draw(type);
-
-      return *this;
-   }
-
-   pass_t & pass_t::draw(DrawMode type, unsigned first, unsigned count) {
-      state_->prg_.use();
-      for (auto & v : state_->vertex_data_) v.draw(type, first, count);
-      return *this;
-   }
-
-   namespace {
-      struct fbo_bind_guard_t {
-         fbo_bind_guard_t(frame_buffer_t & fbo)
-         : fbo_(current_frame_buffer())
-         , do_bind_(fbo_ != fbo.id()) {
-            if (do_bind_) {
-               fbo.bind();
-            }
-         }
-
-         ~fbo_bind_guard_t() {
-            if (do_bind_) {
-               bind_frame_buffer(fbo_);
-            }
-         }
-
-         id_t fbo_;
-         bool do_bind_;
-      };
-   }
-
-   pass_t & pass_t::draw_to(frame_buffer_t & fbo, DrawMode mode) {
-      fbo_bind_guard_t bind_guard(fbo);
-      return draw(mode);
-   }
-
-   pass_t & pass_t::draw_to(frame_buffer_t & fbo, DrawMode mode, unsigned first, unsigned count) {
-      fbo_bind_guard_t bind_guard(fbo);
-      return draw(mode, first, count);
-   }
-
-   uniform pass_t::uniform(std::string const & name) {
-      return state_->prg_.uniform(name);
    }
 
 

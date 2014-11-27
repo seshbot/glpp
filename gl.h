@@ -394,6 +394,50 @@ namespace gl {
       using uniform_action_t = std::function < void(uniform & u) > ;
 
    public:
+      struct batch_callback {
+         template <typename IteratorT, typename FuncT>
+         batch_callback(IteratorT itBegin, IteratorT itEnd, FuncT callback) {
+            struct model : public concept {
+               model(IteratorT itBegin, IteratorT itEnd, FuncT callback)
+                  : it_(itBegin), itEnd_(itEnd), callback_(callback) {}
+
+               virtual bool prepare_next(program & p) const {
+                  callback_(p, *it);
+                  return ++it != itEnd;
+               }
+
+               mutable IteratorT it_;
+               IteratorT itEnd;
+               std::function<void(program &, T &)> callback_
+            };
+
+            model_ = std::make_shared<model>(itBegin, itEnd, callback);
+         }
+
+         template <typename FuncT>
+         batch_callback(FuncT callback) {
+            struct model : public concept {
+               model(FuncT callback) : callback_(callback) {}
+
+               virtual bool prepare_next(program & p) const {
+                  return callback_(p);
+               }
+               std::function<bool(program &)> callback_;
+            };
+
+            model_ = std::make_shared<model>(callback);
+         }
+
+         bool prepare_next(program & p) const { return model_->prepare_next(p); }
+
+         struct concept {
+            virtual ~concept() {}
+            virtual bool prepare_next(program & p) const = 0;
+         };
+
+         std::shared_ptr<concept> model_;
+      };
+
       template <typename T>
       pass_t & set_uniform(std::string const & name, T val) {
          return set_uniform_action(name, [val](gl::uniform & u){ u.set(val); });
@@ -413,11 +457,12 @@ namespace gl {
       pass_t & draw(DrawMode mode);
       pass_t & draw(DrawMode mode, unsigned first, unsigned count);
 
-      pass_t & draw_to(frame_buffer_t & fbo, DrawMode mode);
-      pass_t & draw_to(frame_buffer_t & fbo, DrawMode mode, unsigned first, unsigned count);
+      pass_t & draw_batch(batch_callback const & cb, DrawMode mode);
+      pass_t & draw_batch(batch_callback const & cb, DrawMode mode, unsigned first, unsigned count);
 
    private:
       gl::uniform uniform(std::string const & name);
+      void prepare_draw(); // bind program, uniforms and textures
 
       friend class program;
       pass_t(program & prg);

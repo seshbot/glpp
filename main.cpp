@@ -329,13 +329,25 @@ int main()
          fbo->bind();
          bg_pass.draw(gl::DrawMode::Triangles);
 
-         sprites.for_each_sprite([&sprite_pass](game::entity_t const & entity, gl::sprite_t const & sprite) {
-            sprite_pass
-               .set_uniform("model", entity.transform())
-               .set_uniform("sprite_xy", sprite.current_frame().position)
-               .set_uniform("sprite_wh", sprite.current_frame().dimensions)
-               .draw(gl::DrawMode::Triangles);
-         });
+         bool drawn = false;
+         sprite_pass
+            .draw_batch([&](gl::program & p) {
+               auto & e = entities.entity(player_entity_id);
+               auto & s = sprites.entity_sprite(player_entity_id);
+               p.uniform("model").set(e.transform());
+               p.uniform("sprite_xy").set(s.current_frame().position);
+               p.uniform("sprite_wh").set(s.current_frame().dimensions);
+               auto drawn_once = drawn;
+               drawn = true;
+               return !drawn_once;
+            }, gl::DrawMode::Triangles);
+         //sprites.for_each_sprite([&sprite_pass](game::entity_t const & entity, gl::sprite_t const & sprite) {
+         //   sprite_pass
+         //      .set_uniform("model", entity.transform())
+         //      .set_uniform("sprite_xy", sprite.current_frame().position)
+         //      .set_uniform("sprite_wh", sprite.current_frame().dimensions)
+         //      .draw(gl::DrawMode::Triangles);
+         //});
 
          fbo->unbind();
 
