@@ -202,27 +202,28 @@ int main()
       // load shaders
       //
 
-      auto prg_post = create_program("post");
       auto prg_2d = create_program("2d");
+      auto prg_sprite = create_program("sprite");
+      auto prg_post = create_program("post");
 
 
       //
       // load vertex data
       //
 
-      static const float screen_verts[] = {
+      static const float unit_square_verts[] = {
          -1., 1., 0., 1.,
          1., 1., 1., 1.,
          -1., -1., 0., 0.,
          1., -1., 1., 0.,
       };
 
-      static const unsigned short screen_indices[] = {
+      static const unsigned short unit_square_indices[] = {
          0, 2, 1,
          1, 2, 3,
       };
 
-      auto screen_vertices_spec = gl::describe_buffer({ screen_verts, screen_indices })
+      auto screen_vertices_spec = gl::describe_buffer({ unit_square_verts, unit_square_indices })
          .attrib("p", 2)
          .attrib("tex_coords", 2);
       
@@ -241,8 +242,6 @@ int main()
          u.set(glm::vec2{ dims.x, dims.y });
       };
 
-
-      auto set_proj_cb = [](gl::uniform & u){u.set(static_cast<float>(gl::get_time())); };
       auto bg_pass = prg_2d.pass()
          .with(screen_vertices_spec)
          .set_uniform("texture", gl::texture_t{ "bg_green.png" });
@@ -272,7 +271,6 @@ int main()
 
       auto sprite_tex = sprite_sheet.texture();
 
-      auto prg_sprite = create_program("sprite");
       auto sprite_pass = prg_sprite.pass()
          .with(sprite_vertices_spec)
          .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600.))
