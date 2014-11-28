@@ -15,7 +15,7 @@
 
 // TODO: remove this
 #include <glm/gtc/matrix_transform.hpp>
-
+#include <algorithm>
 
 namespace {
    gl::shader vert_shader(std::string name) { return gl::shader::create_from_file(utils::fmt("../shaders/%s.vert", name.c_str()), gl::shader::Vertex); }
@@ -53,14 +53,23 @@ namespace {
    // turns key presses into a directional vector. consumed by entity controller
    class player_controls_t {
    public:
+      using action_func = std::function < bool(gl::Key, gl::KeyAction) > ;
+
       player_controls_t()
          : dir_flags_(0), direction_(0., 0.) {
       }
+
+      void register_action_handler(gl::Key k, gl::KeyAction a, action_func f) { actions_[{k, a}] = f; }
 
       bool is_moving() const { return dir_flags_ != 0; }
       glm::vec2 const & direction() const { return direction_; }
 
       void handle_key_action(gl::Key key, gl::KeyAction action) {
+         auto action_it = actions_.find({ key, action });
+         if (actions_.end() != action_it) {
+            if (action_it->second(key, action)) return;
+         }
+
          enum class dir { none = 0, up = 1, down = 2, left = 4, right = 8 };
 
          auto key_dir = [key] {
@@ -91,30 +100,57 @@ namespace {
    private:
       std::uint16_t dir_flags_;
       glm::vec2 direction_;
+      using action_key = std::pair < gl::Key, gl::KeyAction > ;
+      std::map<action_key, action_func> actions_;
    };
 
 
    struct sprite_render_callback_t : public gl::pass_t::render_callback {
-      sprite_render_callback_t(game::sprites_t const & sprites)
-         : idx_(0), sprites_(sprites) {
+      sprite_render_callback_t(game::entity_sprites_t const & sprites)
+         : tex_sprite_lookup_idx_(0), sprites_(sprites) {
+         for (auto idx = 0U; idx < sprites_.count(); idx++) {
+            auto & s = sprites_.sprite_at(idx);
+            sprite_indices_by_tex_id.push_back({s.current_animation().texture().id(), idx});
+         }
+
+         auto cmp_textures = [](tex_sprite_index const & a, tex_sprite_index const & b) {
+            return a.tex_id < b.tex_id;
+         };
+
+         std::sort(std::begin(sprite_indices_by_tex_id), std::end(sprite_indices_by_tex_id), cmp_textures);
       }
 
       virtual bool prepare_next(gl::program & p) const {
-         if (idx_ == sprites_.size()) return false;
+         if (tex_sprite_lookup_idx_ == sprite_indices_by_tex_id.size()) return false;
+         auto tex_id = sprite_indices_by_tex_id[tex_sprite_lookup_idx_].tex_id;
+         auto sprite_idx = sprite_indices_by_tex_id[tex_sprite_lookup_idx_].sprite_idx;
 
-         auto & e = sprites_.entity_at(idx_);// entities.entity(player_entity_id);
-         auto & s = sprites_.sprite_at(idx_);// sprites.entity_sprite(player_entity_id);
+         bool set_texture = 0 == tex_sprite_lookup_idx_ || (tex_id != sprite_indices_by_tex_id[tex_sprite_lookup_idx_ - 1].tex_id);
+
+         auto & e = sprites_.entity_at(sprite_idx);// entities.entity(player_entity_id);
+         auto & s = sprites_.sprite_at(sprite_idx);// sprites.entity_sprite(player_entity_id);
 
          p.uniform("model").set(e.transform());
+
+         if (set_texture) {
+            auto sprite_tex = s.current_animation().texture();
+            p.uniform("texture_wh").set(glm::vec2(sprite_tex.width(), sprite_tex.height()));
+            gl::texture_unit_t tex_unit{ 1 };
+            tex_unit.activate();
+            sprite_tex.bind();
+            p.uniform("texture").set(tex_unit);
+         }
          p.uniform("sprite_xy").set(s.current_frame().position);
          p.uniform("sprite_wh").set(s.current_frame().dimensions);
 
-         idx_++;
+         tex_sprite_lookup_idx_++;
          return true;
       }
 
-      mutable std::size_t idx_;
-      game::sprites_t const & sprites_;
+      mutable std::size_t tex_sprite_lookup_idx_;
+      game::entity_sprites_t const & sprites_;
+      struct tex_sprite_index { gl::texture_t::id_type tex_id; std::size_t sprite_idx; };
+      std::vector<tex_sprite_index> sprite_indices_by_tex_id;
    };
 }
 
@@ -145,14 +181,11 @@ int main()
 
    try {
       bool should_reload_program = false;
-      bool should_next = false;
       auto key_handler = [&](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
          if (key == gl::KEY_ESCAPE && action == gl::KEY_ACTION_PRESS)
             ctx.win().set_should_close();
          if (key == gl::KEY_R && action == gl::KEY_ACTION_PRESS)
             should_reload_program = true;
-         if (key == gl::KEY_N && action == gl::KEY_ACTION_PRESS)
-            should_next = true;
 
          controls.handle_key_action(key, action);
       };
@@ -190,26 +223,63 @@ int main()
          { { 66, 420 }, { 66, 92 } },
       });
 
+      gl::sprite_sheet bullet_sprite_sheet({ "../res/bullet.png" }, { { { 0, 0 }, { 64, 64 } } });
 
       //
       // load game data
       //
 
+
+      struct player_entity_controller : public game::entities_t::controller {
+         player_controls_t const & controls_;
+
+         player_entity_controller(player_controls_t const & controls) : controls_(controls) { }
+
+         virtual void update(double t, game::entities_t & entities, game::entity_id_t eid, game::entity_moment_t & e) {
+            e.set_dir(controls_.direction());
+            e.set_vel(controls_.direction() * (static_cast<float>(t)* 400.f));
+            e.update(t);
+
+            auto pos = e.pos();
+            if (pos.x < -400.) pos.x = -400.;
+            if (pos.x > 400.) pos.x = 400.;
+            if (pos.y < -300.) pos.y = -300.;
+            if (pos.y > 300.) pos.y = 300.;
+            e.set_pos(pos);
+         }
+
+         static std::unique_ptr<player_entity_controller> create(player_controls_t const & c) { return std::unique_ptr<player_entity_controller>(new player_entity_controller(c)); }
+      };
+
+      struct player_sprite_controller : public game::entity_sprites_t::controller {
+         virtual void update(double t, game::entity_moment_t const & e, gl::sprite_cursor_t & s) {
+            if (!e.is_moving()) s.set_animation_idx(0);
+            else s.set_animation_idx(1);
+
+            s.advance(t);
+         }
+
+         static std::unique_ptr<player_sprite_controller> create() { return std::unique_ptr<player_sprite_controller>(new player_sprite_controller); }
+      };
+
+
+      struct bullet_entity_controller : public game::entities_t::controller {
+         virtual void update(double t, game::entities_t & entities, game::entity_id_t eid, game::entity_moment_t & e) {
+            e.update(t);
+            if (glm::length(e.pos()) > 600.f) {
+               entities.destroy_entity(eid);
+            }
+         }
+
+         static std::unique_ptr<bullet_entity_controller> create() { return std::unique_ptr<bullet_entity_controller>(new bullet_entity_controller()); }
+      };
+
       game::entities_t entities;
-      game::sprites_t sprites(entities);
-
-      auto player_controller = [&controls](double t, game::entity_t & e) {
-         e.set_dir(controls.direction());
-         e.set_vel(controls.direction() * (static_cast<float>(t) * 400.f));
-         e.update(t);
-      };
-
-      auto player_sprite_controller = [&controls](double t, game::entity_t const & e, gl::sprite_t & s) {
-         if (!e.is_moving()) s.set_animation_idx(0);
-         else s.set_animation_idx(1);
-
-         s.update(t);
-      };
+      game::entity_sprites_t sprites(entities);
+      entities.register_controller("player", player_entity_controller::create(controls));
+      entities.register_controller("bullet", bullet_entity_controller::create());
+      sprites.register_controller("player", player_sprite_controller::create());
+      sprites.register_controller("bullet", sprites.simple_controller());
 
       auto create_player_sprite = [&sprite_sheet]()->gl::sprite_t {
          return{
@@ -218,8 +288,25 @@ int main()
          };
       };
 
-      auto player_entity_id = entities.add_entity({}, player_controller);
-      sprites.add_sprite(player_entity_id, create_player_sprite(), player_sprite_controller);
+      auto create_bullet_sprite = [&bullet_sprite_sheet]()->gl::sprite_t {
+         return{
+            { bullet_sprite_sheet, {0} }
+         };
+      };
+
+      auto player_entity_id = entities.create_entity({}, "player");
+      sprites.register_entity_sprite(player_entity_id, create_player_sprite(), "player");
+
+      controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
+         auto & player_entity = entities.entity(player_entity_id);
+         auto bullet_pos = player_entity.pos() + player_entity.dir() * 40.f;
+         auto bullet_vel = player_entity.vel() + player_entity.dir() * 20.f;
+         auto bullet_moment = game::entity_moment_t{bullet_pos, bullet_vel};
+         auto bullet_id = entities.create_entity(bullet_moment, "bullet");
+         sprites.register_entity_sprite(bullet_id, create_bullet_sprite(), "bullet");
+
+         return true;
+      });
 
 
       // 
@@ -297,9 +384,7 @@ int main()
 
       auto sprite_pass = prg_sprite.pass()
          .with(sprite_vertices_spec)
-         .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600.))
-         .set_uniform("texture_wh", glm::vec2(sprite_tex.width(), sprite_tex.height()))
-         .set_uniform("texture", sprite_tex);
+         .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600.));
 
 
       //
@@ -322,16 +407,6 @@ int main()
             }
             should_reload_program = false;
          }
-
-         //if (should_next) {
-         //   auto & sprite = player_entity.sprite();
-         //   auto new_idx = (sprite.idx() + 1) % sprite.current_frame_count();
-         //   player_entity.sprite().set_idx(new_idx);
-
-         //   utils::log(utils::LOG_INFO, "sprite[%d]\n", new_idx);
-
-         //   should_next = false;
-         //}
 
          auto dims = context.win().frame_buffer_dims();
 

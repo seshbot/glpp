@@ -65,7 +65,7 @@ void main() {
 
    lowp vec4 colour = texture2D(texture, vec2(v_tex_coords.x + xoff, v_tex_coords.y));
 
-   colour = hsv_adjust(colour, sin(2. * t));
+   //colour = hsv_adjust(colour, sin(2. * t));
    lowp vec3 post_colour = post_adjust(colour.rgb, v_tex_coords);
    gl_FragColor = vec4(post_colour.rgb, colour.a);
 }

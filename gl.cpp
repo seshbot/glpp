@@ -366,6 +366,26 @@ namespace gl
          buffer.data());
    }
 
+   void texture_t::bind() const {
+      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id()));
+
+      // TODO: make this stuff configurable via the with() call...
+      // TODO: or should this be initialised in texture creation?
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
+      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+   }
+
+
+   /**
+    * class texture_unit_t
+    */
+
+   void texture_unit_t::activate() const {
+      GL_VERIFY(glActiveTexture(GL_TEXTURE0 + id));
+   }
 
   /**
    * class frame_buffer_t
@@ -1060,25 +1080,13 @@ namespace gl
          upair.second(upair.first); // invoke action
       }
 
-      auto activate_texture = [](texture_unit_t const & u, texture_t const & t) {
-         GL_VERIFY(glActiveTexture(GL_TEXTURE0 + u.id));
-         GL_VERIFY(glBindTexture(GL_TEXTURE_2D, t.id()));
-
-         // TODO: make this stuff configurable via the with() call...
-         // TODO: or should this be initialised in texture creation?
-         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
-         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-
-         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
-         GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
-      };
-
       // bind textures to the texture units used by this pass
       for (auto & tpair : state_->texture_bindings_) {
          texture_unit_t const & tex_unit = tpair.first;
          texture_t const & tex = tpair.second;
 
-         activate_texture(tex_unit, tex);
+         tex_unit.activate();
+         tex.bind();
       }
 
       if (!state_->texture_bindings_without_tex_units_.empty()) {
@@ -1113,7 +1121,8 @@ namespace gl
             texture_t const & tex = tpair.second;
 
             tpair.first.set(tex_unit);
-            activate_texture(tex_unit, tex);
+            tex_unit.activate();
+            tex.bind();
          }
       }
    }

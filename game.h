@@ -2,6 +2,7 @@
 #define GAME__H
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <stdint.h>
 
@@ -17,9 +18,10 @@ namespace game {
    using entity_id_t = std::size_t;
 
    // holds geometric (pos, dir) info of a game entity
-   class entity_t {
+   class entity_moment_t {
    public:
-      entity_t();
+      entity_moment_t();
+      entity_moment_t(glm::vec2 const & pos, glm::vec2 const & vel);
 
       glm::mat4 transform() const;
 
@@ -56,58 +58,69 @@ namespace game {
    // tracks entities and their sprites
    class entities_t {
    public:
-      using entity_update_func = std::function < void(double, game::entity_t &) >;
+      struct controller {
+         virtual ~controller() {}
+         virtual void update(double time_since_last, entities_t & entities, entity_id_t eid, entity_moment_t & entity) = 0;
+      };
 
-      entity_id_t add_entity(game::entity_t e, entity_update_func update);
-      game::entity_t const & entity(entity_id_t id) const;
+      static std::unique_ptr<controller> simple_controller();
+
+      ~entities_t();
+
+      void register_controller(std::string name, std::unique_ptr<controller> controller);
+      entity_id_t create_entity(entity_moment_t e, std::string controller_name);
+      void destroy_entity(entity_id_t eid);
+
+      bool entity_exists(entity_id_t eid) const;
+      entity_moment_t const & entity(entity_id_t eid) const;
 
       void update(double time_since_last);
 
    private:
-      struct entity_controller {
-         entity_controller(game::entity_t e, entity_update_func u);
-         game::entity_t entity;
-         entity_update_func update;
+      std::map<std::string, controller*> controllers_;
+      struct entity_info {
+         bool alive;
+         entity_moment_t moment;
+         controller * controller;
       };
-
-      std::vector<entity_controller> entity_controllers_;
+      std::vector<entity_info> entities_;
+      long first_replace_loc_ = -1;
    };
 
-   class sprites_t{
+   // this ensures all sprite cursors 1represent the current time and state of the attached entity
+   class entity_sprites_t {
    public:
-      sprites_t(entities_t const & entities) : entities_(entities) {}
+      struct controller {
+         virtual ~controller() {}
+         virtual void update(double time_since_last, entity_moment_t const & entity, gl::sprite_cursor_t & sprite) = 0;
+      };
 
-      using sprite_update_func = std::function < void(double, game::entity_t const &, gl::sprite_t &) >;
+      static std::unique_ptr<controller> simple_controller();
 
-      void add_sprite(entity_id_t entity_id, gl::sprite_t sprite, sprite_update_func update);
-      gl::sprite_t const & entity_sprite(entity_id_t entity_id) const;
+      entity_sprites_t(entities_t const & entities);
+      ~entity_sprites_t();
+
+      void register_controller(std::string name, std::unique_ptr<controller> controller);
+      void register_entity_sprite(entity_id_t entity_id, gl::sprite_t sprite, std::string controller_name);
+      void destroy_entity_sprites(entity_id_t entity_id);
+
       void update(double time_since_last);
 
-      std::size_t size() const { return sprite_controllers_.size(); }
-      game::entity_t const & entity_at(std::size_t idx) const { return entity(sprite_controllers_.at(idx).entity_id); }
-      gl::sprite_t const & sprite_at(std::size_t idx) const { return sprite_controllers_.at(idx).sprite; }
+      gl::sprite_cursor_t const & entity_sprite(entity_id_t entity_id) const;
+      std::size_t count() const;
+      entity_moment_t const & entity_at(std::size_t idx) const;
+      gl::sprite_cursor_t const & sprite_at(std::size_t idx) const;
 
    private:
-      game::entity_t const & entity(entity_id_t id) const;
+      void destroy_at_idx(std::size_t idx);
 
-      struct sprite_controller {
-         sprite_controller(entity_id_t e_id, gl::sprite_t s, sprite_update_func u);
-         sprite_controller(sprite_controller && o);
-         sprite_controller & operator=(sprite_controller && o);
-
-         entity_id_t entity_id;
-         gl::sprite_t sprite;
-         sprite_update_func update;
-
-      private:
-         sprite_controller(sprite_controller &) = delete;
-         sprite_controller & operator=(sprite_controller &) = delete;
-      };
+      entity_moment_t const & entity(entity_id_t id) const;
 
       entities_t const & entities_;
-      std::vector<sprite_controller> sprite_controllers_;
+      std::map<std::string, controller*> controllers_;
+      struct entity_sprite_state { entity_id_t eid; gl::sprite_cursor_t curs; controller * cont; };
+      std::vector<entity_sprite_state> entity_sprites_;
    };
-
 }
 
 #endif // #ifndef GAME__H

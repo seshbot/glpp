@@ -56,22 +56,26 @@ namespace gl {
 
    class texture_t {
    public:
+      using id_type = uint32_t;
+
       texture_t(std::string const & filename);
       texture_t(int width, int height);
 
-      uint32_t id() const { return state_->id_; }
+      id_type id() const { return state_->id_; }
 
       int width() const { return state_->width_; }
       int height() const { return state_->height_; }
 
       void save(std::string const & filename) const;
 
+      void bind() const;
+
    private:
       struct state {
          state(std::string const & filename);
          state(int width, int height);
          ~state();
-         uint32_t id_;
+         id_type id_;
          int width_;
          int height_;
       };
@@ -81,6 +85,7 @@ namespace gl {
 
    struct texture_unit_t {
       int id;
+      void activate() const;
    };
 
    class frame_buffer_t {
@@ -603,6 +608,14 @@ namespace gl {
          frame_count_ = frames_.size();
       }
 
+      sprite_sheet(gl::texture_t texture)
+         : texture_(texture)
+         , max_frame_width_(texture.width())
+         , max_frame_height_(texture.height()) {
+         frames_.push_back(frame_ref{ { 0, 0 }, { max_frame_width_, max_frame_height_ } });
+         frame_count_ = frames_.size();
+      }
+
       gl::texture_t texture() const { return texture_; }
 
       std::size_t frame_count() const { return frame_count_; }
@@ -639,56 +652,66 @@ namespace gl {
    class sprite_t {
    public:
       sprite_t(std::initializer_list<animation_t> animations)
-         : animations_(std::begin(animations), std::end(animations))
-         , time_per_frame_(.1)
-         , time_acc_(.0)
-         , current_state_(0)
-         , idx_(0)
+         : state_(std::make_shared<state>(animations))
       {}
 
-      sprite_t(sprite_t const &) = delete;
-      sprite_t & operator=(sprite_t const &) = delete;
+      std::size_t animation_count() const { return state_->animations_.size(); }
+      animation_t const & animation(std::size_t idx) const { return state_->animations_.at(idx); }
 
-      sprite_t(sprite_t && other) { *this = std::move(other); }
-      sprite_t & operator=(sprite_t && other){
-         animations_.swap(other.animations_);
-         std::swap(time_per_frame_, other.time_per_frame_);
-         std::swap(time_acc_, other.time_acc_);
-         std::swap(current_state_, other.current_state_);
-         std::swap(idx_, other.idx_);
+   private:
+      struct state {
+         state(std::initializer_list<animation_t> & animations)
+            : animations_(std::begin(animations), std::end(animations))
+         {}
 
-         return *this;
-      }
+         std::vector<animation_t> animations_;
+      };
 
-      void update(double time_since_last) {
+      std::shared_ptr<state> state_;
+   };
+
+   class sprite_cursor_t {
+   public:
+      sprite_cursor_t(sprite_t sprite)
+         : sprite_(sprite)
+         , time_per_frame_(.1)
+         , time_acc_(.0)
+         , current_animation_idx_(0)
+         , current_frame_idx_(0)
+         , current_animation_(&sprite_.animation(current_animation_idx_)) {}
+
+      void advance(double time_since_last) {
          time_acc_ += time_since_last;
          while (time_acc_ > time_per_frame_) {
-            set_idx(idx_ + 1);
+            set_idx(current_frame_idx_ + 1);
             time_acc_ -= time_per_frame_;
          }
       }
 
-      std::size_t current_animation_idx() const { return current_state_; }
+      std::size_t current_animation_idx() const { return current_animation_idx_; }
       void set_animation_idx(std::size_t state) {
-         if (state == current_state_) return;
-         current_state_ = state;
-         idx_ = 0;
+         if (state == current_animation_idx_) return;
+         current_animation_idx_ = state;
+         current_frame_idx_ = 0;
+         current_animation_ = &sprite_.animation(current_animation_idx_);
       }
 
-      animation_t const & current_animation() const { return animations_.at(current_state_); }
+      animation_t const & current_animation() const { return *current_animation_; }
 
-      std::size_t idx() const { return idx_; }
-      void set_idx(std::size_t idx) { idx_ = idx; idx_ %= current_animation().frame_count(); }
+      std::size_t idx() const { return current_frame_idx_; }
+      void set_idx(std::size_t idx) { current_frame_idx_ = idx; current_frame_idx_ %= current_animation().frame_count(); }
 
-      sprite_sheet::frame_ref const & current_frame() const { return current_animation().frame(idx_); }
+      sprite_sheet::frame_ref const & current_frame() const { return current_animation().frame(current_frame_idx_); }
       std::size_t current_frame_count() const { return current_animation().frame_count(); }
 
    private:
-      std::vector<animation_t> animations_;
+      sprite_t sprite_;
+
       double time_per_frame_;
       double time_acc_;
-      std::size_t current_state_;
-      std::size_t idx_;
+      std::size_t current_animation_idx_;
+      std::size_t current_frame_idx_;
+      animation_t const * current_animation_;
    };
 }
 
