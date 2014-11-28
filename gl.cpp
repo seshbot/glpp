@@ -727,37 +727,6 @@ namespace gl
          : attrib_atomic_val_bytes(attrib.type()) * count;
    }
 
-   unsigned num_vertices(array_spec_t const & packed) {
-      auto block_count = [&](attrib_info const & b) {
-         auto stride_bytes = b.calc_stride_bytes();
-         assert(packed.array.size() % stride_bytes == 0);
-
-         return packed.array.size() / stride_bytes;
-      };
-
-      auto min_block_count = block_count(packed.attribs.front());
-
-      for (auto it = packed.attribs.begin() + 1; it != packed.attribs.end(); ++it) {
-         auto c = block_count(*it);
-         if (c < min_block_count) min_block_count = c;
-      }
-
-      assert(min_block_count > 0);
-
-      return min_block_count;
-   }
-
-   void use(array_spec_t const & packed) {
-      for (auto & attrib_info : packed.attribs) {
-         auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
-         int8_t * data = reinterpret_cast<int8_t*>(packed.array.data()) + attrib_info.offset_bytes;
-
-         GL_VERIFY(glVertexAttribPointer(attrib_info.attrib.location(), attrib_info.count, gl_type, false, attrib_info.stride_bytes, data));
-         GL_VERIFY(glEnableVertexAttribArray(attrib_info.attrib.location()));
-      }
-   }
-
-
    unsigned num_vertices(buffer_spec_t const & packed) {
       auto block_count = [&](attrib_info const & b) {
          auto stride_bytes = b.calc_stride_bytes();
@@ -791,10 +760,6 @@ namespace gl
       }
    }
 
-   void draw(array_spec_t const & b, DrawMode mode) {
-      return draw(b, mode, 0, num_vertices(b));
-   }
-
    void draw(buffer_spec_t const & b, DrawMode mode) {
       unsigned count = b.buffer.has_index_data() ? b.buffer.index_count() : num_vertices(b);
       return draw(b, mode, 0, count);
@@ -812,12 +777,6 @@ namespace gl
          default: throw error("unrecognised draw type when drawing");
          }
       }
-   }
-
-   void draw(array_spec_t const & b, DrawMode mode, unsigned first, unsigned count) {
-      use(b);
-
-      GL_VERIFY(glDrawArrays(gl_draw_mode(mode), first, count));
    }
 
    void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count) {
@@ -933,7 +892,7 @@ namespace gl
    struct pass_t::state {
       state(program prg) : prg_(prg) {}
       program prg_;
-      std::vector<vertex_data_layout> vertex_data_;
+      std::vector<buffer_spec_t> vertex_buffers_;
       std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
       std::vector<std::pair<gl::uniform, texture_t>> texture_bindings_without_tex_units_;
       std::vector<std::pair<gl::uniform, uniform_action_t>> uniform_actions_;
@@ -946,18 +905,8 @@ namespace gl
 
    pass_t::~pass_t() {}
 
-   pass_t & pass_t::with(static_array_t array, std::initializer_list<attrib_info> attribs) {
-      state_->vertex_data_.push_back(array_spec_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
-      return *this;
-   }
-
-   pass_t & pass_t::with(array_spec_t array_spec) {
-      state_->vertex_data_.push_back(std::move(array_spec));
-      return *this;
-   }
-
    pass_t & pass_t::with(buffer_spec_t buffer_spec) {
-      state_->vertex_data_.push_back(std::move(buffer_spec));
+      state_->vertex_buffers_.push_back(std::move(buffer_spec));
       return *this;
    }
 
@@ -1051,7 +1000,7 @@ namespace gl
       prepare_draw();
 
       // draw the vertex buffers used in this pass
-      for (auto & v : state_->vertex_data_) v.draw(mode);
+      for (auto & v : state_->vertex_buffers_) gl::draw(v, mode);
 
       return *this;
    }
@@ -1059,7 +1008,7 @@ namespace gl
    pass_t & pass_t::draw(DrawMode mode, unsigned first, unsigned count) {
       prepare_draw();
 
-      for (auto & v : state_->vertex_data_) v.draw(mode, first, count);
+      for (auto & v : state_->vertex_buffers_) gl::draw(v, mode, first, count);
       return *this;
    }
 
@@ -1067,7 +1016,7 @@ namespace gl
       prepare_draw();
 
       while (cb.prepare_next(state_->prg_)) {
-         for (auto & v : state_->vertex_data_) v.draw(mode);
+         for (auto & v : state_->vertex_buffers_) gl::draw(v, mode);
       }
 
       return *this;
@@ -1077,7 +1026,7 @@ namespace gl
       prepare_draw();
 
       while (cb.prepare_next(state_->prg_)) {
-         for (auto & v : state_->vertex_data_) v.draw(mode, first, count);
+         for (auto & v : state_->vertex_buffers_) gl::draw(v, mode, first, count);
       }
 
       return *this;

@@ -155,46 +155,6 @@ namespace {
 }
 
 
-
-
-//struct bullet_sprite_engine {
-//   bullet_sprite_engine(gl::program & prg)
-//      : bullet_sprite_sheet_({ "../res/bullet.png" })
-//   {
-//      static const float sprite_verts[]; = {
-//         -35., 93., 0., 1.,
-//         34., 93., 1., 1.,
-//         -35., 0., 0., 0.,
-//         34., 0., 1., 0.,
-//      };
-//
-//      static const unsigned short sprite_indices[] = {
-//         0, 2, 1,
-//         1, 2, 3,
-//      };
-//
-//      auto sprite_vertices_spec = gl::describe_buffer({ sprite_verts, sprite_indices })
-//         .attrib("p", 2)
-//         .attrib("tex_coords", 2);
-//
-//      auto sprite_tex = sprite_sheet.texture();
-//
-//      auto sprite_pass = prg_sprite.pass()
-//         .with(sprite_vertices_spec)
-//         .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600.));
-//
-//      auto create_bullet_sprite = [&bullet_sprite_sheet]()->gl::sprite_t {
-//         return{
-//            { bullet_sprite_sheet, { 0 } }
-//         };
-//      };
-//
-//   }
-//
-//   gl::sprite_sheet bullet_sprite_sheet_;
-//   gl::pass_t pass_;
-//};
-
 #ifdef WIN32
 int CALLBACK WinMain(
    HINSTANCE hInstance,

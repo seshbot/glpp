@@ -325,24 +325,6 @@ namespace gl {
       unsigned offset_bytes;
    };
 
-   struct array_spec_t {
-      array_spec_t(static_array_t array, std::vector<attrib_info> attribs)
-         : array(std::move(array)), attribs(std::move(attribs)) {}
-      array_spec_t(array_spec_t const & other)
-         : array(other.array), attribs(std::begin(other.attribs), std::end(other.attribs)) {}
-      array_spec_t & operator=(array_spec_t const & other) {
-         array = other.array;
-
-         decltype(attribs) new_attribs = other.attribs;
-         attribs.swap(new_attribs);
-
-         return *this;
-      }
-
-      static_array_t array;
-      std::vector<attrib_info> attribs;
-   };
-
    struct buffer_spec_t {
       using attribs_type = std::vector<attrib_info>;
 
@@ -385,13 +367,9 @@ namespace gl {
       Triangles, TriangleStrip, TriangleFan,
    };
 
-   unsigned num_vertices(array_spec_t const & b);
    unsigned num_vertices(buffer_spec_t const & b);
-   void use(array_spec_t const & b);
    void use(buffer_spec_t const & b);
-   void draw(array_spec_t const & b, DrawMode mode);
    void draw(buffer_spec_t const & b, DrawMode mode);
-   void draw(array_spec_t const & b, DrawMode mode, unsigned first, unsigned count);
    void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count);
 
 
@@ -417,8 +395,6 @@ namespace gl {
 
       pass_t & set_texture_unit(texture_unit_t u, texture_t tex);
 
-      pass_t & with(static_array_t array, std::initializer_list<attrib_info> attribs);
-      pass_t & with(array_spec_t array_spec);
       pass_t & with(buffer_spec_t buffer_spec);
       pass_t & with(buffer_spec_builder_t const & buffer_spec_builder);
 
@@ -436,30 +412,6 @@ namespace gl {
 
       friend class program;
       pass_t(program prg);
-
-      struct vertex_data_layout {
-         void draw(DrawMode type) const { model_->draw(type); }
-         void draw(DrawMode type, unsigned first, unsigned count) const { model_->draw(type, first, count); }
-
-         vertex_data_layout(vertex_data_layout && other) : model_(std::move(other.model_)) { }
-
-         template <typename T>
-         vertex_data_layout(T impl) : model_(new model<T>(std::move(impl))) {}
-         struct concept {
-            virtual ~concept() {}
-            virtual void draw(DrawMode mode) const = 0;
-            virtual void draw(DrawMode mode, unsigned first, unsigned count) const = 0;
-         };
-         template <typename T>
-         struct model : public concept {
-            model(T data) : data_(std::move(data)) {}
-            virtual void draw(DrawMode mode) const { gl::draw(data_, mode); }
-            virtual void draw(DrawMode mode, unsigned first, unsigned count) const { gl::draw(data_, mode, first, count); }
-            T data_;
-         };
-
-         std::unique_ptr<concept> model_;
-      };
 
       struct state;
       std::shared_ptr<state> state_;
