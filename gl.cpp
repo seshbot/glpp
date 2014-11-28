@@ -928,9 +928,23 @@ namespace gl
    * pass_t
    *
    */
-   pass_t::pass_t(program & prg) 
+
+
+   struct pass_t::state {
+      state(program prg) : prg_(prg) {}
+      program prg_;
+      std::vector<vertex_data_layout> vertex_data_;
+      std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
+      std::vector<std::pair<gl::uniform, texture_t>> texture_bindings_without_tex_units_;
+      std::vector<std::pair<gl::uniform, uniform_action_t>> uniform_actions_;
+   };
+
+
+   pass_t::pass_t(program prg)
       : state_(std::make_shared<state>(prg)) {
    }
+
+   pass_t::~pass_t() {}
 
    pass_t & pass_t::with(static_array_t array, std::initializer_list<attrib_info> attribs) {
       state_->vertex_data_.push_back(array_spec_t{ std::move(array), { std::begin(attribs), std::end(attribs) } });
@@ -1133,8 +1147,27 @@ namespace gl
    *
    */
 
-   program::program()
+   program::state::state()
       : id_(glCreateProgram()) {
+      GL_CHECK();
+   }
+
+   program::state::~state() {
+      destroy();
+   }
+
+   void program::state::destroy() {
+      shaders_.clear();
+      for (auto & u : uniforms_) { u.reset(); }
+      for (auto & a : attribs_) { a.reset(); }
+
+      glDeleteProgram(id_);
+      id_ = 0;
+   }
+
+   program::program()
+      : state_(std::make_shared<state>()) {
+      state_->id_ = glCreateProgram();
       GL_CHECK();
    }
 
@@ -1152,30 +1185,9 @@ namespace gl
       }
    }
 
-   program::program(program & other, shader s1, shader s2)
-      : program() {
-      try {
-         attach(std::move(s1));
-         attach(std::move(s2));
-
-         for (auto & v : other.uniforms_) uniforms_.push_back({ v.name() });
-         for (auto & v : other.attribs_) attribs_.push_back({ v.name() });
-
-         reload();
-      }
-      catch (...) {
-         destroy();
-         throw;
-      }
-   }
-
-   program program::create_using_vars_from(program & other, shader s1, shader s2) {
-      return{ other, std::move(s1), std::move(s2) };
-   }
-
    void program::reload(shader s1, shader s2) {
-      for (auto & s : shaders_) GL_VERIFY(glDetachShader(id_, s.id()));
-      shaders_.clear();
+      for (auto & s : state_->shaders_) GL_VERIFY(glDetachShader(state_->id_, s.id()));
+      state_->shaders_.clear();
 
       attach(std::move(s1));
       attach(std::move(s2));
@@ -1184,15 +1196,15 @@ namespace gl
    }
 
    program::~program() {
-      destroy();
    }
 
    void program::reload() {
-      decltype(uniforms_) old_uniforms;
-      old_uniforms.swap(uniforms_);
+      auto & _ = *state_;
+      decltype(_.uniforms_) old_uniforms;
+      old_uniforms.swap(_.uniforms_);
 
-      decltype(attribs_) old_attribs;
-      old_attribs.swap(attribs_);
+      decltype(_.attribs_) old_attribs;
+      old_attribs.swap(_.attribs_);
 
       auto find_uniform_with_name = [&](std::string const & name) {
          for (auto it = old_uniforms.begin(); it != old_uniforms.end(); ++it) {
@@ -1210,20 +1222,20 @@ namespace gl
          return old_attribs.end();
       };
 
-      GL_VERIFY(glLinkProgram(id_));
+      GL_VERIFY(glLinkProgram(_.id_));
 
       use();
 
       GLint num_uniforms;
-      GL_VERIFY(glGetProgramiv(id_, GL_ACTIVE_UNIFORMS, &num_uniforms));
+      GL_VERIFY(glGetProgramiv(_.id_, GL_ACTIVE_UNIFORMS, &num_uniforms));
 
       for (auto idx = 0; idx < num_uniforms; idx++) {
          int size;
          unsigned int gl_type;
          char name[513];
 
-         GL_VERIFY(glGetActiveUniform(id_, idx, 512, nullptr, &size, &gl_type, name));
-         auto location = GL_VERIFY(glGetUniformLocation(id_, name));
+         GL_VERIFY(glGetActiveUniform(_.id_, idx, 512, nullptr, &size, &gl_type, name));
+         auto location = GL_VERIFY(glGetUniformLocation(_.id_, name));
          if (location == -1) {
             utils::log(utils::LOG_WARN, "uniform '%s' location unknown\n", name);
          }
@@ -1231,25 +1243,25 @@ namespace gl
          auto type = gl_to_value_type(gl_type);
          auto it = find_uniform_with_name(name);
          if (it == old_uniforms.end()) {
-            uniforms_.push_back({ name, location, size, type });
+            _.uniforms_.push_back({ name, location, size, type });
          }
          else {
             it->reset(location, size, type);
-            uniforms_.push_back(*it);
+            _.uniforms_.push_back(*it);
             old_uniforms.erase(it);
          }
       }
 
       GLint num_attribs;
-      glGetProgramiv(id_, GL_ACTIVE_ATTRIBUTES, &num_attribs);
+      glGetProgramiv(_.id_, GL_ACTIVE_ATTRIBUTES, &num_attribs);
 
       for (auto idx = 0; idx < num_attribs; idx++) {
          int size;
          unsigned int gl_type;
          char name[513];
 
-         GL_VERIFY(glGetActiveAttrib(id_, idx, 512, nullptr, &size, &gl_type, name));
-         auto location = GL_VERIFY(glGetAttribLocation(id_, name));
+         GL_VERIFY(glGetActiveAttrib(_.id_, idx, 512, nullptr, &size, &gl_type, name));
+         auto location = GL_VERIFY(glGetAttribLocation(_.id_, name));
          if (location == -1) {
             utils::log(utils::LOG_WARN, "attribute '%s' location unknown\n", name);
          }
@@ -1260,11 +1272,11 @@ namespace gl
          auto type = gl_to_value_type(gl_type);
          auto it = find_attrib_with_name(name);
          if (it == old_attribs.end()) {
-            attribs_.push_back({ name, location, size, type });
+            _.attribs_.push_back({ name, location, size, type });
          }
          else {
             it->reset(location, size, type);
-            attribs_.push_back(*it);
+            _.attribs_.push_back(*it);
             old_attribs.erase(it);
          }
       }
@@ -1272,68 +1284,47 @@ namespace gl
       // make sure we keep handles to the old uniforms so existing handles dont just break
       for (auto & u : old_uniforms) {
          u.reset();
-         uniforms_.push_back(u);
+         _.uniforms_.push_back(u);
       }
       for (auto & a : old_attribs) {
          a.reset();
-         attribs_.push_back(a);
+         _.attribs_.push_back(a);
       }
    }
 
    uniform program::uniform(std::string const & name) {
-      for (auto & u : uniforms_) {
+      for (auto & u : state_->uniforms_) {
          if (u.name() == name) return u;
       }
 
       // not found, create and start tracking an invalid uniform
       auto new_uniform = gl::uniform{ name };
-      uniforms_.push_back(new_uniform);
+      state_->uniforms_.push_back(new_uniform);
       return new_uniform;
    }
 
    attrib program::attrib(std::string const & name) {
-      for (auto & a : attribs_) {
+      for (auto & a : state_->attribs_) {
          if (a.name() == name) return a;
       }
 
       // not found, create and start tracking an invalid attrib
       auto new_attrib = gl::attrib{ name };
-      attribs_.push_back(new_attrib);
+      state_->attribs_.push_back(new_attrib);
       return new_attrib;
    }
 
-   program::program(program && other) {
-      *this = std::move(other);
-
-      other.id_ = 0;
-   }
-
-   program & program::operator=(program && other) {
-      std::swap(id_, other.id_);
-
-      std::swap(shaders_, other.shaders_);
-      std::swap(uniforms_, other.uniforms_);
-      std::swap(attribs_, other.attribs_);
-
-      return *this;
-   }
-
    void program::use() const {
-      GL_VERIFY(glUseProgram(id_));
+      GL_VERIFY(glUseProgram(state_->id_));
    }
 
    void program::destroy() {
-      shaders_.clear();
-      for (auto & u : uniforms_) { u.reset(); }
-      for (auto & a : attribs_) { a.reset(); }
-
-      glDeleteProgram(id_);
-      id_ = 0;
+      state_->destroy();
    }
 
    void program::attach(shader s) {
-      GL_VERIFY(glAttachShader(id_, s.id()));
-      shaders_.push_back(std::move(s));
+      GL_VERIFY(glAttachShader(state_->id_, s.id()));
+      state_->shaders_.push_back(std::move(s));
    }
 
    std::string program::compile_logs() const {
@@ -1346,7 +1337,7 @@ namespace gl
       };
 
       std::string logs;
-      for (auto & s : shaders_) {
+      for (auto & s : state_->shaders_) {
          auto log = s.compile_log();
          if (log.length() == 0) continue;
 

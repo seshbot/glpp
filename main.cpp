@@ -155,6 +155,46 @@ namespace {
 }
 
 
+
+
+//struct bullet_sprite_engine {
+//   bullet_sprite_engine(gl::program & prg)
+//      : bullet_sprite_sheet_({ "../res/bullet.png" })
+//   {
+//      static const float sprite_verts[]; = {
+//         -35., 93., 0., 1.,
+//         34., 93., 1., 1.,
+//         -35., 0., 0., 0.,
+//         34., 0., 1., 0.,
+//      };
+//
+//      static const unsigned short sprite_indices[] = {
+//         0, 2, 1,
+//         1, 2, 3,
+//      };
+//
+//      auto sprite_vertices_spec = gl::describe_buffer({ sprite_verts, sprite_indices })
+//         .attrib("p", 2)
+//         .attrib("tex_coords", 2);
+//
+//      auto sprite_tex = sprite_sheet.texture();
+//
+//      auto sprite_pass = prg_sprite.pass()
+//         .with(sprite_vertices_spec)
+//         .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600.));
+//
+//      auto create_bullet_sprite = [&bullet_sprite_sheet]()->gl::sprite_t {
+//         return{
+//            { bullet_sprite_sheet, { 0 } }
+//         };
+//      };
+//
+//   }
+//
+//   gl::sprite_sheet bullet_sprite_sheet_;
+//   gl::pass_t pass_;
+//};
+
 #ifdef WIN32
 int CALLBACK WinMain(
    HINSTANCE hInstance,
@@ -223,7 +263,7 @@ int main()
          { { 66, 420 }, { 66, 92 } },
       });
 
-      gl::sprite_sheet bullet_sprite_sheet({ "../res/bullet.png" }, { { { 0, 0 }, { 64, 64 } } });
+      gl::sprite_sheet bullet_sprite_sheet({ "../res/bullet.png" });
 
       //
       // load game data
@@ -237,7 +277,8 @@ int main()
 
          virtual void update(double t, game::entities_t & entities, game::entity_id_t eid, game::entity_moment_t & e) {
             e.set_dir(controls_.direction());
-            e.set_vel(controls_.direction() * (static_cast<float>(t)* 400.f));
+            auto target_vel = controls_.direction() * (static_cast<float>(t)* 500.f);
+            e.set_vel(utils::lerp(e.vel(), target_vel, 7.f * static_cast<float>(t)));
             e.update(t);
 
             auto pos = e.pos();
@@ -300,7 +341,7 @@ int main()
       controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
          auto & player_entity = entities.entity(player_entity_id);
          auto bullet_pos = player_entity.pos() + player_entity.dir() * 40.f;
-         auto bullet_vel = player_entity.vel() + player_entity.dir() * 20.f;
+         auto bullet_vel = player_entity.vel() + player_entity.dir() * 0.5f;
          auto bullet_moment = game::entity_moment_t{bullet_pos, bullet_vel};
          auto bullet_id = entities.create_entity(bullet_moment, "bullet");
          sprites.register_entity_sprite(bullet_id, create_bullet_sprite(), "bullet");

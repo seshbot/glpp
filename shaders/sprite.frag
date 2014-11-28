@@ -20,6 +20,7 @@ mediump vec2 sprite_uv() {
 
 void main() {
    mediump vec4 c = texture2D(texture, sprite_uv());
+
    if (c.a == 0.) discard;
 
    gl_FragColor = c;

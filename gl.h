@@ -406,6 +406,8 @@ namespace gl {
          virtual bool prepare_next(program & p) const = 0;
       };
 
+      ~pass_t();
+
       template <typename T>
       pass_t & set_uniform(std::string const & name, T val) {
          return set_uniform_action(name, [val](gl::uniform & u){ u.set(val); });
@@ -433,7 +435,7 @@ namespace gl {
       void prepare_draw(); // bind program, uniforms and textures
 
       friend class program;
-      pass_t(program & prg);
+      pass_t(program prg);
 
       struct vertex_data_layout {
          void draw(DrawMode type) const { model_->draw(type); }
@@ -459,15 +461,7 @@ namespace gl {
          std::unique_ptr<concept> model_;
       };
 
-      struct state {
-         state(program & prg) : prg_(prg) {}
-         program & prg_;
-         std::vector<vertex_data_layout> vertex_data_;
-         std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
-         std::vector<std::pair<gl::uniform, texture_t>> texture_bindings_without_tex_units_;
-         std::vector<std::pair<gl::uniform, uniform_action_t>> uniform_actions_;
-      };
-
+      struct state;
       std::shared_ptr<state> state_;
    };
 
@@ -480,11 +474,6 @@ namespace gl {
       program(shader s1, shader s2);
       ~program();
 
-      static program create_using_vars_from(program & other, shader s1, shader s2);
-
-		program(program && other);
-		program & operator=(program && other);
-
       void reload(shader s1, shader s2);
 
       gl::uniform uniform(std::string const & name);
@@ -493,7 +482,7 @@ namespace gl {
       void use() const;
 
       void destroy();
-      id_t id() const { return id_; }
+      id_t id() const { return state_->id_; }
       void attach(shader s);
 
       std::string compile_logs() const;
@@ -502,20 +491,21 @@ namespace gl {
 
    private:
       program();
-      program(program & other, shader s);
-      program(program & other, shader s1, shader s2);
-
-      program(program const &) = delete;
-      program & operator=(program const &) = delete;
 
       void reload();
 
-      id_t id_;
-      std::vector<shader> shaders_;
-      std::vector<gl::uniform> uniforms_;
-      std::vector<gl::attrib> attribs_;
+      struct state {
+         state();
+         ~state();
+         void destroy();
 
-      int version_ = 1;
+         id_t id_;
+         std::vector<shader> shaders_;
+         std::vector<gl::uniform> uniforms_;
+         std::vector<gl::attrib> attribs_;
+      };
+
+      std::shared_ptr<state> state_;
    };
 
    class context;
