@@ -191,11 +191,89 @@ int main()
          }
       };
 
+      class sprite_repository : public game::world_view_t::sprite_repository_t {
+      public:
+         sprite_repository()
+            : player_sprite_sheet_(
+               { "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
+                  { { 0, 420 }, { 66, 92 } },
+                  { { 66, 419 }, { 66, 92 } },
+                  { { 133, 420 }, { 66, 92 } },
+                  { { 0, 326 }, { 66, 92 } },
+                  { { 133, 420 }, { 66, 92 } },
+                  { { 66, 420 }, { 66, 92 } },
+               })
+            , player_sprite_(
+               {
+                  { player_sprite_sheet_, { 0 } },
+                  { player_sprite_sheet_, { 1, 2, 3, 4, 5 } },
+               })
+         { }
+
+         gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const override {
+            return player_sprite_;
+         }
+
+      private:
+         gl::sprite_sheet player_sprite_sheet_;
+         gl::sprite_t player_sprite_;
+      };
+
       game::entity_info_table entity_db;
 
       player_controller controller(controls);
+      sprite_repository sprite_repository;
+
       game::world_t world(entity_db, controller);
-      game::world_view_t world_view(entity_db);
+      game::world_view_t world_view(entity_db, sprite_repository);
+
+
+      struct render_callback_t : public gl::pass_t::render_callback {
+         render_callback_t(game::world_view_t::iterator itBegin, game::world_view_t::iterator itEnd)
+         : itBegin_(itBegin)
+         , itEnd_(itEnd)
+         , it_(itBegin_) {
+         }
+
+         virtual bool prepare_next(gl::program & p) const override {
+            if (it_ == itEnd_) return false;
+            auto & current_render_info = *it_;
+
+            auto tex_id = current_render_info.tex_id;
+
+            bool should_set_texture = (it_ == itBegin_) || (tex_id != current_tex_id_);
+            current_tex_id_ = tex_id;
+
+            auto & sprite = *current_render_info.sprite;
+            auto & moment = *current_render_info.moment;
+
+            p.uniform("model").set(moment.transform());
+
+            if (should_set_texture) {
+               auto sprite_tex = sprite.current_animation().texture();
+               p.uniform("texture_wh").set(glm::vec2(sprite_tex.width(), sprite_tex.height()));
+               gl::texture_unit_t tex_unit{ 1 };
+               tex_unit.activate();
+               sprite_tex.bind();
+               p.uniform("texture").set(tex_unit);
+            }
+            p.uniform("sprite_xy").set(sprite.current_frame().position);
+            p.uniform("sprite_wh").set(sprite.current_frame().dimensions);
+
+            it_++;
+            return true;
+         }
+
+      private:
+         game::world_view_t::iterator itBegin_;
+         game::world_view_t::iterator itEnd_;
+         mutable game::world_view_t::iterator it_;
+         mutable gl::texture_t::id_type current_tex_id_ = 0;
+
+         render_callback_t(render_callback_t const &) {}
+         render_callback_t & operator=(render_callback_t const &) {}
+      };
+
 
 
       //struct bullet_entity_controller : public game::entities_t::controller {
@@ -344,9 +422,15 @@ int main()
          glViewport(0, 0, dims.x, dims.y);
 
          fbo->bind();
-         bg_pass.draw(gl::DrawMode::Triangles);
-         //sprite_pass.draw_batch(sprite_render_callback_t{ sprites }, gl::DrawMode::Triangles);
-         sprite_pass.draw_batch(world_view.render_callback, gl::DrawMode::Triangles);
+         {
+            bg_pass.draw(gl::DrawMode::Triangles);
+
+            sprite_pass.draw_batch(
+               render_callback_t{
+                  world_view.renderables_begin(),
+                  world_view.renderables_end() },
+               gl::DrawMode::Triangles);
+         }
          fbo->unbind();
 
          post_pass.draw(gl::DrawMode::Triangles);

@@ -199,6 +199,11 @@ namespace game {
 
 
    struct world_view_t {
+      struct sprite_repository_t {
+         virtual ~sprite_repository_t() { }
+         virtual gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const = 0;
+      };
+
       struct render_info_t {
          render_info_t(gl::sprite_cursor_t const & sprite, moment_t const & moment);
          render_info_t(render_info_t & other);
@@ -210,35 +215,23 @@ namespace game {
          moment_t const * moment;
       };
 
-      struct render_callback_t : public gl::pass_t::render_callback {
-         std::vector<render_info_t> render_info_;
-
-         render_callback_t();
-         render_callback_t(std::vector<render_info_t> render_info);
-
-         render_callback_t(render_callback_t && other);
-         render_callback_t & operator=(render_callback_t && other);
-
-         virtual bool prepare_next(gl::program & p) const;
-
-      private:
-         mutable std::size_t current_idx_ = 0;
-         mutable gl::texture_t::id_type current_tex_id_ = 0;
-
-         render_callback_t(render_callback_t const &) {}
-         render_callback_t & operator=(render_callback_t const &) {}
-      };
-
-      entity_info_table & entity_db_;
-      render_callback_t render_callback;
-
-      world_view_t(entity_info_table & entity_db);
+      world_view_t(entity_info_table & entity_db, sprite_repository_t & sprite_repository);
 
       void update(double time_since_last);
+
+      using iterator = std::vector<render_info_t>::iterator;
+      using const_iterator = std::vector<render_info_t>::const_iterator;
+
+      iterator renderables_begin() { return render_info_.begin(); }
+      iterator renderables_end() { return render_info_.end(); }
 
    private:
       void update_sprite_cursor(double time_since_last, gl::sprite_cursor_t & cursor, moment_t & moment);
       std::unique_ptr<gl::sprite_cursor_t> create_sprite(game::creature_t const & creature);
+
+      entity_info_table & entity_db_;
+      sprite_repository_t & sprite_repository_;
+      std::vector<render_info_t> render_info_;
    };
 
 }

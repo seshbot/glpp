@@ -110,7 +110,7 @@ namespace game {
    // class world_view_t::render_info_t
    //
 
-   world_view_t::render_info_t::render_info_t(gl::sprite_cursor_t const & sprite, game::moment_t const & moment)
+   world_view_t::render_info_t::render_info_t(gl::sprite_cursor_t const & sprite, moment_t const & moment)
       : tex_id(sprite.current_animation().texture().id()), sprite(&sprite), moment(&moment)
    { }
 
@@ -130,76 +130,25 @@ namespace game {
 
 
    //
-   // class world_view_t::render_callback_t
-   //
-
-   world_view_t::render_callback_t::render_callback_t()
-   { }
-
-   world_view_t::render_callback_t::render_callback_t(std::vector<render_info_t> render_info) : render_info_(std::move(render_info)) {
-      auto cmp_textures = [](render_info_t const & a, render_info_t const & b) {
-         return a.tex_id < b.tex_id;
-      };
-
-      std::sort(std::begin(render_info_), std::end(render_info_), cmp_textures);
-   }
-
-   world_view_t::render_callback_t::render_callback_t(render_callback_t && other)
-      : render_info_(std::move(other.render_info_))
-      , current_idx_(other.current_idx_)
-      , current_tex_id_(other.current_tex_id_)
-   { }
-
-   world_view_t::render_callback_t & world_view_t::render_callback_t::operator=(render_callback_t && other) {
-      render_info_ = std::move(other.render_info_);
-      current_idx_ = other.current_idx_;
-      current_tex_id_ = other.current_tex_id_;
-      return *this;
-   }
-
-   bool world_view_t::render_callback_t::prepare_next(gl::program & p) const {
-      if (current_idx_ == render_info_.size()) return false;
-      auto & current_render_info = render_info_[current_idx_];
-
-      auto tex_id = current_render_info.tex_id;
-
-      bool set_texture = 0 == current_idx_ || (tex_id != current_tex_id_);
-      current_tex_id_ = tex_id;
-
-      auto & sprite = *current_render_info.sprite;
-      auto & moment = *current_render_info.moment;
-
-      p.uniform("model").set(moment.transform());
-
-      if (set_texture) {
-         auto sprite_tex = sprite.current_animation().texture();
-         p.uniform("texture_wh").set(glm::vec2(sprite_tex.width(), sprite_tex.height()));
-         gl::texture_unit_t tex_unit{ 1 };
-         tex_unit.activate();
-         sprite_tex.bind();
-         p.uniform("texture").set(tex_unit);
-      }
-      p.uniform("sprite_xy").set(sprite.current_frame().position);
-      p.uniform("sprite_wh").set(sprite.current_frame().dimensions);
-
-      current_idx_++;
-      return true;
-   }
-
-
-   //
    // class world_view_t
    //
 
-   world_view_t::world_view_t(game::entity_info_table & entity_db)
+   world_view_t::world_view_t(entity_info_table & entity_db, sprite_repository_t & sprite_repository)
       : entity_db_(entity_db)
+      , sprite_repository_(sprite_repository)
    { }
 
-   void world_view_t::update_sprite_cursor(double time_since_last, gl::sprite_cursor_t & cursor, game::moment_t & moment) {
+   void world_view_t::update_sprite_cursor(double time_since_last, gl::sprite_cursor_t & cursor, moment_t & moment) {
       if (!moment.is_moving()) cursor.set_animation_idx(0);
       else cursor.set_animation_idx(1);
 
       cursor.advance(time_since_last);
+   }
+
+   namespace {
+      bool cmp_by_tex_id(world_view_t::render_info_t const & a, world_view_t::render_info_t const & b) {
+         return a.tex_id < b.tex_id;
+      }
    }
 
    void world_view_t::update(double time_since_last) {
@@ -223,24 +172,15 @@ namespace game {
          render_info.push_back({ *sprite_ptr, moment });
       }
 
-      render_callback = render_callback_t{ std::move(render_info) };
+      std::sort(std::begin(render_info_), std::end(render_info_), cmp_by_tex_id);
+
+      render_info_.swap(render_info);
    }
 
-   std::unique_ptr<gl::sprite_cursor_t> world_view_t::create_sprite(game::creature_t const & creature) {
-      static gl::sprite_sheet sprite_sheet({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
-         { { 0, 420 }, { 66, 92 } },
-         { { 66, 419 }, { 66, 92 } },
-         { { 133, 420 }, { 66, 92 } },
-         { { 0, 326 }, { 66, 92 } },
-         { { 133, 420 }, { 66, 92 } },
-         { { 66, 420 }, { 66, 92 } },
-      });
-      static gl::sprite_t player_sprite{
-         { sprite_sheet, { 0 } },
-         { sprite_sheet, { 1, 2, 3, 4, 5 } }
-      };
-
-      return std::unique_ptr<gl::sprite_cursor_t>(new gl::sprite_cursor_t(player_sprite));
+   std::unique_ptr<gl::sprite_cursor_t> world_view_t::create_sprite(creature_t const & creature) {
+      return std::unique_ptr<gl::sprite_cursor_t>(
+         new gl::sprite_cursor_t(
+            sprite_repository_.find_creature_sprite(creature)));
    }
 
 }

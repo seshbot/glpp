@@ -1451,6 +1451,135 @@ namespace gl
    }
 
 
+   //
+   // class sprite_sheet
+   //
+
+   sprite_sheet::sprite_sheet(gl::texture_t texture, std::initializer_list<frame_ref> frames)
+      : texture_(texture) {
+      for (auto & s : frames) {
+         if (s.dimensions.x > max_frame_width_) max_frame_width_ = s.dimensions.x;
+         if (s.dimensions.y > max_frame_height_) max_frame_height_ = s.dimensions.y;
+
+         frames_.push_back(s);
+      }
+
+      frame_count_ = frames_.size();
+   }
+
+   sprite_sheet::sprite_sheet(gl::texture_t texture)
+      : texture_(texture)
+      , max_frame_width_(texture.width())
+      , max_frame_height_(texture.height()) {
+      frames_.push_back(frame_ref{ { 0, 0 }, { max_frame_width_, max_frame_height_ } });
+      frame_count_ = frames_.size();
+   }
+
+
+   //
+   // class animation_t
+   //
+
+   animation_t::animation_t(sprite_sheet const & frames, std::initializer_list<int> indices)
+      : frames_(frames)
+      , indices_(std::begin(indices), std::end(indices))
+   {}
+
+   gl::texture_t animation_t::texture() const {
+      return frames_.texture();
+   }
+
+   std::size_t animation_t::frame_count() const {
+      return indices_.size();
+   }
+
+   sprite_sheet::frame_ref const & animation_t::frame(std::size_t idx) const {
+      return frames_.frame(indices_.at(idx));
+   }
+
+
+   //
+   // class sprite_t
+   //
+
+   struct sprite_t::state {
+      state(std::initializer_list<animation_t> & animations)
+         : animations_(std::begin(animations), std::end(animations))
+      {}
+
+      std::vector<animation_t> animations_;
+   };
+
+   sprite_t::sprite_t(std::initializer_list<animation_t> animations)
+      : state_(std::make_shared<state>(animations))
+   {}
+
+   sprite_t::~sprite_t() {
+   }
+
+   std::size_t sprite_t::animation_count() const {
+      return state_->animations_.size();
+   }
+
+   animation_t const & sprite_t::animation(std::size_t idx) const {
+      return state_->animations_.at(idx);
+   }
+
+
+   //
+   // class sprite_cursor_t
+   //
+
+   sprite_cursor_t::sprite_cursor_t(sprite_t sprite)
+      : sprite_(sprite)
+      , time_per_frame_(.1)
+      , time_acc_(.0)
+      , current_animation_idx_(0)
+      , current_frame_idx_(0)
+      , current_animation_(&sprite_.animation(current_animation_idx_))
+   { }
+
+   void sprite_cursor_t::advance(double time_since_last) {
+      time_acc_ += time_since_last;
+      while (time_acc_ > time_per_frame_) {
+         set_idx(current_frame_idx_ + 1);
+         time_acc_ -= time_per_frame_;
+      }
+   }
+
+   std::size_t sprite_cursor_t::current_animation_idx() const {
+      return current_animation_idx_;
+   }
+
+   void sprite_cursor_t::set_animation_idx(std::size_t state) {
+      if (state == current_animation_idx_) return;
+      current_animation_idx_ = state;
+      current_frame_idx_ = 0;
+      current_animation_ = &sprite_.animation(current_animation_idx_);
+   }
+
+   animation_t const & sprite_cursor_t::current_animation() const {
+      return *current_animation_;
+   }
+
+   std::size_t sprite_cursor_t::idx() const {
+      return current_frame_idx_;
+   }
+
+   void sprite_cursor_t::set_idx(std::size_t idx) {
+      current_frame_idx_ = idx;
+      current_frame_idx_ %= current_animation().frame_count();
+   }
+
+   sprite_sheet::frame_ref const & sprite_cursor_t::current_frame() const {
+      return current_animation().frame(current_frame_idx_);
+   }
+
+   std::size_t sprite_cursor_t::current_frame_count() const {
+      return current_animation().frame_count();
+   }
+
+
    /**
     * free functions
     */
