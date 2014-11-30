@@ -103,55 +103,6 @@ namespace {
       using action_key = std::pair < gl::Key, gl::KeyAction > ;
       std::map<action_key, action_func> actions_;
    };
-
-
-   struct sprite_render_callback_t : public gl::pass_t::render_callback {
-      sprite_render_callback_t(game::entity_sprites_t const & sprites)
-         : tex_sprite_lookup_idx_(0), sprites_(sprites) {
-         for (auto idx = 0U; idx < sprites_.count(); idx++) {
-            auto & s = sprites_.sprite_at(idx);
-            sprite_indices_by_tex_id.push_back({s.current_animation().texture().id(), idx});
-         }
-
-         auto cmp_textures = [](tex_sprite_index const & a, tex_sprite_index const & b) {
-            return a.tex_id < b.tex_id;
-         };
-
-         std::sort(std::begin(sprite_indices_by_tex_id), std::end(sprite_indices_by_tex_id), cmp_textures);
-      }
-
-      virtual bool prepare_next(gl::program & p) const {
-         if (tex_sprite_lookup_idx_ == sprite_indices_by_tex_id.size()) return false;
-         auto tex_id = sprite_indices_by_tex_id[tex_sprite_lookup_idx_].tex_id;
-         auto sprite_idx = sprite_indices_by_tex_id[tex_sprite_lookup_idx_].sprite_idx;
-
-         bool set_texture = 0 == tex_sprite_lookup_idx_ || (tex_id != sprite_indices_by_tex_id[tex_sprite_lookup_idx_ - 1].tex_id);
-
-         auto & e = sprites_.entity_at(sprite_idx);// entities.entity(player_entity_id);
-         auto & s = sprites_.sprite_at(sprite_idx);// sprites.entity_sprite(player_entity_id);
-
-         p.uniform("model").set(e.transform());
-
-         if (set_texture) {
-            auto sprite_tex = s.current_animation().texture();
-            p.uniform("texture_wh").set(glm::vec2(sprite_tex.width(), sprite_tex.height()));
-            gl::texture_unit_t tex_unit{ 1 };
-            tex_unit.activate();
-            sprite_tex.bind();
-            p.uniform("texture").set(tex_unit);
-         }
-         p.uniform("sprite_xy").set(s.current_frame().position);
-         p.uniform("sprite_wh").set(s.current_frame().dimensions);
-
-         tex_sprite_lookup_idx_++;
-         return true;
-      }
-
-      mutable std::size_t tex_sprite_lookup_idx_;
-      game::entity_sprites_t const & sprites_;
-      struct tex_sprite_index { gl::texture_t::id_type tex_id; std::size_t sprite_idx; };
-      std::vector<tex_sprite_index> sprite_indices_by_tex_id;
-   };
 }
 
 
@@ -225,89 +176,55 @@ int main()
 
       gl::sprite_sheet bullet_sprite_sheet({ "../res/bullet.png" });
 
+
       //
       // load game data
       //
 
-
-      struct player_entity_controller : public game::entities_t::controller {
+      struct player_controller : public game::world_t::player_controller_t {
          player_controls_t const & controls_;
+         player_controller(player_controls_t const & controls) : controls_(controls) {}
 
-         player_entity_controller(player_controls_t const & controls) : controls_(controls) { }
-
-         virtual void update(double t, game::entities_t & entities, game::entity_id_t eid, game::entity_moment_t & e) {
-            e.set_dir(controls_.direction());
-            auto target_vel = controls_.direction() * (static_cast<float>(t)* 500.f);
-            e.set_vel(utils::lerp(e.vel(), target_vel, 7.f * static_cast<float>(t)));
-            e.update(t);
-
-            auto pos = e.pos();
-            if (pos.x < -400.) pos.x = -400.;
-            if (pos.x > 400.) pos.x = 400.;
-            if (pos.y < -300.) pos.y = -300.;
-            if (pos.y > 300.) pos.y = 300.;
-            e.set_pos(pos);
+         virtual glm::vec2 get_relative_velocity() const override {
+            if (!controls_.is_moving()) return{};
+            return controls_.direction();
          }
-
-         static std::unique_ptr<player_entity_controller> create(player_controls_t const & c) { return std::unique_ptr<player_entity_controller>(new player_entity_controller(c)); }
       };
 
-      struct player_sprite_controller : public game::entity_sprites_t::controller {
-         virtual void update(double t, game::entity_moment_t const & e, gl::sprite_cursor_t & s) {
-            if (!e.is_moving()) s.set_animation_idx(0);
-            else s.set_animation_idx(1);
+      game::entity_info_table entity_db;
 
-            s.advance(t);
-         }
-
-         static std::unique_ptr<player_sprite_controller> create() { return std::unique_ptr<player_sprite_controller>(new player_sprite_controller); }
-      };
+      player_controller controller(controls);
+      game::world_t world(entity_db, controller);
+      game::world_view_t world_view(entity_db);
 
 
-      struct bullet_entity_controller : public game::entities_t::controller {
-         virtual void update(double t, game::entities_t & entities, game::entity_id_t eid, game::entity_moment_t & e) {
-            e.update(t);
-            if (glm::length(e.pos()) > 600.f) {
-               entities.destroy_entity(eid);
-            }
-         }
+      //struct bullet_entity_controller : public game::entities_t::controller {
+      //   virtual void update(double t, game::entities_t & entities, game::entity_id_t eid, game::moment_t & e) {
+      //      e.update(t);
+      //      if (glm::length(e.pos()) > 600.f) {
+      //         entities.destroy_entity(eid);
+      //      }
+      //   }
 
-         static std::unique_ptr<bullet_entity_controller> create() { return std::unique_ptr<bullet_entity_controller>(new bullet_entity_controller()); }
-      };
+      //   static std::unique_ptr<bullet_entity_controller> create() { return std::unique_ptr<bullet_entity_controller>(new bullet_entity_controller()); }
+      //};
 
-      game::entities_t entities;
-      game::entity_sprites_t sprites(entities);
-      entities.register_controller("player", player_entity_controller::create(controls));
-      entities.register_controller("bullet", bullet_entity_controller::create());
-      sprites.register_controller("player", player_sprite_controller::create());
-      sprites.register_controller("bullet", sprites.simple_controller());
+      //auto create_bullet_sprite = [&bullet_sprite_sheet]()->gl::sprite_t {
+      //   return{
+      //      { bullet_sprite_sheet, {0} }
+      //   };
+      //};
 
-      auto create_player_sprite = [&sprite_sheet]()->gl::sprite_t {
-         return{
-            { sprite_sheet, { 0 } },
-            { sprite_sheet, { 1, 2, 3, 4, 5 } }
-         };
-      };
+      //controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
+      //   auto & player_entity = entities.entity(player_entity_id);
+      //   auto bullet_pos = player_entity.pos() + player_entity.dir() * 40.f;
+      //   auto bullet_vel = player_entity.vel() + player_entity.dir() * 0.5f;
+      //   auto bullet_moment = game::moment_t{bullet_pos, bullet_vel};
+      //   auto bullet_id = entities.create_entity(bullet_moment, "bullet");
+      //   sprites.register_entity_sprite(bullet_id, create_bullet_sprite(), "bullet");
 
-      auto create_bullet_sprite = [&bullet_sprite_sheet]()->gl::sprite_t {
-         return{
-            { bullet_sprite_sheet, {0} }
-         };
-      };
-
-      auto player_entity_id = entities.create_entity({}, "player");
-      sprites.register_entity_sprite(player_entity_id, create_player_sprite(), "player");
-
-      controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
-         auto & player_entity = entities.entity(player_entity_id);
-         auto bullet_pos = player_entity.pos() + player_entity.dir() * 40.f;
-         auto bullet_vel = player_entity.vel() + player_entity.dir() * 0.5f;
-         auto bullet_moment = game::entity_moment_t{bullet_pos, bullet_vel};
-         auto bullet_id = entities.create_entity(bullet_moment, "bullet");
-         sprites.register_entity_sprite(bullet_id, create_bullet_sprite(), "bullet");
-
-         return true;
-      });
+      //   return true;
+      //});
 
 
       // 
@@ -419,8 +336,8 @@ int main()
          double this_tick = gl::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
-         entities.update(time_since_last_tick);
-         sprites.update(time_since_last_tick);
+         world.update(time_since_last_tick);
+         world_view.update(time_since_last_tick);
 
          glClearColor(.7f, .87f, .63f, 1.);
          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -428,7 +345,8 @@ int main()
 
          fbo->bind();
          bg_pass.draw(gl::DrawMode::Triangles);
-         sprite_pass.draw_batch(sprite_render_callback_t{ sprites }, gl::DrawMode::Triangles);
+         //sprite_pass.draw_batch(sprite_render_callback_t{ sprites }, gl::DrawMode::Triangles);
+         sprite_pass.draw_batch(world_view.render_callback, gl::DrawMode::Triangles);
          fbo->unbind();
 
          post_pass.draw(gl::DrawMode::Triangles);
