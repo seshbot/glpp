@@ -141,7 +141,7 @@ int main()
          controls.handle_key_action(key, action);
       };
 
-      gl::context context { key_handler };
+      gl::context context{ key_handler };
 
 #ifdef USE_GLEW
       GLenum err = glewInit();
@@ -203,11 +203,11 @@ int main()
                   { { 133, 420 }, { 66, 92 } },
                   { { 66, 420 }, { 66, 92 } },
                })
-            , player_sprite_(
-               {
-                  { player_sprite_sheet_, { 0 } },
-                  { player_sprite_sheet_, { 1, 2, 3, 4, 5 } },
-               })
+               , player_sprite_(
+                  {
+                     { player_sprite_sheet_, { 0 } },
+                     { player_sprite_sheet_, { 1, 2, 3, 4, 5 } },
+                  })
          { }
 
          gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const override {
@@ -227,6 +227,10 @@ int main()
       game::world_t world(entity_db, controller);
       game::world_view_t world_view(entity_db, sprite_repository);
 
+      for (auto i = 0; i < 4; i++) {
+         auto loc = glm::vec2(std::rand() % 700 - 350, std::rand() % 500 - 250);
+         world.create_creature(game::creature_t::types::person, { loc, {} });
+      }
 
       struct render_callback_t : public gl::pass_t::render_callback {
          render_callback_t(game::world_view_t::iterator itBegin, game::world_view_t::iterator itEnd)

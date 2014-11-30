@@ -891,7 +891,9 @@ namespace gl
 
    struct pass_t::state {
       state(program prg) : prg_(prg) {}
+      state(pass_t & parent) : prg_(parent.state_->prg_), parent_(new pass_t(parent)) {}
       program prg_;
+      std::unique_ptr<pass_t> parent_;
       std::vector<buffer_spec_t> vertex_buffers_;
       std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
       std::vector<std::pair<gl::uniform, texture_t>> texture_bindings_without_tex_units_;
@@ -903,7 +905,15 @@ namespace gl
       : state_(std::make_shared<state>(prg)) {
    }
 
+   pass_t::pass_t(extend_tag, pass_t & parent)
+      : state_(std::make_shared<state>(parent)) {
+   }
+
    pass_t::~pass_t() {}
+
+   pass_t pass_t::extend() {
+      return{ extend_tag(), *this };
+   }
 
    pass_t & pass_t::with(buffer_spec_t buffer_spec) {
       state_->vertex_buffers_.push_back(std::move(buffer_spec));
@@ -1037,7 +1047,12 @@ namespace gl
    }
 
    void pass_t::prepare_draw() {
-      state_->prg_.use();
+      if (state_->parent_) {
+         state_->parent_->prepare_draw();
+      }
+      else {
+         state_->prg_.use();
+      }
 
       for (auto & upair : state_->uniform_actions_) {
          upair.second(upair.first); // invoke action

@@ -386,6 +386,9 @@ namespace gl {
 
       ~pass_t();
 
+      // create a pass that uses this pass as a parent - primitives added to child will not affect parent
+      pass_t extend();
+
       template <typename T>
       pass_t & set_uniform(std::string const & name, T val) {
          return set_uniform_action(name, [val](gl::uniform & u){ u.set(val); });
@@ -412,6 +415,9 @@ namespace gl {
 
       friend class program;
       pass_t(program prg);
+
+      struct extend_tag {};
+      pass_t(extend_tag, pass_t & parent);
 
       struct state;
       std::shared_ptr<state> state_;

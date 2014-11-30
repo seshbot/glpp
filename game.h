@@ -75,7 +75,8 @@ namespace game {
       glm::vec2 const & pos() const { return state_->pos_; }
       glm::vec2 const & vel() const { return state_->vel_; }
 
-      bool is_moving() const { return glm::length(vel()) > 0.1; }
+      bool is_moving() const { return state_->speed_ > 0.1; }
+      float speed() const { return state_->speed_; }
 
       void set_dir(glm::vec2 const & dir) {
          if (glm::length(dir) < 0.1)
@@ -84,7 +85,7 @@ namespace game {
          state_->dir_ = norm;
       }
       void set_pos(glm::vec2 const & pos) { state_->pos_ = pos; }
-      void set_vel(glm::vec2 const & vel) { state_->vel_ = vel; }
+      void set_vel(glm::vec2 const & vel) { state_->vel_ = vel; state_->speed_ = glm::length(vel); }
 
       void update(double time_since_last);
 
@@ -95,10 +96,24 @@ namespace game {
          glm::vec2 pos_;
          glm::vec2 dir_;
          glm::vec2 vel_;
-
+         float speed_ = 0.f;
       };
 
       std::shared_ptr<state> state_;
+   };
+
+   struct plan_t {
+      enum class type_t { do_nothing, move_to, wait_for, follow_for };
+
+      type_t type;
+      double time;
+      glm::vec2 pos;
+      entity_id_t entity;
+
+      static plan_t do_nothing() { return{ type_t::do_nothing }; }
+      static plan_t move_to(glm::vec2 & loc) { return{ type_t::move_to, 0., loc }; }
+      static plan_t wait_for(double time) { return{ type_t::wait_for, time }; }
+      static plan_t follow_for(entity_id_t entity, double time) { return{ type_t::follow_for, time, {}, entity }; }
    };
 
    struct creature_t {
@@ -125,16 +140,20 @@ namespace game {
       using entity_id_column_type = table_column_t < entity_id_t >;
       using moment_column_type = table_column_t < moment_t >;
       using creature_column_type = table_column_t < creature_t >;
+      using plan_column_type = table_column_t < plan_t >;
       using sprite_column_type = table_column_t < std::unique_ptr<gl::sprite_cursor_t> >;
+
       entity_id_column_type entity_ids_;
       moment_column_type moments_;
       creature_column_type creature_info_;
+      plan_column_type plan_;
       sprite_column_type sprites_;
 
       entity_info_table()
          : entity_ids_(index)
          , moments_(index)
          , creature_info_(index)
+         , plan_(index)
          , sprites_(index)
       {}
 
@@ -146,6 +165,7 @@ namespace game {
          entity_ids_.alloc_row(id);
          moments_.alloc_row();
          creature_info_.alloc_row();
+         plan_.alloc_row();
          sprites_.alloc_row();
          return id;
       }
@@ -154,6 +174,7 @@ namespace game {
          entity_ids_.delete_by_id(id);
          moments_.delete_by_id(id);
          creature_info_.delete_by_id(id);
+         plan_.delete_by_id(id);
          sprites_.delete_by_id(id);
          index.delete_row(id);
       }
@@ -168,6 +189,9 @@ namespace game {
 
       creature_t & creature_info(table_row_id_type id) { return creature_info_.select(id); }
       creature_column_type::collection_type & creature_infos() { return creature_info_.values(); }
+
+      plan_t & plan(table_row_id_type id) { return plan_.select(id); }
+      plan_column_type::collection_type & plans() { return plan_.values(); }
 
       gl::sprite_cursor_t & sprite(table_row_id_type id) { return *sprites_.select(id); }
       sprite_column_type::collection_type & sprites() { return sprites_.values(); }

@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <random>
 
 
 namespace game {
@@ -65,8 +66,11 @@ namespace game {
    }
 
    void world_t::creature_think(double time_since_last) {
+      auto & player_moment = entity_db_.moment(player_id);
+
       auto & entity_ids = entity_db_.entity_ids();
       auto & creatures = entity_db_.creature_infos();
+      auto & plans = entity_db_.plans();
       auto & moments = entity_db_.moments();
 
       for (std::size_t idx = 0; idx < creatures.size(); idx++) {
@@ -75,8 +79,40 @@ namespace game {
          if (id == player_id) continue;
 
          auto & m = moments[idx];
+         auto & p = plans[idx];
 
-         // TODO: set velocity
+         switch (p.type) {
+         case plan_t::type_t::do_nothing: {
+            if (glm::length(player_moment.pos() - m.pos()) < 60.) {
+               auto target = glm::vec2((float)(std::rand() % 800 - 400), (float)(std::rand() % 600 - 300));
+               p = plan_t::move_to(target);
+            }
+         }
+         break;
+         case plan_t::type_t::move_to: {
+            auto to_target = p.pos - m.pos();
+            auto dist = glm::length(to_target);
+            if (dist < 10.) {
+               p = plan_t::wait_for((double)(std::rand() % 3 + 1));
+            }
+            else {
+               m.set_dir(to_target);
+               m.set_vel((to_target / dist) * 200.f);
+            }
+         }
+         break;
+         case plan_t::type_t::wait_for: {
+            if (m.speed() > 0.01) m.set_vel({});
+            p.time -= time_since_last;
+            if (p.time < 0.) {
+               auto target = glm::vec2((float)(std::rand() % 750 - 375), (float)(std::rand() % 500 - 250));
+               p = plan_t::move_to(target);
+            }
+         }
+         break;
+         case plan_t::type_t::follow_for: break;
+         default: break;
+         }
       }
    }
 
