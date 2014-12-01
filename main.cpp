@@ -165,7 +165,7 @@ int main()
       // load sprite data
       //
 
-      gl::sprite_sheet sprite_sheet({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
+      gl::sprite_sheet creature_sprite_sheet({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
          { { 0, 420 }, { 66, 92 } },
          { { 66, 419 }, { 66, 92 } },
          { { 133, 420 }, { 66, 92 } },
@@ -203,10 +203,15 @@ int main()
                   { { 133, 420 }, { 66, 92 } },
                   { { 66, 420 }, { 66, 92 } },
                })
+               , bullet_sprite_sheet_({ "../res/bullet.png" })
                , player_sprite_(
                   {
                      { player_sprite_sheet_, { 0 } },
                      { player_sprite_sheet_, { 1, 2, 3, 4, 5 } },
+                  })
+               , bullet_sprite_(
+                  {
+                     { bullet_sprite_sheet_, {0} }
                   })
          { }
 
@@ -214,18 +219,25 @@ int main()
             return player_sprite_;
          }
 
+         gl::sprite_t const & find_particle_sprite(game::particle_t const & particle) const override {
+            return bullet_sprite_;
+         }
+
       private:
          gl::sprite_sheet player_sprite_sheet_;
+         gl::sprite_sheet bullet_sprite_sheet_;
          gl::sprite_t player_sprite_;
+         gl::sprite_t bullet_sprite_;
       };
 
-      game::entity_info_table entity_db;
+      game::creature_info_table entity_db;
+      game::particle_info_table particle_db;
 
       player_controller controller(controls);
       sprite_repository sprite_repository;
 
-      game::world_t world(entity_db, controller);
-      game::world_view_t world_view(entity_db, sprite_repository);
+      game::world_t world(entity_db, particle_db, controller);
+      game::world_view_t world_view(entity_db, particle_db, sprite_repository);
 
       for (auto i = 0; i < 4; i++) {
          auto loc = glm::vec2(std::rand() % 700 - 350, std::rand() % 500 - 250);
@@ -241,8 +253,8 @@ int main()
 
          virtual bool prepare_next(gl::program & p) const override {
             if (it_ == itEnd_) return false;
-            auto & current_render_info = *it_;
 
+            auto & current_render_info = *it_;
             auto tex_id = current_render_info.tex_id;
 
             bool should_set_texture = (it_ == itBegin_) || (tex_id != current_tex_id_);
@@ -297,16 +309,24 @@ int main()
       //   };
       //};
 
-      //controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
-      //   auto & player_entity = entities.entity(player_entity_id);
-      //   auto bullet_pos = player_entity.pos() + player_entity.dir() * 40.f;
-      //   auto bullet_vel = player_entity.vel() + player_entity.dir() * 0.5f;
-      //   auto bullet_moment = game::moment_t{bullet_pos, bullet_vel};
-      //   auto bullet_id = entities.create_entity(bullet_moment, "bullet");
-      //   sprites.register_entity_sprite(bullet_id, create_bullet_sprite(), "bullet");
+      controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
+         //auto & player_entity = entities.entity(player_entity_id);
+         //auto bullet_pos = player_entity.pos() + player_entity.dir() * 40.f;
+         //auto bullet_vel = player_entity.vel() + player_entity.dir() * 0.5f;
+         //auto bullet_moment = game::moment_t{bullet_pos, bullet_vel};
+         //auto bullet_id = entities.create_entity(bullet_moment, "bullet");
+         //sprites.register_entity_sprite(bullet_id, create_bullet_sprite(), "bullet");
 
-      //   return true;
-      //});
+         auto & player = entity_db.moment(world.player_id());
+         auto bullet_pos = player.pos() + player.dir() * 40.f;
+         auto bullet_vel = player.vel() + player.dir() * 400.f;
+         auto bullet_moment = game::moment_t{ bullet_pos, bullet_vel };
+
+         auto ttl = 1.f + (float)(std::rand() % 100) / 100.f;
+         auto bullet_id = world.create_particle(game::particle_t::bullet, bullet_moment, ttl);
+
+         return true;
+      });
 
 
       // 
@@ -365,10 +385,10 @@ int main()
          .set_uniform_action("t", set_time_cb);
 
       static const float sprite_verts[] = {
-         -35., 93., 0., 1.,
-         34., 93., 1., 1.,
-         -35., 0., 0., 0.,
-         34., 0., 1., 0.,
+         -.5, 1., 0., 1.,
+         .5, 1., 1., 1.,
+         -.5, 0., 0., 0.,
+         .5, 0., 1., 0.,
       };
 
       static const unsigned short sprite_indices[] = {
@@ -379,8 +399,6 @@ int main()
       auto sprite_vertices_spec = gl::describe_buffer({ sprite_verts, sprite_indices })
          .attrib("p", 2)
          .attrib("tex_coords", 2);
-
-      auto sprite_tex = sprite_sheet.texture();
 
       auto sprite_pass = prg_sprite.pass()
          .with(sprite_vertices_spec)
@@ -431,8 +449,14 @@ int main()
 
             sprite_pass.draw_batch(
                render_callback_t{
-                  world_view.renderables_begin(),
-                  world_view.renderables_end() },
+                  world_view.creatures_begin(),
+                  world_view.creatures_end() },
+                  gl::DrawMode::Triangles);
+
+            sprite_pass.draw_batch(
+               render_callback_t{
+               world_view.particles_begin(),
+               world_view.particles_end() },
                gl::DrawMode::Triangles);
          }
          fbo->unbind();

@@ -133,8 +133,73 @@ namespace game {
       types type;
    };
 
+   struct particle_t {
+      enum types {
+         bullet
+      };
 
-   struct entity_info_table{
+      types type;
+      double time_remaining;
+   };
+
+
+   struct particle_info_table{
+      table_index_t index;
+
+      using id_column_type = table_column_t < table_row_id_type >;
+      using moment_column_type = table_column_t < moment_t >;
+      using particle_column_type = table_column_t < particle_t >;
+      using sprite_column_type = table_column_t < std::unique_ptr<gl::sprite_cursor_t> >;
+
+      id_column_type ids_;
+      moment_column_type moments_;
+      particle_column_type particle_info_;
+      sprite_column_type sprites_;
+
+      particle_info_table()
+         : ids_(index)
+         , moments_(index)
+         , particle_info_(index)
+         , sprites_(index)
+      { }
+
+      particle_info_table(particle_info_table const &) = delete;
+      particle_info_table& operator=(particle_info_table const &) = delete;
+
+      table_row_id_type create_row() {
+         auto id = index.alloc_row();
+         ids_.alloc_row(id);
+         moments_.alloc_row();
+         particle_info_.alloc_row();
+         sprites_.alloc_row();
+         return id;
+      }
+
+      void delete_row(table_row_id_type id) {
+         ids_.delete_by_id(id);
+         moments_.delete_by_id(id);
+         particle_info_.delete_by_id(id);
+         sprites_.delete_by_id(id);
+         index.delete_row(id);
+      }
+
+      std::size_t size() const { return index.size(); }
+
+      table_row_id_type id(table_row_id_type id) { return id; }
+      id_column_type::collection_type & ids() { return ids_.values(); }
+
+      moment_t & moment(table_row_id_type id) { return moments_.select(id); }
+      moment_column_type::collection_type & moments() { return moments_.values(); }
+
+      particle_t & particle_info(table_row_id_type id) { return particle_info_.select(id); }
+      particle_column_type::collection_type & particle_infos() { return particle_info_.values(); }
+
+      gl::sprite_cursor_t & sprite(table_row_id_type id) { return *sprites_.select(id); }
+      sprite_column_type::collection_type & sprites() { return sprites_.values(); }
+   };
+
+
+   struct creature_info_table{
       table_index_t index;
 
       using entity_id_column_type = table_column_t < entity_id_t >;
@@ -149,7 +214,7 @@ namespace game {
       plan_column_type plan_;
       sprite_column_type sprites_;
 
-      entity_info_table()
+      creature_info_table()
          : entity_ids_(index)
          , moments_(index)
          , creature_info_(index)
@@ -157,8 +222,8 @@ namespace game {
          , sprites_(index)
       {}
 
-      entity_info_table(entity_info_table const &) = delete;
-      entity_info_table& operator=(entity_info_table const &) = delete;
+      creature_info_table(creature_info_table const &) = delete;
+      creature_info_table& operator=(creature_info_table const &) = delete;
 
       table_row_id_type create_row() {
          auto id = index.alloc_row();
@@ -205,20 +270,25 @@ namespace game {
          virtual glm::vec2 get_relative_velocity() const = 0;
       };
 
-      world_t(entity_info_table & entity_db, player_controller_t const & player_controller);
+      world_t(creature_info_table & entity_db, particle_info_table & particle_db, player_controller_t const & player_controller);
 
       entity_id_t create_creature(creature_t::types type, moment_t const & moment);
+      entity_id_t create_particle(particle_t::types type, moment_t const & moment, double ttl);
 
       void update(double time_since_last);
+
+      entity_id_t player_id() const { return player_id_; }
 
    private:
       void creature_think(double time_since_last);
       void player_update(double time_since_last);
       void move_creatures(double time_since_last);
+      void move_particles(double time_since_last);
 
-      entity_info_table & entity_db_;
+      creature_info_table & entity_db_;
+      particle_info_table & particle_db_;
       player_controller_t const & player_controller_;
-      entity_id_t player_id;
+      entity_id_t player_id_;
    };
 
 
@@ -226,6 +296,7 @@ namespace game {
       struct sprite_repository_t {
          virtual ~sprite_repository_t() { }
          virtual gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const = 0;
+         virtual gl::sprite_t const & find_particle_sprite(game::particle_t const & particle) const = 0;
       };
 
       struct render_info_t {
@@ -239,23 +310,31 @@ namespace game {
          moment_t const * moment;
       };
 
-      world_view_t(entity_info_table & entity_db, sprite_repository_t & sprite_repository);
+      world_view_t(creature_info_table & entity_db, particle_info_table & particle_db, sprite_repository_t & sprite_repository);
 
       void update(double time_since_last);
 
       using iterator = std::vector<render_info_t>::iterator;
-      using const_iterator = std::vector<render_info_t>::const_iterator;
 
-      iterator renderables_begin() { return render_info_.begin(); }
-      iterator renderables_end() { return render_info_.end(); }
+      iterator creatures_begin() { return creature_render_info_.begin(); }
+      iterator creatures_end() { return creature_render_info_.end(); }
+
+      iterator particles_begin() { return particle_render_info_.begin(); }
+      iterator particles_end() { return particle_render_info_.end(); }
 
    private:
-      void update_sprite_cursor(double time_since_last, gl::sprite_cursor_t & cursor, moment_t & moment);
-      std::unique_ptr<gl::sprite_cursor_t> create_sprite(game::creature_t const & creature);
+      void update_creatures(double time_since_last);
+      void update_particles(double time_since_last);
 
-      entity_info_table & entity_db_;
+      void update_sprite_animation(double time_since_last, gl::sprite_cursor_t & cursor, moment_t & moment);
+      std::unique_ptr<gl::sprite_cursor_t> create_sprite(game::creature_t const & creature);
+      std::unique_ptr<gl::sprite_cursor_t> create_sprite(particle_t const & particle);
+
+      creature_info_table & entity_db_;
+      particle_info_table & particle_db_;
       sprite_repository_t & sprite_repository_;
-      std::vector<render_info_t> render_info_;
+      std::vector<render_info_t> creature_render_info_;
+      std::vector<render_info_t> particle_render_info_;
    };
 
 }
