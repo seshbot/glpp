@@ -15,7 +15,7 @@ namespace game {
    //
 
    moment_t::moment_t()
-      : state_(std::make_shared<state>()) {
+      : dir_(0., 1.) {
    }
 
    moment_t::moment_t(glm::vec2 const & pos, glm::vec2 const & vel)
@@ -36,8 +36,7 @@ namespace game {
    }
 
    void moment_t::update(double time_since_last) {
-      auto & _ = *state_;
-      _.pos_ += _.vel_ * static_cast<float>(time_since_last);
+      pos_ += vel_ * static_cast<float>(time_since_last);
    }
 
 

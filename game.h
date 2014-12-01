@@ -71,35 +71,29 @@ namespace game {
 
       glm::mat4 transform() const;
 
-      glm::vec2 const & dir() const { return state_->dir_; }
-      glm::vec2 const & pos() const { return state_->pos_; }
-      glm::vec2 const & vel() const { return state_->vel_; }
+      glm::vec2 const & dir() const { return dir_; }
+      glm::vec2 const & pos() const { return pos_; }
+      glm::vec2 const & vel() const { return vel_; }
 
-      bool is_moving() const { return state_->speed_ > 0.1; }
-      float speed() const { return state_->speed_; }
+      bool is_moving() const { return speed_ > 0.1; }
+      float speed() const { return speed_; }
 
       void set_dir(glm::vec2 const & dir) {
          if (glm::length(dir) < 0.1)
             return;
          auto norm = glm::normalize(dir);
-         state_->dir_ = norm;
+         dir_ = norm;
       }
-      void set_pos(glm::vec2 const & pos) { state_->pos_ = pos; }
-      void set_vel(glm::vec2 const & vel) { state_->vel_ = vel; state_->speed_ = glm::length(vel); }
+      void set_pos(glm::vec2 const & pos) { pos_ = pos; }
+      void set_vel(glm::vec2 const & vel) { vel_ = vel; speed_ = glm::length(vel); }
 
       void update(double time_since_last);
 
    private:
-      struct state {
-         state() : dir_(0., 1.) {}
-
-         glm::vec2 pos_;
-         glm::vec2 dir_;
-         glm::vec2 vel_;
-         float speed_ = 0.f;
-      };
-
-      std::shared_ptr<state> state_;
+      glm::vec2 pos_;
+      glm::vec2 dir_;
+      glm::vec2 vel_;
+      float speed_ = 0.f;
    };
 
    struct plan_t {
