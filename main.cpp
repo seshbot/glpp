@@ -162,22 +162,6 @@ int main()
 
 
       //
-      // load sprite data
-      //
-
-      gl::sprite_sheet creature_sprite_sheet({ "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
-         { { 0, 420 }, { 66, 92 } },
-         { { 66, 419 }, { 66, 92 } },
-         { { 133, 420 }, { 66, 92 } },
-         { { 0, 326 }, { 66, 92 } },
-         { { 133, 420 }, { 66, 92 } },
-         { { 66, 420 }, { 66, 92 } },
-      });
-
-      gl::sprite_sheet bullet_sprite_sheet({ "../res/bullet.png" });
-
-
-      //
       // load game data
       //
 
@@ -203,16 +187,23 @@ int main()
                   { { 133, 420 }, { 66, 92 } },
                   { { 66, 420 }, { 66, 92 } },
                })
-               , bullet_sprite_sheet_({ "../res/bullet.png" })
+               , bullet_sprite_sheet_({ "../res/sprites.png" }, {
+                  { { 0, 608 }, { 32, 32 } },
+                  { { 0, 544 }, { 64, 64 } },
+               })
                , player_sprite_(
-                  {
-                     { player_sprite_sheet_, { 0 } },
-                     { player_sprite_sheet_, { 1, 2, 3, 4, 5 } },
-                  })
+               {
+                  { player_sprite_sheet_, { 0 } },
+                  { player_sprite_sheet_, { 1, 2, 3, 4, 5 } },
+               })
                , bullet_sprite_(
-                  {
-                     { bullet_sprite_sheet_, {0} }
-                  })
+               {
+                  { bullet_sprite_sheet_, {0} }
+               })
+               , big_rock_sprite_(
+               {
+                  { bullet_sprite_sheet_, {1} }
+               })
          { }
 
          gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const override {
@@ -228,6 +219,7 @@ int main()
          gl::sprite_sheet bullet_sprite_sheet_;
          gl::sprite_t player_sprite_;
          gl::sprite_t bullet_sprite_;
+         gl::sprite_t big_rock_sprite_;
       };
 
       game::creature_info_table entity_db;
@@ -291,39 +283,13 @@ int main()
       };
 
 
-
-      //struct bullet_entity_controller : public game::entities_t::controller {
-      //   virtual void update(double t, game::entities_t & entities, game::entity_id_t eid, game::moment_t & e) {
-      //      e.update(t);
-      //      if (glm::length(e.pos()) > 600.f) {
-      //         entities.destroy_entity(eid);
-      //      }
-      //   }
-
-      //   static std::unique_ptr<bullet_entity_controller> create() { return std::unique_ptr<bullet_entity_controller>(new bullet_entity_controller()); }
-      //};
-
-      //auto create_bullet_sprite = [&bullet_sprite_sheet]()->gl::sprite_t {
-      //   return{
-      //      { bullet_sprite_sheet, {0} }
-      //   };
-      //};
-
       controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
-         //auto & player_entity = entities.entity(player_entity_id);
-         //auto bullet_pos = player_entity.pos() + player_entity.dir() * 40.f;
-         //auto bullet_vel = player_entity.vel() + player_entity.dir() * 0.5f;
-         //auto bullet_moment = game::moment_t{bullet_pos, bullet_vel};
-         //auto bullet_id = entities.create_entity(bullet_moment, "bullet");
-         //sprites.register_entity_sprite(bullet_id, create_bullet_sprite(), "bullet");
-
          auto & player = entity_db.moment(world.player_id());
-         auto bullet_pos = player.pos() + player.dir() * 40.f;
+         auto bullet_pos = player.pos() + glm::vec2(0., 30.f) + player.dir() * 40.f;
          auto bullet_vel = player.vel() + player.dir() * 400.f;
          auto bullet_moment = game::moment_t{ bullet_pos, bullet_vel };
 
-         auto ttl = 1.f + (float)(std::rand() % 100) / 100.f;
-         auto bullet_id = world.create_particle(game::particle_t::bullet, bullet_moment, ttl);
+         auto bullet_id = world.create_particle(game::particle_t::bullet, bullet_moment, 2.f);
 
          return true;
       });
