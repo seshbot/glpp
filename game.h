@@ -295,9 +295,8 @@ namespace game {
 
       struct render_info_t {
          render_info_t(gl::sprite_cursor_t const & sprite, moment_t const & moment);
-         render_info_t(render_info_t & other);
-
-         render_info_t & operator=(render_info_t & other);
+         render_info_t(render_info_t const & other);
+         render_info_t & operator=(render_info_t const & other);
 
          gl::texture_t::id_type tex_id;
          gl::sprite_cursor_t const * sprite;

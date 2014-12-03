@@ -182,11 +182,11 @@ namespace game {
       : tex_id(sprite.current_animation().texture().id()), sprite(&sprite), moment(&moment)
    { }
 
-   world_view_t::render_info_t::render_info_t(render_info_t & other)
+   world_view_t::render_info_t::render_info_t(render_info_t const & other)
       : tex_id(other.tex_id), sprite(other.sprite), moment(other.moment)
    { }
 
-   world_view_t::render_info_t & world_view_t::render_info_t::operator=(render_info_t & other) {
+   world_view_t::render_info_t & world_view_t::render_info_t::operator=(render_info_t const & other) {
       if (&other == this) return *this;
 
       tex_id = other.tex_id;
@@ -238,7 +238,7 @@ namespace game {
          update_sprite_animation(time_since_last, *sprite_ptr, moment);
          sprite_ptr->advance(time_since_last);
 
-         creature_render_info.push_back({ *sprite_ptr, moment });
+         creature_render_info.push_back({ {*sprite_ptr}, moment });
       }
 
       std::sort(std::begin(creature_render_info), std::end(creature_render_info), cmp_by_tex_id);
@@ -264,7 +264,7 @@ namespace game {
          auto & moment = moments[idx];
          sprite_ptr->advance(time_since_last);
 
-         particle_render_info.push_back({ *sprite_ptr, moment });
+         particle_render_info.push_back({ {*sprite_ptr}, moment });
       }
 
       std::sort(std::begin(particle_render_info), std::end(particle_render_info), cmp_by_tex_id);
@@ -305,7 +305,7 @@ std::size_t table_index_t::index_of(table_row_id_type row_id) const {
 }
 
 table_row_id_type table_index_t::alloc_row() {
-   auto alloc_row_id = [&](table_row_id_type new_row_idx) {
+   auto alloc_row_id = [&](table_row_id_type new_row_idx) -> table_row_id_type{
       for (auto id = 0U; id < row_id_to_row_idx.size(); id++) {
          if (row_id_to_row_idx[id] == -1) {
             row_id_to_row_idx[id] = new_row_idx;

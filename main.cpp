@@ -279,7 +279,7 @@ int main()
          mutable gl::texture_t::id_type current_tex_id_ = 0;
 
          render_callback_t(render_callback_t const &) {}
-         render_callback_t & operator=(render_callback_t const &) {}
+         render_callback_t & operator=(render_callback_t const &) { return *this; }
       };
 
 
