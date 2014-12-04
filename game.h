@@ -289,8 +289,10 @@ namespace game {
    struct world_view_t {
       struct sprite_repository_t {
          virtual ~sprite_repository_t() { }
-         virtual gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const = 0;
-         virtual gl::sprite_t const & find_particle_sprite(game::particle_t const & particle) const = 0;
+         virtual gl::sprite_t const & find_creature_sprite(creature_t const & creature) const = 0;
+         virtual float creature_sprite_updating(creature_t const & creature, gl::sprite_cursor_t & cursor, moment_t & moment) const = 0;
+         virtual gl::sprite_t const & find_particle_sprite(particle_t const & particle) const = 0;
+         virtual float particle_sprite_updating(particle_t const & particle, gl::sprite_cursor_t & cursor, moment_t & moment) const = 0;
       };
 
       struct render_info_t {
@@ -320,8 +322,7 @@ namespace game {
       void update_creatures(double time_since_last);
       void update_particles(double time_since_last);
 
-      void update_sprite_animation(double time_since_last, gl::sprite_cursor_t & cursor, moment_t & moment);
-      std::unique_ptr<gl::sprite_cursor_t> create_sprite(game::creature_t const & creature);
+      std::unique_ptr<gl::sprite_cursor_t> create_sprite(creature_t const & creature);
       std::unique_ptr<gl::sprite_cursor_t> create_sprite(particle_t const & particle);
 
       creature_info_table & entity_db_;

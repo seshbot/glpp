@@ -178,40 +178,59 @@ int main()
       class sprite_repository : public game::world_view_t::sprite_repository_t {
       public:
          sprite_repository()
-            : player_sprite_sheet_(
-               { "../res/kenney_platformer_graphics/Player/p1_walk/p1_walk.png" }, {
-                  { { 0, 420 }, { 66, 92 } },
-                  { { 66, 419 }, { 66, 92 } },
-                  { { 133, 420 }, { 66, 92 } },
-                  { { 0, 326 }, { 66, 92 } },
-                  { { 133, 420 }, { 66, 92 } },
-                  { { 66, 420 }, { 66, 92 } },
+            : player_sprite_sheet_({ "../res/dude-walk.png" }, 64, 72)
+            , bullet_sprite_sheet_({ "../res/sprites.png" }, {
+               { { 0, 608 }, { 32, 32 } },
+               { { 0, 544 }, { 64, 64 } },
+            })
+            , player_sprite_(
+            {
+               { player_sprite_sheet_, { 0, 1, 2, 3, 4, 5, 6, 7 } },
+               { player_sprite_sheet_, { 8, 9, 10, 11, 12, 13, 14, 15 } },
+               { player_sprite_sheet_, { 16, 17, 18, 19, 20, 21, 22, 23 } },
+               { player_sprite_sheet_, { 24, 25, 26, 27, 28, 29, 30, 31 } },
+               { player_sprite_sheet_, { 32, 33, 34, 35, 36, 37, 38, 39 } },
+               { player_sprite_sheet_, { 40, 41, 42, 43, 44, 45, 46, 47 } },
                })
-               , bullet_sprite_sheet_({ "../res/sprites.png" }, {
-                  { { 0, 608 }, { 32, 32 } },
-                  { { 0, 544 }, { 64, 64 } },
-               })
-               , player_sprite_(
-               {
-                  { player_sprite_sheet_, { 0 } },
-                  { player_sprite_sheet_, { 1, 2, 3, 4, 5 } },
-               })
-               , bullet_sprite_(
-               {
-                  { bullet_sprite_sheet_, {0} }
-               })
-               , big_rock_sprite_(
-               {
-                  { bullet_sprite_sheet_, {1} }
-               })
+            , bullet_sprite_(
+            {
+               { bullet_sprite_sheet_, {0} }
+            })
+            , big_rock_sprite_(
+            {
+               { bullet_sprite_sheet_, {1} }
+            })
          { }
 
          gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const override {
             return player_sprite_;
          }
 
+         float creature_sprite_updating(game::creature_t const & creature, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
+            if (moment.speed() < 10.) {
+               cursor.set_idx(0);
+               return 0.;
+            }
+
+            auto y = moment.dir().y;
+            auto abs_x = std::abs(moment.dir().x);
+            if (abs_x > 0.25f) {
+               if (y < -.1f) cursor.set_animation_idx(1);
+               else if (y > 0.1f) cursor.set_animation_idx(3);
+               else cursor.set_animation_idx(2);
+            }
+            else if (moment.dir().y > 0.5f) cursor.set_animation_idx(4);
+            else cursor.set_animation_idx(0);
+
+            return 1.;
+         }
+
          gl::sprite_t const & find_particle_sprite(game::particle_t const & particle) const override {
             return bullet_sprite_;
+         }
+
+         float particle_sprite_updating(game::particle_t const & particle, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
+            return 1.;
          }
 
       private:

@@ -126,11 +126,11 @@ namespace game {
 
    void world_t::player_update(double time_since_last) {
       auto & m = entity_db_.moment(player_id_);
-      auto target_vel = player_controller_.get_relative_velocity() * 500.f;
+      auto target_vel = player_controller_.get_relative_velocity() * 200.f;
       if (glm::length(target_vel) > 0.1) {
          m.set_dir(player_controller_.get_relative_velocity());
       }
-      m.set_vel(utils::lerp(m.vel(), target_vel, 7.f * static_cast<float>(time_since_last)));
+      m.set_vel(utils::lerp(m.vel(), target_vel, 12.f * static_cast<float>(time_since_last)));
    }
 
    void world_t::move_creatures(double time_since_last) {
@@ -228,15 +228,16 @@ namespace game {
 
       for (std::size_t idx = 0; idx < entity_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
+         auto & creature = creatures[idx];
 
          // create and track sprites if no sprite associated with entity
          if (!sprite_ptr) {
-            sprite_ptr = create_sprite(creatures[idx]);
+            sprite_ptr = create_sprite(creature);
          }
 
          auto & moment = moments[idx];
-         update_sprite_animation(time_since_last, *sprite_ptr, moment);
-         sprite_ptr->advance(time_since_last);
+         auto animation_speed = sprite_repository_.creature_sprite_updating(creature, *sprite_ptr, moment);
+         sprite_ptr->advance(animation_speed * time_since_last);
 
          creature_render_info.push_back({ *sprite_ptr, moment });
       }
@@ -270,11 +271,6 @@ namespace game {
       std::sort(std::begin(particle_render_info), std::end(particle_render_info), cmp_by_tex_id);
 
       particle_render_info_.swap(particle_render_info);
-   }
-
-   void world_view_t::update_sprite_animation(double time_since_last, gl::sprite_cursor_t & cursor, moment_t & moment) {
-      if (!moment.is_moving()) cursor.set_animation_idx(0);
-      else cursor.set_animation_idx(1);
    }
 
    std::unique_ptr<gl::sprite_cursor_t> world_view_t::create_sprite(creature_t const & creature) {

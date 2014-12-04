@@ -542,7 +542,8 @@ namespace gl {
          glm::ivec2 dimensions;
       };
 
-      sprite_sheet(gl::texture_t texture, std::initializer_list<frame_ref> frames);
+      sprite_sheet(gl::texture_t texture, std::vector<frame_ref> frames);
+      sprite_sheet(gl::texture_t texture, int frame_x, int frame_y);
       sprite_sheet(gl::texture_t texture);
 
       gl::texture_t texture() const { return texture_; }

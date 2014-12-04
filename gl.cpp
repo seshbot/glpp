@@ -1470,7 +1470,7 @@ namespace gl
    // class sprite_sheet
    //
 
-   sprite_sheet::sprite_sheet(gl::texture_t texture, std::initializer_list<frame_ref> frames)
+   sprite_sheet::sprite_sheet(gl::texture_t texture, std::vector<frame_ref> frames)
       : texture_(texture) {
       for (auto & s : frames) {
          if (s.dimensions.x > max_frame_width_) max_frame_width_ = s.dimensions.x;
@@ -1480,6 +1480,24 @@ namespace gl
       }
 
       frame_count_ = frames_.size();
+   }
+
+   namespace {
+      std::vector<sprite_sheet::frame_ref> calculate_frames(gl::texture_t const & texture, int frame_x, int frame_y) {
+         std::vector<sprite_sheet::frame_ref> frames;
+         for (auto y = 0; y < texture.height(); y += frame_y) {
+            for (auto x = 0; x < texture.width(); x += frame_x) {
+               // tex coords are from top==0, 2d graphics use bottom==0
+               auto frame_lower_bound = texture.height() - (y + frame_y);
+               frames.push_back({ { x, frame_lower_bound }, {frame_x, frame_y} });
+            }
+         }
+         return frames;
+      }
+   }
+
+   sprite_sheet::sprite_sheet(gl::texture_t texture, int frame_x, int frame_y)
+      : sprite_sheet(std::move(texture), calculate_frames(texture, frame_x, frame_y)) {
    }
 
    sprite_sheet::sprite_sheet(gl::texture_t texture)
