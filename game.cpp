@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <random>
 
+namespace {
+   const float CREATURE_SPEED_PER_SECOND = 150.f;
+}
 
 namespace game {
 
@@ -90,6 +93,9 @@ namespace game {
          auto & p = plans[idx];
 
          switch (p.type) {
+         case plan_t::type_t::walk_on_spot: {
+         }
+         break;
          case plan_t::type_t::do_nothing: {
             if (glm::length(player_moment.pos() - m.pos()) < 60.) {
                auto target = glm::vec2((float)(std::rand() % 800 - 400), (float)(std::rand() % 600 - 300));
@@ -105,7 +111,7 @@ namespace game {
             }
             else {
                m.set_dir(to_target);
-               m.set_vel((to_target / dist) * 200.f);
+               m.set_vel((to_target / dist) * CREATURE_SPEED_PER_SECOND);
             }
          }
          break;
@@ -126,7 +132,7 @@ namespace game {
 
    void world_t::player_update(double time_since_last) {
       auto & m = entity_db_.moment(player_id_);
-      auto target_vel = player_controller_.get_relative_velocity() * 200.f;
+      auto target_vel = player_controller_.get_relative_velocity() * CREATURE_SPEED_PER_SECOND;
       if (glm::length(target_vel) > 0.1) {
          m.set_dir(player_controller_.get_relative_velocity());
       }
@@ -236,7 +242,7 @@ namespace game {
          }
 
          auto & moment = moments[idx];
-         auto animation_speed = sprite_repository_.creature_sprite_updating(creature, *sprite_ptr, moment);
+         auto animation_speed = sprite_repository_.creature_sprite_updating(idx, creature, *sprite_ptr, moment);
          sprite_ptr->advance(animation_speed * time_since_last);
 
          creature_render_info.push_back({ *sprite_ptr, moment });

@@ -177,8 +177,9 @@ int main()
 
       class sprite_repository : public game::world_view_t::sprite_repository_t {
       public:
-         sprite_repository()
-            : player_sprite_sheet_({ "../res/dude-walk.png" }, 64, 72)
+         sprite_repository(game::creature_info_table const & creature_db)
+            : creature_db_(creature_db)
+            , player_sprite_sheet_({ "../res/dude-walk.png" }, 64, 72)
             , bullet_sprite_sheet_({ "../res/sprites.png" }, {
                { { 0, 608 }, { 32, 32 } },
                { { 0, 544 }, { 64, 64 } },
@@ -206,7 +207,10 @@ int main()
             return player_sprite_;
          }
 
-         float creature_sprite_updating(game::creature_t const & creature, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
+         float creature_sprite_updating(std::size_t db_idx, game::creature_t const & creature, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
+            auto const & plan = creature_db_.plan(db_idx);
+            if (plan.type == game::plan_t::type_t::walk_on_spot) return 1.;
+
             if (moment.speed() < 10.) {
                cursor.set_idx(0);
                return 0.;
@@ -229,11 +233,13 @@ int main()
             return bullet_sprite_;
          }
 
-         float particle_sprite_updating(game::particle_t const & particle, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
+         float particle_sprite_updating(std::size_t db_idx, game::particle_t const & particle, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
             return 1.;
          }
 
       private:
+         game::creature_info_table const & creature_db_;
+
          gl::sprite_sheet player_sprite_sheet_;
          gl::sprite_sheet bullet_sprite_sheet_;
          gl::sprite_t player_sprite_;
@@ -241,16 +247,16 @@ int main()
          gl::sprite_t big_rock_sprite_;
       };
 
-      game::creature_info_table entity_db;
+      game::creature_info_table creature_db;
       game::particle_info_table particle_db;
 
       player_controller controller(controls);
-      sprite_repository sprite_repository;
+      sprite_repository sprite_repository(creature_db);
 
-      game::world_t world(entity_db, particle_db, controller);
-      game::world_view_t world_view(entity_db, particle_db, sprite_repository);
+      game::world_t world(creature_db, particle_db, controller);
+      game::world_view_t world_view(creature_db, particle_db, sprite_repository);
 
-      for (auto i = 0; i < 4; i++) {
+      for (auto i = 0; i < 10; i++) {
          auto loc = glm::vec2(std::rand() % 700 - 350, std::rand() % 500 - 250);
          world.create_creature(game::creature_t::types::person, { loc, {} });
       }
@@ -303,7 +309,7 @@ int main()
 
 
       controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
-         auto & player = entity_db.moment(world.player_id());
+         auto & player = creature_db.moment(world.player_id());
          auto bullet_pos = player.pos() + glm::vec2(0., 30.f) + player.dir() * 40.f;
          auto bullet_vel = player.vel() + player.dir() * 400.f;
          auto bullet_moment = game::moment_t{ bullet_pos, bullet_vel };

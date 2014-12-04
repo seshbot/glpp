@@ -298,7 +298,7 @@ namespace gl
          filename.c_str(),
          SOIL_LOAD_AUTO,
          SOIL_CREATE_NEW_ID,
-         SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y,
+         SOIL_FLAG_INVERT_Y, // SOIL_FLAG_MIPMAPS // BEWARE mipmaps make colours bleed! (alters the tex params)
          &width, &height, &resized_width, &resized_height, &channels);
 
       if (!id_) {
@@ -1484,12 +1484,18 @@ namespace gl
 
    namespace {
       std::vector<sprite_sheet::frame_ref> calculate_frames(gl::texture_t const & texture, int frame_x, int frame_y) {
+         auto tex_height = texture.height();
+         auto tex_width = texture.width();
          std::vector<sprite_sheet::frame_ref> frames;
-         for (auto y = 0; y < texture.height(); y += frame_y) {
-            for (auto x = 0; x < texture.width(); x += frame_x) {
+         for (auto y = 0; y < tex_height; y += frame_y) {
+            for (auto x = 0; x < tex_width; x += frame_x) {
                // tex coords are from top==0, 2d graphics use bottom==0
-               auto frame_lower_bound = texture.height() - (y + frame_y);
-               frames.push_back({ { x, frame_lower_bound }, {frame_x, frame_y} });
+               auto frame_lower_bound = (tex_height) - (y + frame_y);
+
+               assert(frame_lower_bound >= 0 && "calculated frame lower bound is < 0");
+               assert((frame_lower_bound + frame_y) <= texture.height() && "calculated frame upper bound is > texture height");
+
+               frames.push_back({ { x, frame_lower_bound }, { frame_x, frame_y } });
             }
          }
          return frames;

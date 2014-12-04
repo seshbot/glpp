@@ -45,6 +45,7 @@ public:
    table_column_t(table_index_t const & index);
 
    T & select(table_row_id_type id);
+   T const & select(table_row_id_type id) const;
    void delete_by_id(table_row_id_type id);
    void set_by_id(table_row_id_type id, T & val);
 
@@ -97,7 +98,7 @@ namespace game {
    };
 
    struct plan_t {
-      enum class type_t { do_nothing, move_to, wait_for, follow_for };
+      enum class type_t { do_nothing, move_to, wait_for, follow_for, walk_on_spot, };
 
       type_t type;
       double time;
@@ -250,6 +251,7 @@ namespace game {
       creature_column_type::collection_type & creature_infos() { return creature_info_.values(); }
 
       plan_t & plan(table_row_id_type id) { return plan_.select(id); }
+      plan_t const & plan(table_row_id_type id) const { return plan_.select(id); }
       plan_column_type::collection_type & plans() { return plan_.values(); }
 
       gl::sprite_cursor_t & sprite(table_row_id_type id) { return *sprites_.select(id); }
@@ -290,9 +292,9 @@ namespace game {
       struct sprite_repository_t {
          virtual ~sprite_repository_t() { }
          virtual gl::sprite_t const & find_creature_sprite(creature_t const & creature) const = 0;
-         virtual float creature_sprite_updating(creature_t const & creature, gl::sprite_cursor_t & cursor, moment_t & moment) const = 0;
+         virtual float creature_sprite_updating(std::size_t db_idx, creature_t const & creature, gl::sprite_cursor_t & cursor, moment_t & moment) const = 0;
          virtual gl::sprite_t const & find_particle_sprite(particle_t const & particle) const = 0;
-         virtual float particle_sprite_updating(particle_t const & particle, gl::sprite_cursor_t & cursor, moment_t & moment) const = 0;
+         virtual float particle_sprite_updating(std::size_t db_idx, particle_t const & particle, gl::sprite_cursor_t & cursor, moment_t & moment) const = 0;
       };
 
       struct render_info_t {
@@ -345,6 +347,9 @@ table_column_t<T>::table_column_t(table_index_t const & index) : index_(index) {
 
 template <typename T>
 T & table_column_t<T>::select(table_row_id_type id) { return values_[index_.index_of(id)]; }
+
+template <typename T>
+T const & table_column_t<T>::select(table_row_id_type id) const { return values_[index_.index_of(id)]; }
 
 template <typename T>
 void table_column_t<T>::delete_by_id(table_row_id_type id) {
