@@ -1503,7 +1503,7 @@ namespace gl
    }
 
    sprite_sheet::sprite_sheet(gl::texture_t texture, int frame_x, int frame_y)
-      : sprite_sheet(std::move(texture), calculate_frames(texture, frame_x, frame_y)) {
+      : sprite_sheet(texture, calculate_frames(texture, frame_x, frame_y)) {
    }
 
    sprite_sheet::sprite_sheet(gl::texture_t texture)
