@@ -61,3 +61,15 @@ endif ()
 
 add_subdirectory(soil2-20141119)
 set(SOIL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/soil2-20141119/src CACHE INTERNAL "")
+
+#
+# AssImp
+#
+
+set(BUILD_SHARED_LIBS OFF)
+set(LIB_INSTALL_DIR "lib")
+set(ASSIMP_LIB_INSTALL_DIR "lib")
+add_subdirectory(assimp-3.1.1)
+
+set(ASSIMP_LIBRARIES assimp CACHE INTERNAL "")
+set(ASSIMP_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/assimp-3.1.1/include CACHE INTERNAL "")
