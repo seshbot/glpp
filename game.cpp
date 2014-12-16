@@ -2,12 +2,17 @@
 
 #include "utils.h"
 
+#define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/vector_angle.hpp>
 
 #include <algorithm>
 #include <random>
 
 namespace {
+   const float VIEW_DIMENSION_WIDTH = 800.f;
+   const float VIEW_DIMENSION_HEIGHT = 600.f;
+   const float VIEW_DIMENSION_DEPTH = 2.f; // -1 - 1
    const float CREATURE_SPEED_PER_SECOND = 150.f;
 }
 
@@ -28,14 +33,35 @@ namespace game {
    }
 
 
-   glm::mat4 moment_t::transform() const {
-      float x = 400.f + pos().x;
-      float y = 300.f + pos().y;
+   glm::mat4 moment_t::sprite_transform() const {
+      float x = (VIEW_DIMENSION_WIDTH / 2.f) + pos().x;  // 0 - 800
+      float y = (VIEW_DIMENSION_HEIGHT / 2.f) + pos().y; // 0 - 600
+      float z = (y / VIEW_DIMENSION_HEIGHT) * -1.f; // -1 - 0
+      auto moved = glm::translate(glm::mat4{}, glm::vec3{ x, y, z });
 
-      auto moved = glm::translate(glm::mat4{}, glm::vec3{ x, y, 0. });
-
+      // flip the sprite if we are heading right-to-left
       if (dir().x < 0) return glm::scale(moved, glm::vec3{ -1., 1., 1. });
       return moved;
+   }
+
+   glm::mat4 moment_t::mesh_transform() const {
+      float x = (VIEW_DIMENSION_WIDTH / 2.f) + pos().x;  // 0 - 800
+      float z = -((VIEW_DIMENSION_HEIGHT / 2.f) + pos().y); // 0 - 600
+      auto moved = glm::translate(glm::mat4{}, glm::vec3{ x, 0., z });
+
+      return
+         glm::rotate(
+            glm::rotate(
+               glm::scale(moved, glm::vec3{ 32. }),
+               glm::radians(-45.f), glm::vec3{ 1., 0., 0. }),
+            angle(), glm::vec3{ 0., 1., 0. });
+   }
+
+   glm::vec2::value_type moment_t::angle() const {
+      auto abs_angle = glm::angle(glm::vec2{ 0., -1 }, dir_);
+      return (dir_.x >= 0)
+         ? abs_angle
+         : glm::radians(360.f) - abs_angle;
    }
 
    void moment_t::update(double time_since_last) {

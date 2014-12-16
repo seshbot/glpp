@@ -60,10 +60,24 @@ lowp vec3 post_adjust(lowp vec3 rgb, mediump vec2 xy) {
     return rgb;
 }
 
-void main() {
-   mediump float xoff = 0.0;//1 * sin(20. * t + 40. * v_tex_coords.y);
+const lowp vec2 PIXEL_RATIO = vec2(1. / 800., 1. / 600.);
 
-   lowp vec4 colour = texture2D(texture, vec2(v_tex_coords.x + xoff, v_tex_coords.y));
+lowp float border_contrib(mediump vec2 offset) {
+   return texture2D(texture, v_tex_coords + offset * PIXEL_RATIO * 1.8).a;
+}
+lowp vec4 colour_with_border() {
+   lowp vec4 colour = texture2D(texture, v_tex_coords);
+   if (colour.a > 0.5) return colour;
+   lowp float border =
+      border_contrib(vec2(-1., 1.)) + border_contrib(vec2(0., 1.)) + border_contrib(vec2(1., 1.)) +
+      border_contrib(vec2(-1., 0.)) +                                 border_contrib(vec2(1., 0.)) +
+      border_contrib(vec2(-1., -1.)) + border_contrib(vec2(0., -1.)) + border_contrib(vec2(1., -1.));
+
+   return vec4(0., 0., 0., border / 4.);
+}
+
+void main() {
+   lowp vec4 colour = texture2D(texture, v_tex_coords);
 
    //colour = hsv_adjust(colour, sin(2. * t));
    lowp vec3 post_colour = post_adjust(colour.rgb, v_tex_coords);

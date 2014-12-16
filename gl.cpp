@@ -2,6 +2,8 @@
 
 #ifdef WIN32
 #  include <GLES2/gl2.h>
+#  define GL_GLEXT_PROTOTYPES
+#  include <GLES2/gl2ext.h>
 
 #  define USE_OPENGL_ES_2
 #else  // LINUX, OSX
@@ -35,6 +37,11 @@ void checkOpenGLError(const char* stmt, const char* function, const char* file, 
 }
 
 namespace {
+   bool extensionEnabled(std::string const & extName) {
+      const char* extString = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+      return strstr(extString, extName.c_str()) != NULL;
+   }
+
    std::string get_shader_info_log(gl::id_t shader_id)
    {
       GLint  length;
@@ -283,11 +290,12 @@ namespace gl
       : state_(std::make_shared<state>(filename)) {
    }
 
-   texture_t::texture_t(int width, int height)
-      : state_(std::make_shared<state>(width, height)) {
+   texture_t::texture_t(dim_t const & dims, Format format)
+      : state_(std::make_shared<state>(dims, format)) {
    }
 
-   texture_t::state::state(std::string const & filename) {
+   texture_t::state::state(std::string const & filename)
+   : format_(texture_t::RGBA) { // TODO: this may not be right?
       int width;
       int height;
       int resized_width;
@@ -305,8 +313,8 @@ namespace gl
          throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
       }
 
-      width_ = width;
-      height_ = height;
+      dims_.x = width;
+      dims_.y = height;
 
       GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
 
@@ -322,12 +330,18 @@ namespace gl
       GL_VERIFY(glBindTexture(GL_TEXTURE_2D, 0));
    }
 
-   texture_t::state::state(int width, int height)
-   : width_(width), height_(height) {
+   texture_t::state::state(dim_t const & dims, texture_t::Format format)
+   : dims_(dims), format_(format) {
       GL_VERIFY(glGenTextures(1, &id_));
       GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
 
-      GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+      auto fmt
+         = format == texture_t::RGBA ? GL_RGBA
+         : format == texture_t::RGB ? GL_RGB
+         : format == texture_t::BGRA ? GL_BGRA_EXT
+         : throw error("unrecognised image format");
+
+      GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, fmt, dims_.x, dims_.y, 0, fmt, GL_UNSIGNED_BYTE, NULL));
 
       // set texture parameters
       GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
@@ -346,11 +360,18 @@ namespace gl
    }
 
    void texture_t::save(std::string const & filename) const {
-      std::vector<uint8_t> buffer(4 * state_->width_ * state_->height_);
+      std::vector<uint8_t> buffer(4 * state_->dims_.x * state_->dims_.y);
 
-      GL_VERIFY(glReadPixels(0, 0, state_->width_, state_->height_, GL_RGBA, GL_UNSIGNED_BYTE, &buffer[0]));
+      auto format = state_->format_;
+      auto fmt
+         = format == texture_t::RGBA ? GL_RGBA
+         : format == texture_t::RGB ? GL_RGB
+         : format == texture_t::BGRA ? GL_BGRA_EXT
+         : throw error("unrecognised image format");
 
-      auto format = [&filename] {
+      GL_VERIFY(glReadPixels(0, 0, state_->dims_.x, state_->dims_.y, fmt, GL_UNSIGNED_BYTE, &buffer[0]));
+
+      auto soil_format = [&filename] {
          auto ext = filename.substr(filename.length() - 4);
          if (ext == ".png") return SOIL_SAVE_TYPE_PNG;
          if (ext == ".tga") return SOIL_SAVE_TYPE_TGA;
@@ -361,8 +382,8 @@ namespace gl
       }();
 
       SOIL_save_image(
-         filename.c_str(), format,
-         state_->width_, state_->height_, 4, // TODO: channels?
+         filename.c_str(), soil_format,
+         state_->dims_.x, state_->dims_.y, 4, // TODO: channels?
          buffer.data());
    }
 
@@ -392,19 +413,48 @@ namespace gl
    *
    */
 
-   frame_buffer_t::frame_buffer_t(dim_t dims)
-      : dims_(dims), colour_buffer_(dims.x, dims.y) {
+   frame_buffer_t::frame_buffer_t(texture_t const & tex)
+   : dims_(tex.dims()), samples_(0) {
       GL_VERIFY(glGenFramebuffers(1, &fbo_id_));
       GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_));
 
       // attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
-      GL_VERIFY(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colour_buffer_.id(), 0));
+      GL_VERIFY(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex.id(), 0));
 
       // create render buffer for stencil and depth (we arent interested in reading it)
-      GL_VERIFY(glGenRenderbuffers(1, &rbo_id_));
-      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, rbo_id_));
+      GL_VERIFY(glGenRenderbuffers(1, &depth_rbo_id_));
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id_));
       GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y)); // GL_DEPTH24_STENCIL8
-      GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_id_)); // GL_DEPTH_STENCIL_ATTACHMENT
+      GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id_)); // GL_DEPTH_STENCIL_ATTACHMENT
+
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+
+      check_fbo();
+
+      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+   }
+
+   frame_buffer_t::frame_buffer_t(dim_t dims, unsigned samples)
+      : dims_(dims), samples_(samples) {
+      // NOTE: ANGLE doesn't support glTexImage2DMultisample (for MSAA), only glRenderbufferStorageMultisampleANGLE
+
+      GL_VERIFY(glGenFramebuffers(1, &fbo_id_));
+      GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_));
+
+      // TODO: verify samples_ is valid
+      // must use GL_BGRA8_EXT because thats what the default buffer format is in ANGLE (must match for blitting)
+      GL_VERIFY(glGenRenderbuffers(1, &colour_rbo_id_));
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, colour_rbo_id_));
+      if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_BGRA8_EXT, dims_.x, dims_.y));
+      else GL_VERIFY(glRenderbufferStorageMultisampleANGLE(GL_RENDERBUFFER, samples_, GL_BGRA8_EXT, dims_.x, dims_.y));
+      GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colour_rbo_id_));
+
+      GL_VERIFY(glGenRenderbuffers(1, &depth_rbo_id_));
+      GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id_));
+      if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
+      else GL_VERIFY(glRenderbufferStorageMultisampleANGLE(GL_RENDERBUFFER, samples_, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
+      GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id_));
+
       GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 
       check_fbo();
@@ -413,16 +463,53 @@ namespace gl
    }
 
    frame_buffer_t::~frame_buffer_t() {
-      GL_VERIFY(glDeleteRenderbuffers(1, &rbo_id_));
+      if (0 != depth_rbo_id_) GL_VERIFY(glDeleteRenderbuffers(1, &depth_rbo_id_));
+      if (0 != colour_rbo_id_) GL_VERIFY(glDeleteRenderbuffers(1, &colour_rbo_id_));
       GL_VERIFY(glDeleteFramebuffers(1, &fbo_id_));
    }
 
-   void frame_buffer_t::bind() const { check_fbo(); GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_)); }
-   void frame_buffer_t::unbind() const { GL_VERIFY(glBindFramebuffer(GL_FRAMEBUFFER, 0)); }
+   void frame_buffer_t::bind(BindTarget target) const {
+      check_fbo();
+      GLenum t
+         = target == ReadDraw ? GL_FRAMEBUFFER
+         : target == Read ? GL_READ_FRAMEBUFFER_ANGLE
+         : target == Draw ? GL_DRAW_FRAMEBUFFER_ANGLE
+         : throw error("unrecognised bind target");
+
+      if (t == ReadDraw) glBindFramebuffer(GL_READ_FRAMEBUFFER_ANGLE, 0);
+      GL_VERIFY(glBindFramebuffer(t, fbo_id_));
+   }
+
+   void frame_buffer_t::unbind(BindTarget target) const {
+      GLenum t
+         = target == ReadDraw ? GL_FRAMEBUFFER
+         : target == Read ? GL_READ_FRAMEBUFFER_ANGLE
+         : target == Draw ? GL_DRAW_FRAMEBUFFER_ANGLE
+         : throw error("unrecognised bind target");
+      GL_VERIFY(glBindFramebuffer(t, 0));
+   }
+
+   void frame_buffer_t::blit_to_draw_buffer() const {
+      // https://www.opengl.org/wiki/Framebuffer_Object
+      // from https://www.opengl.org/wiki/Multisampling
+
+      // you can do a full screen blit from an MSAA fbo to a non - MSAA fbo if they're the same format
+      // see BlitFramebufferANGLE on entry_points_gles_2_0_ext.cpp : 667
+
+      //GL_VERIFY(glBindFramebuffer(GL_DRAW_FRAMEBUFFER_ANGLE, 0));   // Make sure no FBO is set as the draw framebuffer
+      GL_VERIFY(glBindFramebuffer(GL_READ_FRAMEBUFFER_ANGLE, fbo_id_)); // Make sure your multisampled FBO is the read framebuffer
+      GL_VERIFY(glBlitFramebufferANGLE(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+   }
+
+   void frame_buffer_t::blit_to_screen() const {
+      GL_VERIFY(glBindFramebuffer(GL_DRAW_FRAMEBUFFER_ANGLE, 0));
+      blit_to_draw_buffer();
+   }
+
 
    void frame_buffer_t::check_fbo() const {
       // Your framebuffer can only be used as a render target if memory has been allocated to store the results
-      auto status = GL_VERIFY(glCheckFramebufferStatus(GL_FRAMEBUFFER));
+      auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE) {
          auto status_msg = [status] {
             switch (status) {
@@ -440,6 +527,8 @@ namespace gl
 
          utils::log(utils::LOG_ERROR, "framebuffer not initialised correctly: error 0x%x (%s)\n", status, status_msg);
       }
+
+      GL_CHECK();
    }
 
    id_t current_frame_buffer() {
@@ -517,6 +606,29 @@ namespace gl
       compile_log_ = std::move(other.compile_log_);
       return *this;
    }
+
+  /**
+   * ValueType functions
+   **/
+
+   template <> ValueType value_type<int8_t>() { return ValueType::Byte; }
+   template <> ValueType value_type<uint8_t>() { return ValueType::UByte; }
+   template <> ValueType value_type<int16_t>() { return ValueType::Short; }
+   template <> ValueType value_type<uint16_t>() { return ValueType::UShort; }
+   template <> ValueType value_type<int32_t>() { return ValueType::Int; }
+   template <> ValueType value_type<uint32_t>() { return ValueType::UInt; }
+   template <> ValueType value_type<float>() { return ValueType::Float; }
+   template <> ValueType value_type<glm::ivec2>() { return ValueType::IntVec2; }
+   template <> ValueType value_type<glm::ivec3>() { return ValueType::IntVec3; }
+   template <> ValueType value_type<glm::ivec4>() { return ValueType::IntVec4; }
+   template <> ValueType value_type<glm::vec2>() { return ValueType::FloatVec2; }
+   template <> ValueType value_type<glm::vec3>() { return ValueType::FloatVec3; }
+   template <> ValueType value_type<glm::vec4>() { return ValueType::FloatVec4; }
+   template <> ValueType value_type<glm::mat2>() { return ValueType::FloatMat2; }
+   template <> ValueType value_type<glm::mat3>() { return ValueType::FloatMat3; }
+   template <> ValueType value_type<glm::mat4>() { return ValueType::FloatMat4; }
+   template <> ValueType value_type<texture_unit_t>() { return ValueType::Sampler2d; }
+
 
   /**
    * class uniform
@@ -676,26 +788,28 @@ namespace gl
    *
    */
 
-   buffer_t::idx_array_t::idx_array_t(void* data, unsigned count, ValueType data_type, std::size_t byte_size)
-      : data(data), count(count), data_type(data_type), byte_size(byte_size) {
-      assert((data_type == ValueType::UInt || data_type == ValueType::UShort || data_type == ValueType::UByte) && "invalid index buffer type");
-   }
-
-
    buffer_t::state::state(void* vertex_data, std::size_t vertex_data_byte_size)
       : vertex_buffer_size_(vertex_data_byte_size) {
+      if (vertex_data == nullptr) return;
+
       glGenBuffers(1, &vertex_id_);
       glBindBuffer(GL_ARRAY_BUFFER, vertex_id_);
       glBufferData(GL_ARRAY_BUFFER, vertex_data_byte_size, vertex_data, GL_STATIC_DRAW);
    }
 
-   buffer_t::state::state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type)
+   buffer_t::state::state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size)
    : state(vertex_data, vertex_byte_size) {
       index_data_type_ = index_data_type;
       index_count_ = index_count;
+      // TODO: infer byte size?
+      assert(index_byte_size == index_count * attrib_atomic_val_bytes(index_data_type));
       glGenBuffers(1, &index_id_);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_id_);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_byte_size, index_data, GL_STATIC_DRAW);
+   }
+
+   buffer_t::state::state(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size)
+   : state(nullptr, 0, index_data, index_data_type, index_count, index_byte_size) {
    }
 
    buffer_t::state::~state() {
@@ -704,17 +818,33 @@ namespace gl
    }
 
 
+   buffer_t::buffer_t(Target target, static_array_t data) {
+      switch (target) {
+      case ArrayBuffer:
+         state_ = std::make_shared<state>(data.data(), data.size());
+         break;
+      case IndexBuffer:
+         state_ = std::make_shared<state>(data.data(), data.data_type(), data.elem_count(), data.size());
+         break;
+      default:
+         assert(false && "unrecognised buffer target");
+         throw error("unrecognised buffer target");
+      }
+   }
+
    buffer_t::buffer_t(static_array_t vertex_data)
-      : state_(new state(vertex_data.data(), vertex_data.size())) {
+      : state_(std::make_shared<state>(vertex_data.data(), vertex_data.size())) {
    }
 
-   buffer_t::buffer_t(static_array_t vertex_data, idx_array_t index_data)
-      : state_(new state(vertex_data.data(), vertex_data.size(), index_data.data, index_data.count, index_data.byte_size, index_data.data_type)) {
+   buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data)
+      : state_(std::make_shared<state>(vertex_data.data(), vertex_data.size(), index_data.data(), index_data.data_type(), index_data.elem_count(), index_data.size())) {
+      assert((index_data.data_type() == ValueType::UInt || index_data.data_type() == ValueType::UShort || index_data.data_type() == ValueType::UByte) && "second buffer parameter must be index buffer (must be integral type)");
    }
 
-   void buffer_t::use() const {
-      assert(0 != state_->vertex_id_ && "vertex buffer not initialised");
-      glBindBuffer(GL_ARRAY_BUFFER, state_->vertex_id_);
+   void buffer_t::bind() const {
+      if (0 != state_->vertex_id_) {
+         glBindBuffer(GL_ARRAY_BUFFER, state_->vertex_id_);
+      }
       if (0 != state_->index_id_) {
          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state_->index_id_);
       }
@@ -747,8 +877,8 @@ namespace gl
       return min_block_count;
    }
 
-   void use(buffer_spec_t const & packed) {
-      packed.buffer.use();
+   void bind(buffer_spec_t const & packed) {
+      packed.buffer.bind();
       for (auto & attrib_info : packed.attribs) {
          auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
 
@@ -780,7 +910,7 @@ namespace gl
    }
 
    void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count) {
-      use(b);
+      bind(b);
 
       if (b.buffer.has_index_data()) {
          assert(count <= b.buffer.index_count() && "index count greater than number of indices in buffer while drawing indexed buffer");
@@ -818,6 +948,8 @@ namespace gl
    }
 
    buffer_spec_t buffer_spec_builder_t::build(program & prg) const {
+      assert(state_->slices_.size() != 0 && "cannot build buffer spec without any attributes");
+
       buffer_spec_t::attribs_type attribs_sans_stride;
 
       unsigned pos_bytes = 0;
@@ -892,9 +1024,13 @@ namespace gl
    struct pass_t::state {
       state(program prg) : prg_(prg) {}
       state(pass_t & parent) : prg_(parent.state_->prg_), parent_(new pass_t(parent)) {}
+      state(state const &) = delete;
+      state & operator=(state const &) = delete;
+
       program prg_;
       std::unique_ptr<pass_t> parent_;
       std::vector<buffer_spec_t> vertex_buffers_;
+      int index_buffer_idx_ = -1;
       std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
       std::vector<std::pair<gl::uniform, texture_t>> texture_bindings_without_tex_units_;
       std::vector<std::pair<gl::uniform, uniform_action_t>> uniform_actions_;
@@ -917,6 +1053,13 @@ namespace gl
 
    pass_t & pass_t::with(buffer_spec_t buffer_spec) {
       state_->vertex_buffers_.push_back(std::move(buffer_spec));
+      auto & b = state_->vertex_buffers_.back();
+
+      // keep track of which buffer has the index data
+      if (b.buffer.has_index_data()) {
+         assert(!index_buffer_() && "render pass already has an index buffer");
+         state_->index_buffer_idx_ = state_->vertex_buffers_.size() - 1;
+      }
       return *this;
    }
 
@@ -956,6 +1099,12 @@ namespace gl
       // no binding exists, add to end
       state_->texture_bindings_.push_back({ u, tex });
       return *this;
+   }
+
+   buffer_t const * pass_t::index_buffer_() const {
+      if (state_->index_buffer_idx_ != -1) return &state_->vertex_buffers_[state_->index_buffer_idx_].buffer;
+      if (state_->parent_) return state_->parent_->index_buffer_();
+      return nullptr;
    }
 
 
@@ -1005,38 +1154,68 @@ namespace gl
    //   return *this;
    //}
 
+   unsigned pass_t::calc_draw_count_() const {
+      auto draw_count = 0U;
+
+      auto * index_buffer = index_buffer_();
+      if (nullptr != index_buffer) return index_buffer->index_count();
+
+      // TODO: verify that all buffers have sufficient elements to draw?
+
+      for (auto & v : state_->vertex_buffers_) {
+         draw_count = draw_count == 0 ? num_vertices(v) : std::min(draw_count, num_vertices(v));
+      }
+
+      return draw_count;
+   }
 
    pass_t & pass_t::draw(DrawMode mode) {
-      prepare_draw();
-
-      // draw the vertex buffers used in this pass
-      for (auto & v : state_->vertex_buffers_) gl::draw(v, mode);
-
+      prepare_draw_();
+      draw_(mode, 0, calc_draw_count_());
       return *this;
    }
 
    pass_t & pass_t::draw(DrawMode mode, unsigned first, unsigned count) {
-      prepare_draw();
-
-      for (auto & v : state_->vertex_buffers_) gl::draw(v, mode, first, count);
+      prepare_draw_();
+      draw_(mode, first, count);
       return *this;
    }
 
-   pass_t & pass_t::draw_batch(render_callback const & cb, DrawMode mode) {
-      prepare_draw();
+   void pass_t::draw_(DrawMode mode, unsigned first, unsigned count) {
+      auto * index_buffer = index_buffer_();
+      if (nullptr != index_buffer) {
+         auto index_count = index_buffer->index_count();
+         assert(count <= index_count && "index count greater than number of indices in buffer while drawing indexed buffer");
+         assert(first <= index_count && "first index greater than total number of indices in buffer while drawing indexed buffer");
+         assert(first + count <= index_count && "end index greater than total number of indices in buffer while drawing indexed buffer");
 
+         auto gl_type = attrib_atomic_gl_type(index_buffer->index_data_type());
+         auto idx_count = count;
+         auto idx_start = reinterpret_cast<GLvoid*>(first * attrib_atomic_val_bytes(index_buffer->index_data_type()));
+
+         GL_VERIFY(glDrawElements(gl_draw_mode(mode), idx_count, gl_type, idx_start));
+      }
+      else {
+         GL_VERIFY(glDrawArrays(gl_draw_mode(mode), first, count));
+      }
+   }
+
+   pass_t & pass_t::draw_batch(render_callback const & cb, DrawMode mode) {
+      prepare_draw_();
+
+      auto draw_count = calc_draw_count_();
       while (cb.prepare_next(state_->prg_)) {
-         for (auto & v : state_->vertex_buffers_) gl::draw(v, mode);
+         draw_(mode, 0, draw_count);
       }
 
       return *this;
    }
 
    pass_t & pass_t::draw_batch(render_callback const & cb, DrawMode mode, unsigned first, unsigned count) {
-      prepare_draw();
+      prepare_draw_();
 
       while (cb.prepare_next(state_->prg_)) {
-         for (auto & v : state_->vertex_buffers_) gl::draw(v, mode, first, count);
+         draw_(mode, first, count);
       }
 
       return *this;
@@ -1046,9 +1225,9 @@ namespace gl
       return state_->prg_.uniform(name);
    }
 
-   void pass_t::prepare_draw() {
+   void pass_t::prepare_draw_() {
       if (state_->parent_) {
-         state_->parent_->prepare_draw();
+         state_->parent_->prepare_draw_();
       }
       else {
          state_->prg_.use();
@@ -1103,6 +1282,8 @@ namespace gl
             tex.bind();
          }
       }
+
+      for (auto & v : state_->vertex_buffers_) gl::bind(v);
    }
 
 
@@ -1150,7 +1331,9 @@ namespace gl
    }
 
    void program::reload(shader s1, shader s2) {
-      for (auto & s : state_->shaders_) GL_VERIFY(glDetachShader(state_->id_, s.id()));
+      for (auto & s : state_->shaders_) {
+         GL_VERIFY(glDetachShader(state_->id_, s.id()));
+      }
       state_->shaders_.clear();
 
       attach(std::move(s1));
@@ -1199,10 +1382,11 @@ namespace gl
          char name[513];
 
          GL_VERIFY(glGetActiveUniform(_.id_, idx, 512, nullptr, &size, &gl_type, name));
-         auto location = GL_VERIFY(glGetUniformLocation(_.id_, name));
+         auto location = glGetUniformLocation(_.id_, name);
          if (location == -1) {
             utils::log(utils::LOG_WARN, "uniform '%s' location unknown\n", name);
          }
+         GL_CHECK();
 
          auto type = gl_to_value_type(gl_type);
          auto it = find_uniform_with_name(name);
@@ -1225,13 +1409,15 @@ namespace gl
          char name[513];
 
          GL_VERIFY(glGetActiveAttrib(_.id_, idx, 512, nullptr, &size, &gl_type, name));
-         auto location = GL_VERIFY(glGetAttribLocation(_.id_, name));
+         auto location = glGetAttribLocation(_.id_, name);
          if (location == -1) {
             utils::log(utils::LOG_WARN, "attribute '%s' location unknown\n", name);
          }
          else {
             assert(idx == location);
          }
+
+         GL_CHECK();
 
          auto type = gl_to_value_type(gl_type);
          auto it = find_attrib_with_name(name);
@@ -1425,7 +1611,7 @@ namespace gl
 #endif
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-      glfwWindowHint(GLFW_SAMPLES, 4);
+      glfwWindowHint(GLFW_SAMPLES, 8);
       glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
       GLFWwindow* window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
@@ -1438,8 +1624,7 @@ namespace gl
       window_key_callbacks_.set(window, *this, key_handler);
       glfwSetKeyCallback(window, key_callback);
 
-      GL_VERIFY(glEnable(GL_BLEND));
-      GL_VERIFY(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+      assert(extensionEnabled("GL_ANGLE_framebuffer_multisample"));
 
       impl_.reset(new impl{ window });
    }
@@ -1484,16 +1669,15 @@ namespace gl
 
    namespace {
       std::vector<sprite_sheet::frame_ref> calculate_frames(gl::texture_t const & texture, int frame_x, int frame_y) {
-         auto tex_height = texture.height();
-         auto tex_width = texture.width();
+         auto tex_dims = texture.dims();
          std::vector<sprite_sheet::frame_ref> frames;
-         for (auto y = 0; y < tex_height; y += frame_y) {
-            for (auto x = 0; x < tex_width; x += frame_x) {
+         for (auto y = 0; y < tex_dims.y; y += frame_y) {
+            for (auto x = 0; x < tex_dims.x; x += frame_x) {
                // tex coords are from top==0, 2d graphics use bottom==0
-               auto frame_lower_bound = (tex_height) - (y + frame_y);
+               auto frame_lower_bound = (tex_dims.y)-(y + frame_y);
 
                assert(frame_lower_bound >= 0 && "calculated frame lower bound is < 0");
-               assert((frame_lower_bound + frame_y) <= texture.height() && "calculated frame upper bound is > texture height");
+               assert((frame_lower_bound + frame_y) <= tex_dims.y && "calculated frame upper bound is > texture height");
 
                frames.push_back({ { x, frame_lower_bound }, { frame_x, frame_y } });
             }
@@ -1508,8 +1692,8 @@ namespace gl
 
    sprite_sheet::sprite_sheet(gl::texture_t texture)
       : texture_(texture)
-      , max_frame_width_(texture.width())
-      , max_frame_height_(texture.height()) {
+      , max_frame_width_(texture.dims().x)
+      , max_frame_height_(texture.dims().y) {
       frames_.push_back(frame_ref{ { 0, 0 }, { max_frame_width_, max_frame_height_ } });
       frame_count_ = frames_.size();
    }

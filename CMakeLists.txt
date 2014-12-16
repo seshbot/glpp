@@ -23,6 +23,7 @@ set(SOURCE
 
 set(SHADERS
 	shaders/2d.vert shaders/2d.frag
+	shaders/3d.vert shaders/3d.frag
     shaders/post.vert shaders/post.frag
     shaders/sprite.vert shaders/sprite.frag)
 

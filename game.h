@@ -70,8 +70,10 @@ namespace game {
       moment_t();
       moment_t(glm::vec2 const & pos, glm::vec2 const & vel);
 
-      glm::mat4 transform() const;
+      glm::mat4 sprite_transform() const;
+      glm::mat4 mesh_transform() const;
 
+      glm::vec2::value_type angle() const;
       glm::vec2 const & dir() const { return dir_; }
       glm::vec2 const & pos() const { return pos_; }
       glm::vec2 const & vel() const { return vel_; }

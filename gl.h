@@ -17,7 +17,7 @@
 #include <glm/mat4x4.hpp>
 
 
-#ifdef DEBUG
+#ifdef _DEBUG
    void checkOpenGLError(const char* function, const char* file, int line);
    void checkOpenGLError(const char* stmt, const char* function, const char* file, int line);
 
@@ -58,13 +58,14 @@ namespace gl {
    public:
       using id_type = uint32_t;
 
+      enum Format { RGB, RGBA, BGRA };
+
       texture_t(std::string const & filename);
-      texture_t(int width, int height);
+      texture_t(dim_t const & dims, Format format = RGBA);
 
       id_type id() const { return state_->id_; }
 
-      int width() const { return state_->width_; }
-      int height() const { return state_->height_; }
+      dim_t const & dims() const { return state_->dims_; }
 
       void save(std::string const & filename) const;
 
@@ -73,11 +74,11 @@ namespace gl {
    private:
       struct state {
          state(std::string const & filename);
-         state(int width, int height);
+         state(dim_t const & dims, Format format);
          ~state();
          id_type id_;
-         int width_;
-         int height_;
+         dim_t dims_;
+         Format format_;
       };
 
       std::shared_ptr<state> state_;
@@ -93,24 +94,28 @@ namespace gl {
       frame_buffer_t(frame_buffer_t const &) = delete;
       frame_buffer_t & operator=(frame_buffer_t const &) = delete;
 
-      frame_buffer_t(gl::dim_t dims);
+      frame_buffer_t(texture_t const & tex); // implied samples == 0
+      frame_buffer_t(gl::dim_t dims, unsigned samples = 0);
       ~frame_buffer_t();
 
       id_t id() const { return fbo_id_; }
       gl::dim_t dims() const { return dims_; }
 
-      void bind() const;
-      void unbind() const;
+      enum BindTarget { Read, Draw, ReadDraw };
+      void bind(BindTarget target = ReadDraw) const;
+      void unbind(BindTarget target = ReadDraw) const;
 
-      gl::texture_t & texture() { return colour_buffer_; }
+      void blit_to_draw_buffer() const;
+      void blit_to_screen() const;
 
    private:
       void check_fbo() const;
 
       dim_t dims_;
+      unsigned samples_;
       id_t fbo_id_;
-      id_t rbo_id_; // render buffer for stencil/depth
-      gl::texture_t colour_buffer_;
+      id_t colour_rbo_id_; // render buffer MSAA colour data
+      id_t depth_rbo_id_; // render buffer for stencil/depth
    };
 
    id_t current_frame_buffer();
@@ -167,6 +172,26 @@ namespace gl {
       DoubleMat3x2, DoubleMat3x4,
       DoubleMat4x2, DoubleMat4x3,
    };
+
+   template <typename T> ValueType value_type();
+   template <> ValueType value_type<int8_t>();
+   template <> ValueType value_type<uint8_t>();
+   template <> ValueType value_type<int16_t>();
+   template <> ValueType value_type<uint16_t>();
+   template <> ValueType value_type<int32_t>();
+   template <> ValueType value_type<uint32_t>();
+   template <> ValueType value_type<float>();
+   template <> ValueType value_type<glm::ivec2>();
+   template <> ValueType value_type<glm::ivec3>();
+   template <> ValueType value_type<glm::ivec4>();
+   template <> ValueType value_type<glm::vec2>();
+   template <> ValueType value_type<glm::vec3>();
+   template <> ValueType value_type<glm::vec4>();
+   template <> ValueType value_type<glm::mat2>();
+   template <> ValueType value_type<glm::mat3>();
+   template <> ValueType value_type<glm::mat4>();
+   template <> ValueType value_type<texture_unit_t>();
+
 
    class uniform {
    public:
@@ -241,21 +266,29 @@ namespace gl {
    public:
       template <typename T, unsigned N>
       static_array_t(const T(&data)[N]) 
-         : static_array_t((void*)data, N * sizeof(T)) {}
+         : static_array_t((void*)data, value_type<std::remove_cv<T>::type>(), N, N * sizeof(T)) {}
 
-      static_array_t(void* data, std::size_t byte_size)
-         : state_(std::make_shared<state>(data, byte_size)) { }
+      template <typename T>
+      static_array_t(T *data, std::size_t elem_count)
+         : static_array_t((void*)data, value_type<std::remove_cv<T>::type>(), elem_count, elem_count * sizeof(T)) {}
+
+      // TODO: we also need a way of unambiguously creating a buffer from void* and byte size
 
       void * const data() const { return state_->data_; }
+      ValueType data_type() const { return state_->data_type_; }
       std::size_t size() const { return state_->byte_size_; }
+      std::size_t elem_count() const { return state_->elem_count_; }
 
       friend bool operator==(static_array_t const & lhs, static_array_t const & rhs) { return lhs.data() == rhs.data(); }
       friend bool operator!=(static_array_t const & lhs, static_array_t const & rhs) { return !(lhs == rhs); }
 
    private:
+      static_array_t(void* data, ValueType data_type, std::size_t elem_count, std::size_t byte_size)
+         : state_(std::make_shared<state>(data, data_type, elem_count, byte_size)) { }
+
       struct state {
-         state(void* d, std::size_t sz) : data_(d), byte_size_(sz) { }
-         void * const data_; std::size_t byte_size_;
+         state(void* d, ValueType dt, std::size_t ct, std::size_t sz) : data_(d), data_type_(dt), elem_count_(ct), byte_size_(sz) { }
+         void * const data_; ValueType data_type_; std::size_t elem_count_; std::size_t byte_size_;
       };
 
       std::shared_ptr<state const> state_;
@@ -263,34 +296,25 @@ namespace gl {
 
    class buffer_t {
    public:
-      struct idx_array_t {
-         template <unsigned N>
-         idx_array_t(const uint32_t(&data)[N]) : idx_array_t((void*)data, N, ValueType::UInt, N * sizeof(uint32_t)) {}
-         template <unsigned N>
-         idx_array_t(const uint16_t(&data)[N]) : idx_array_t((void*)data, N, ValueType::UShort, N * sizeof(uint16_t)) {}
-         template <unsigned N>
-         idx_array_t(const uint8_t(&data)[N]) : idx_array_t((void*)data, N, ValueType::UByte, N * sizeof(uint8_t)) {}
-         idx_array_t(void* data, unsigned count, ValueType data_type, std::size_t byte_size);
+      enum Target { ArrayBuffer, IndexBuffer };
+      buffer_t(Target target, static_array_t data);
 
-         void* data;
-         unsigned count;
-         ValueType data_type;
-         std::size_t byte_size;
-      };
-
+      // convenience: assume array buffer
       buffer_t(static_array_t vertex_data);
-      buffer_t(static_array_t vertex_data, idx_array_t indices);
+      // convenience: assume array and index buffers
+      buffer_t(static_array_t vertex_data, static_array_t indices);
 
       std::size_t vertex_buffer_size() const { return state_->vertex_buffer_size_; }
 
       id_t vertex_buffer_id() const { return state_->vertex_id_; }
       id_t index_buffer_id() const { return state_->index_id_; }
 
+      bool has_vertex_data() const { return state_->vertex_id_ != 0; }
       bool has_index_data() const { return state_->index_id_ != 0; }
       ValueType index_data_type() const { return state_->index_data_type_; }
       unsigned index_count() const { return state_->index_count_; }
 
-      void use() const;
+      void bind() const;
 
       friend bool operator==(buffer_t const & lhs, buffer_t const & rhs) { return lhs.vertex_buffer_id() == rhs.vertex_buffer_id() && lhs.index_buffer_id() == rhs.index_buffer_id(); }
       friend bool operator!=(buffer_t const & lhs, buffer_t const & rhs) { return !(lhs == rhs); }
@@ -298,12 +322,13 @@ namespace gl {
    private:
       struct state {
          state(void* vertex_data, std::size_t vertex_byte_size);
-         state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type);
+         state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
+         state(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
          ~state();
 
          id_t vertex_id_ = 0;
          id_t index_id_ = 0;
-         std::size_t vertex_buffer_size_;
+         std::size_t vertex_buffer_size_ = 0;
          ValueType index_data_type_ = Unknown;
          unsigned index_count_ = 0;
       };
@@ -368,7 +393,7 @@ namespace gl {
    };
 
    unsigned num_vertices(buffer_spec_t const & b);
-   void use(buffer_spec_t const & b);
+   void bind(buffer_spec_t const & b);
    void draw(buffer_spec_t const & b, DrawMode mode);
    void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count);
 
@@ -411,7 +436,10 @@ namespace gl {
 
    private:
       gl::uniform uniform(std::string const & name);
-      void prepare_draw(); // bind program, uniforms and textures
+      buffer_t const * index_buffer_() const;
+      unsigned calc_draw_count_() const;
+      void prepare_draw_(); // bind program, uniforms and textures
+      void draw_(DrawMode mode, unsigned first, unsigned count); // must call prepare_draw_ first
 
       friend class program;
       pass_t(program prg);
