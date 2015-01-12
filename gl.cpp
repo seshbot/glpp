@@ -336,12 +336,14 @@ namespace gl
       GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
 
       auto fmt
-         = format == texture_t::RGBA ? GL_RGBA
-         : format == texture_t::RGB ? GL_RGB
-         : format == texture_t::BGRA ? GL_BGRA_EXT
+         = format == texture_t::RGBA ? GL_RGBA8
+         : format == texture_t::RGB ? GL_RGB8
+         : format == texture_t::BGRA ? GL_BGRA8_EXT
          : throw error("unrecognised image format");
 
-      GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, fmt, dims_.x, dims_.y, 0, fmt, GL_UNSIGNED_BYTE, NULL));
+      //GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, fmt, dims_.x, dims_.y, 0, fmt, GL_UNSIGNED_BYTE, NULL));
+      GL_VERIFY(glTexStorage2DEXT(GL_TEXTURE_2D, 1, fmt, dims_.x, dims_.y));
+     // GL_VERIFY(glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, dims_.x, dims_.y, fmt, GL_UNSIGNED_BYTE, NULL));
 
       // set texture parameters
       GL_VERIFY(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
