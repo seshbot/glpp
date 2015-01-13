@@ -445,14 +445,24 @@ namespace gl
       // must use GL_BGRA8_EXT because thats what the default buffer format is in ANGLE (must match for blitting)
       GL_VERIFY(glGenRenderbuffers(1, &colour_rbo_id_));
       GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, colour_rbo_id_));
+#ifdef WIN32
       if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_BGRA8_EXT, dims_.x, dims_.y));
       else GL_VERIFY(glRenderbufferStorageMultisampleANGLE(GL_RENDERBUFFER, samples_, GL_BGRA8_EXT, dims_.x, dims_.y));
+#else
+      if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, dims_.x, dims_.y));
+      else GL_VERIFY(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples_, GL_RGBA8, dims_.x, dims_.y));
+#endif
       GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colour_rbo_id_));
 
       GL_VERIFY(glGenRenderbuffers(1, &depth_rbo_id_));
       GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id_));
+#ifdef WIN32
       if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
       else GL_VERIFY(glRenderbufferStorageMultisampleANGLE(GL_RENDERBUFFER, samples_, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
+#else
+      if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
+      else GL_VERIFY(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples_, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
+#endif
       GL_VERIFY(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id_));
 
       GL_VERIFY(glBindRenderbuffer(GL_RENDERBUFFER, 0));
@@ -1624,7 +1634,9 @@ namespace gl
       window_key_callbacks_.set(window, *this, key_handler);
       glfwSetKeyCallback(window, key_callback);
 
+#ifdef WIN32
       assert(extensionEnabled("GL_ANGLE_framebuffer_multisample"));
+#endif
 
       impl_.reset(new impl{ window });
    }

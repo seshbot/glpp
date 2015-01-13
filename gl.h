@@ -7,6 +7,7 @@
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <type_traits>
 
 #include "input.h"
 #include <glm/vec2.hpp>
@@ -16,7 +17,7 @@
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 
-
+#define _DEBUG
 #ifdef _DEBUG
    void checkOpenGLError(const char* function, const char* file, int line);
    void checkOpenGLError(const char* stmt, const char* function, const char* file, int line);
@@ -266,11 +267,11 @@ namespace gl {
    public:
       template <typename T, unsigned N>
       static_array_t(const T(&data)[N]) 
-         : static_array_t((void*)data, value_type<std::remove_cv<T>::type>(), N, N * sizeof(T)) {}
+         : static_array_t((void*)data, value_type<T>(), N, N * sizeof(T)) {}
 
       template <typename T>
       static_array_t(T *data, std::size_t elem_count)
-         : static_array_t((void*)data, value_type<std::remove_cv<T>::type>(), elem_count, elem_count * sizeof(T)) {}
+         : static_array_t((void*)data, value_type<T>(), elem_count, elem_count * sizeof(T)) {}
 
       // TODO: we also need a way of unambiguously creating a buffer from void* and byte size
 
