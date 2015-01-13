@@ -498,9 +498,9 @@ int main()
          .with(screen_vertices_spec)
          .set_uniform("texture", gl::texture_t{ "bg_green.png" });
 
-      auto post_tex = std::unique_ptr<gl::texture_t>(new gl::texture_t(context.win().frame_buffer_dims(), gl::texture_t::BGRA));
-      auto tex_fbo = std::unique_ptr<gl::frame_buffer_t>(new gl::frame_buffer_t(*post_tex));
-      auto msaa_fbo = std::unique_ptr<gl::frame_buffer_t>(new gl::frame_buffer_t(context.win().frame_buffer_dims(), 8));
+      auto post_tex = std::unique_ptr<gl::texture_t>();
+      auto tex_fbo = std::unique_ptr<gl::frame_buffer_t>();
+      auto msaa_fbo = std::unique_ptr<gl::frame_buffer_t>();
 
       auto set_post_tex_cb = [&post_tex](gl::uniform & u) { gl::texture_unit_t tu{ 2 }; tu.activate(); post_tex->bind();  u.set(tu); };
       auto post_pass = prg_post.pass()
@@ -680,11 +680,11 @@ int main()
          auto dims = context.win().frame_buffer_dims();
 
          if (!tex_fbo || tex_fbo->dims() != dims) {
-            post_tex = std::unique_ptr<gl::texture_t>(new gl::texture_t(dims, gl::texture_t::BGRA));
-            tex_fbo = std::unique_ptr<gl::frame_buffer_t>(new gl::frame_buffer_t(*post_tex));
+            post_tex.reset(new gl::texture_t(dims, gl::texture_t::RGBA));
+            tex_fbo.reset(new gl::frame_buffer_t(*post_tex));
          }
          if (!msaa_fbo || msaa_fbo->dims() != dims) {
-            msaa_fbo = std::unique_ptr<gl::frame_buffer_t>(new gl::frame_buffer_t(dims, 8));
+            msaa_fbo.reset(new gl::frame_buffer_t(dims, 8));
          }
 
          double this_tick = gl::get_time();

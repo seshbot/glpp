@@ -17,7 +17,7 @@
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 
-#define _DEBUG
+//#define _DEBUG
 #ifdef _DEBUG
    void checkOpenGLError(const char* function, const char* file, int line);
    void checkOpenGLError(const char* stmt, const char* function, const char* file, int line);
@@ -59,7 +59,13 @@ namespace gl {
    public:
       using id_type = uint32_t;
 
-      enum Format { RGB, RGBA, BGRA };
+      enum Format {
+         RGB,
+         RGBA,
+#ifdef WIN32
+         BGRA
+#endif
+      };
 
       texture_t(std::string const & filename);
       texture_t(dim_t const & dims, Format format = RGBA);

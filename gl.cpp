@@ -336,13 +336,16 @@ namespace gl
       GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
 
       auto fmt
-         = format == texture_t::RGBA ? GL_RGBA8
-         : format == texture_t::RGB ? GL_RGB8
-         : format == texture_t::BGRA ? GL_BGRA8_EXT
+         = format == texture_t::RGBA ? GL_RGBA
+         : format == texture_t::RGB ? GL_RGB
+#ifdef WIN32
+         : format == texture_t::BGRA ? GL_BGRA_EXT
+#endif
          : throw error("unrecognised image format");
 
-      //GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, fmt, dims_.x, dims_.y, 0, fmt, GL_UNSIGNED_BYTE, NULL));
-      GL_VERIFY(glTexStorage2DEXT(GL_TEXTURE_2D, 1, fmt, dims_.x, dims_.y));
+      // TODO: add GL_ARB_texture_storage, and use e.g., RGB8 etc for storage...
+      GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, fmt, dims_.x, dims_.y, 0, fmt, GL_UNSIGNED_BYTE, NULL));
+      //GL_VERIFY(glTexStorage2D(GL_TEXTURE_2D, 1, fmt, dims_.x, dims_.y));
      // GL_VERIFY(glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, dims_.x, dims_.y, fmt, GL_UNSIGNED_BYTE, NULL));
 
       // set texture parameters
@@ -368,7 +371,9 @@ namespace gl
       auto fmt
          = format == texture_t::RGBA ? GL_RGBA
          : format == texture_t::RGB ? GL_RGB
+#ifdef WIN32
          : format == texture_t::BGRA ? GL_BGRA_EXT
+#endif
          : throw error("unrecognised image format");
 
       GL_VERIFY(glReadPixels(0, 0, state_->dims_.x, state_->dims_.y, fmt, GL_UNSIGNED_BYTE, &buffer[0]));
@@ -510,7 +515,11 @@ namespace gl
 
       //GL_VERIFY(glBindFramebuffer(GL_DRAW_FRAMEBUFFER_ANGLE, 0));   // Make sure no FBO is set as the draw framebuffer
       GL_VERIFY(glBindFramebuffer(GL_READ_FRAMEBUFFER_ANGLE, fbo_id_)); // Make sure your multisampled FBO is the read framebuffer
+#ifdef WIN32
       GL_VERIFY(glBlitFramebufferANGLE(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+#else
+      GL_VERIFY(glBlitFramebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+#endif
    }
 
    void frame_buffer_t::blit_to_screen() const {
