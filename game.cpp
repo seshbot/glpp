@@ -13,10 +13,24 @@ namespace {
    const float VIEW_DIMENSION_WIDTH = 800.f;
    const float VIEW_DIMENSION_HEIGHT = 600.f;
    const float VIEW_DIMENSION_DEPTH = 2.f; // -1 - 1
+   const float WORLD_MIN_Y = -VIEW_DIMENSION_HEIGHT / 2.f;
+   const float WORLD_MAX_Y = VIEW_DIMENSION_HEIGHT / 2.f * 1.414213562373f;
+   const float WORLD_MIN_X = -VIEW_DIMENSION_WIDTH / 2.f;
+   const float WORLD_MAX_X = VIEW_DIMENSION_WIDTH / 2.f;
+
    const float CREATURE_SPEED_PER_SECOND = 150.f;
 }
 
 namespace game {
+
+   glm::vec2 random_world_location() {
+      const auto WORLD_SPAN_X = (int)(WORLD_MAX_X - WORLD_MIN_X);
+      const auto WORLD_SPAN_Y = (int)(WORLD_MAX_Y - WORLD_MIN_Y);
+      return{
+         (float)(std::rand() % WORLD_SPAN_X + WORLD_MIN_X),
+         (float)(std::rand() % WORLD_SPAN_Y + WORLD_MIN_Y)
+      };
+   }
 
    //
    // moment_t
@@ -51,9 +65,9 @@ namespace game {
 
       return
          glm::rotate(
-            glm::rotate(
+//            glm::rotate(
                glm::scale(moved, glm::vec3{ 32. }),
-               glm::radians(-45.f), glm::vec3{ 1., 0., 0. }),
+//               glm::radians(-45.f), glm::vec3{ 1., 0., 0. }),
             angle(), glm::vec3{ 0., 1., 0. });
    }
 
@@ -124,8 +138,7 @@ namespace game {
          break;
          case plan_t::type_t::do_nothing: {
             if (glm::length(player_moment.pos() - m.pos()) < 60.) {
-               auto target = glm::vec2((float)(std::rand() % 800 - 400), (float)(std::rand() % 600 - 300));
-               p = plan_t::move_to(target);
+               p = plan_t::move_to(random_world_location());
             }
          }
          break;
@@ -145,8 +158,7 @@ namespace game {
             if (m.speed() > 0.01) m.set_vel({});
             p.time -= time_since_last;
             if (p.time < 0.) {
-               auto target = glm::vec2((float)(std::rand() % 750 - 375), (float)(std::rand() % 500 - 250));
-               p = plan_t::move_to(target);
+               p = plan_t::move_to(random_world_location());
             }
          }
          break;
@@ -173,10 +185,10 @@ namespace game {
 
          // dont let them go outside the screen
          auto pos = m.pos();
-         if (pos.x < -400.) pos.x = -400.;
-         if (pos.x > 400.) pos.x = 400.;
-         if (pos.y < -300.) pos.y = -300.;
-         if (pos.y > 300.) pos.y = 300.;
+         if (pos.x < WORLD_MIN_X) pos.x = WORLD_MIN_X;
+         if (pos.x > WORLD_MAX_X) pos.x = WORLD_MAX_X;
+         if (pos.y < WORLD_MIN_Y) pos.y = WORLD_MIN_Y;
+         if (pos.y > WORLD_MAX_Y) pos.y = WORLD_MAX_Y;
          m.set_pos(pos);
       }
 

@@ -7,7 +7,6 @@
 #  define USE_GLEW
 #endif
 
-#include <cstdlib>
 #include <map>
 #include "utils.h"
 #include "gl.h"
@@ -385,8 +384,7 @@ int main()
       game::world_view_t world_view(creature_db, particle_db, sprite_repository);
 
       for (auto i = 0; i < 20; i++) {
-         auto loc = glm::vec2(std::rand() % 700 - 350, std::rand() % 500 - 250);
-         world.create_creature(game::creature_t::types::person, { loc, {} });
+         world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
       }
 
       struct sprite_render_callback_t : public gl::pass_t::render_callback {
@@ -580,11 +578,10 @@ int main()
 
 
       auto set_view_cb = [](gl::uniform & u) {
-         auto t = static_cast<float>(gl::get_time());
-         auto xpos = 0; // 1000. * sin(t);
-         auto ypos = 1000.f; // 800 + 200. * sin(t);
-         auto zpos = 0.f; // 1000.f; // 500;// +400. * cos(t);
-         u.set(glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 0., -1. }));
+         auto xpos = 0;
+         auto ypos = 100.f;
+         auto zpos = 100.f;
+         u.set(glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. }));
       };
 
       auto set_model_cb = [](gl::uniform & u) {
@@ -609,7 +606,7 @@ int main()
             .set_uniform("colour", mesh_colour)
             .set_uniform("local", pos)
             .set_uniform_action("view", set_view_cb)
-            .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 2000.))
+            .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
             .set_uniform_action("t", set_time_cb);
       };
 
@@ -680,7 +677,12 @@ int main()
          auto dims = context.win().frame_buffer_dims();
 
          if (!tex_fbo || tex_fbo->dims() != dims) {
-            post_tex.reset(new gl::texture_t(dims, gl::texture_t::RGBA));
+#ifdef WIN32 
+            gl::texture_t::Format fmt = gl::texture_t::BGRA;
+#else
+            gl::texture_t::Format fmt = gl::texture_t::RGBA;
+#endif
+            post_tex.reset(new gl::texture_t(dims, fmt));
             tex_fbo.reset(new gl::frame_buffer_t(*post_tex));
          }
          if (!msaa_fbo || msaa_fbo->dims() != dims) {
@@ -690,9 +692,17 @@ int main()
          double this_tick = gl::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
+         //
+         // update world
+         //
+
          world.update(time_since_last_tick);
          world_view.update(time_since_last_tick);
 
+
+         //
+         // render
+         //
 
          glClearColor(.7f, .87f, .63f, 1.);
          glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

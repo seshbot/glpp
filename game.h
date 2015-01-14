@@ -62,6 +62,9 @@ private:
 
 
 namespace game {
+
+   glm::vec2 random_world_location();
+
    using entity_id_t = int;
 
    // holds geometric (pos, dir) info of a game entity
