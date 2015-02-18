@@ -6,7 +6,7 @@
 #  include <limits.h> // for MAX_PATH
 #endif
 
-#include "utils.h"
+#include <glpp/utils.h>
 
 #include <iostream>
 #include <fstream>

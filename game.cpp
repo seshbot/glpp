@@ -1,6 +1,6 @@
 #include "game.h"
 
-#include "utils.h"
+#include <glpp/utils.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
@@ -222,7 +222,7 @@ namespace game {
    // class world_view_t::render_info_t
    //
 
-   world_view_t::render_info_t::render_info_t(gl::sprite_cursor_t const & sprite, moment_t const & moment)
+   world_view_t::render_info_t::render_info_t(glpp::sprite_cursor_t const & sprite, moment_t const & moment)
       : tex_id(sprite.current_animation().texture().id()), sprite(&sprite), moment(&moment)
    { }
 
@@ -317,15 +317,15 @@ namespace game {
       particle_render_info_.swap(particle_render_info);
    }
 
-   std::unique_ptr<gl::sprite_cursor_t> world_view_t::create_sprite(creature_t const & creature) {
-      return std::unique_ptr<gl::sprite_cursor_t>(
-         new gl::sprite_cursor_t(
+   std::unique_ptr<glpp::sprite_cursor_t> world_view_t::create_sprite(creature_t const & creature) {
+      return std::unique_ptr<glpp::sprite_cursor_t>(
+         new glpp::sprite_cursor_t(
             sprite_repository_.find_creature_sprite(creature)));
    }
 
-   std::unique_ptr<gl::sprite_cursor_t> world_view_t::create_sprite(particle_t const & particle) {
-      return std::unique_ptr<gl::sprite_cursor_t>(
-         new gl::sprite_cursor_t(
+   std::unique_ptr<glpp::sprite_cursor_t> world_view_t::create_sprite(particle_t const & particle) {
+      return std::unique_ptr<glpp::sprite_cursor_t>(
+         new glpp::sprite_cursor_t(
          sprite_repository_.find_particle_sprite(particle)));
    }
 

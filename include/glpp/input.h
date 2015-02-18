@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace gl {
+namespace glpp {
    enum KeyModFlag {
       KEY_MOD_UNKNOWN = 0,
       KEY_MOD_SHIFT = 0x1,

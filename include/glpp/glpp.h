@@ -1,15 +1,22 @@
 #ifndef PCX_GL__H
 #define PCX_GL__H
 
+// TODO:
+// - auto-generate gl functions? https://cvs.khronos.org/svn/repos/ogl/trunk/doc/registry/public/api/gl.xml
+//   - also see https://github.com/hpicgs/glbinding
+// - move to dedicated library
+//   - how to resolve GLM dependencies?
+// - allow multiple contexts
+//   - allow glpp:: invocations via contexts? context.functions()?
+// - thread safety (use TLS?)
+
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <functional>
-#include <iterator>
 #include <memory>
-#include <type_traits>
 
-#include "input.h"
+#include <glpp/input.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -32,7 +39,7 @@
 #endif
 
 
-namespace gl {
+namespace glpp {
 	using id_t = unsigned int;
 
    struct dim_t { int x; int y; };
@@ -102,11 +109,11 @@ namespace gl {
       frame_buffer_t & operator=(frame_buffer_t const &) = delete;
 
       frame_buffer_t(texture_t const & tex); // implied samples == 0
-      frame_buffer_t(gl::dim_t dims, unsigned samples = 0);
+      frame_buffer_t(glpp::dim_t dims, unsigned samples = 0);
       ~frame_buffer_t();
 
       id_t id() const { return fbo_id_; }
-      gl::dim_t dims() const { return dims_; }
+      glpp::dim_t dims() const { return dims_; }
 
       enum BindTarget { Read, Draw, ReadDraw };
       void bind(BindTarget target = ReadDraw) const;
@@ -279,26 +286,22 @@ namespace gl {
       static_array_t(T *data, std::size_t elem_count)
          : static_array_t((void*)data, value_type<T>(), elem_count, elem_count * sizeof(T)) {}
 
-      // TODO: we also need a way of unambiguously creating a buffer from void* and byte size
-
-      void * const data() const { return state_->data_; }
-      ValueType data_type() const { return state_->data_type_; }
-      std::size_t size() const { return state_->byte_size_; }
-      std::size_t elem_count() const { return state_->elem_count_; }
+      void * const data() const { return data_; }
+      ValueType data_type() const { return data_type_; }
+      std::size_t size() const { return byte_size_; }
+      std::size_t elem_count() const { return elem_count_; }
 
       friend bool operator==(static_array_t const & lhs, static_array_t const & rhs) { return lhs.data() == rhs.data(); }
       friend bool operator!=(static_array_t const & lhs, static_array_t const & rhs) { return !(lhs == rhs); }
 
    private:
       static_array_t(void* data, ValueType data_type, std::size_t elem_count, std::size_t byte_size)
-         : state_(std::make_shared<state>(data, data_type, elem_count, byte_size)) { }
+         : data_(data), data_type_(data_type), elem_count_(elem_count), byte_size_(byte_size) { }
 
-      struct state {
-         state(void* d, ValueType dt, std::size_t ct, std::size_t sz) : data_(d), data_type_(dt), elem_count_(ct), byte_size_(sz) { }
-         void * const data_; ValueType data_type_; std::size_t elem_count_; std::size_t byte_size_;
-      };
-
-      std::shared_ptr<state const> state_;
+      void * const data_;
+      ValueType data_type_;
+      std::size_t elem_count_;
+      std::size_t byte_size_;
    };
 
    class buffer_t {
@@ -423,7 +426,7 @@ namespace gl {
 
       template <typename T>
       pass_t & set_uniform(std::string const & name, T val) {
-         return set_uniform_action(name, [val](gl::uniform & u){ u.set(val); });
+         return set_uniform_action(name, [val](glpp::uniform & u){ u.set(val); });
       }
 
       pass_t & set_uniform_action(std::string const & name, uniform_action_t action);
@@ -442,7 +445,7 @@ namespace gl {
       pass_t & draw_batch(render_callback const & cb, DrawMode mode, unsigned first, unsigned count);
 
    private:
-      gl::uniform uniform(std::string const & name);
+      glpp::uniform uniform(std::string const & name);
       buffer_t const * index_buffer_() const;
       unsigned calc_draw_count_() const;
       void prepare_draw_(); // bind program, uniforms and textures
@@ -469,8 +472,8 @@ namespace gl {
 
       void reload(shader s1, shader s2);
 
-      gl::uniform uniform(std::string const & name);
-      gl::attrib attrib(std::string const & name);
+      glpp::uniform uniform(std::string const & name);
+      glpp::attrib attrib(std::string const & name);
 
       void use() const;
 
@@ -494,8 +497,8 @@ namespace gl {
 
          id_t id_;
          std::vector<shader> shaders_;
-         std::vector<gl::uniform> uniforms_;
-         std::vector<gl::attrib> attribs_;
+         std::vector<glpp::uniform> uniforms_;
+         std::vector<glpp::attrib> attribs_;
       };
 
       std::shared_ptr<state> state_;
@@ -577,11 +580,11 @@ namespace gl {
          glm::ivec2 dimensions;
       };
 
-      sprite_sheet(gl::texture_t texture, std::vector<frame_ref> frames);
-      sprite_sheet(gl::texture_t texture, int frame_x, int frame_y);
-      sprite_sheet(gl::texture_t texture);
+      sprite_sheet(glpp::texture_t texture, std::vector<frame_ref> frames);
+      sprite_sheet(glpp::texture_t texture, int frame_x, int frame_y);
+      sprite_sheet(glpp::texture_t texture);
 
-      gl::texture_t texture() const { return texture_; }
+      glpp::texture_t texture() const { return texture_; }
 
       std::size_t frame_count() const { return frame_count_; }
       frame_ref const & frame(std::size_t idx) const { return frames_.at(idx); }
@@ -589,7 +592,7 @@ namespace gl {
       glm::ivec2 const & frame_dims(int idx) const { return frames_.at(idx).dimensions; }
 
    private:
-      gl::texture_t texture_;
+      glpp::texture_t texture_;
 
       int max_frame_width_;
       int max_frame_height_;
@@ -602,7 +605,7 @@ namespace gl {
    public:
       animation_t(sprite_sheet const & frames, std::initializer_list<int> indices);
 
-      gl::texture_t texture() const;
+      glpp::texture_t texture() const;
       std::size_t frame_count() const;
 
       sprite_sheet::frame_ref const & frame(std::size_t idx) const;

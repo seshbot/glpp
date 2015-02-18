@@ -1,16 +1,16 @@
 #ifdef WIN32
 #  include <windows.h>
-#  include <GLES2/gl2.h>
+//#  include <GLES2/gl2.h>
 #else  // LINUX, OSX
 #  include <GL/glew.h>
-
 #  define USE_GLEW
 #endif
 
 #include <map>
-#include "utils.h"
-#include "gl.h"
 #include "game.h"
+#include <glpp/glpp.h>
+#include <glpp/utils.h>
+#include <glpp/gles2.h>
 
 // TODO: remove this
 #define GLM_FORCE_RADIANS
@@ -20,13 +20,13 @@
 
 
 namespace {
-   gl::shader vert_shader(std::string name) { return gl::shader::create_from_file(utils::fmt("../shaders/%s.vert", name.c_str()), gl::shader::Vertex); }
-   gl::shader frag_shader(std::string name) { return gl::shader::create_from_file(utils::fmt("../shaders/%s.frag", name.c_str()), gl::shader::Fragment); }
+   glpp::shader vert_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../shaders/%s.vert", name.c_str()), glpp::shader::Vertex); }
+   glpp::shader frag_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../shaders/%s.frag", name.c_str()), glpp::shader::Fragment); }
 
-   gl::program create_program(std::string name) {
+   glpp::program create_program(std::string name) {
       utils::log(utils::LOG_INFO, "compiling '%s' shader programs... ", name.c_str());
 
-      auto program = gl::program{ vert_shader(name), frag_shader(name) };
+      auto program = glpp::program{ vert_shader(name), frag_shader(name) };
 
       utils::log(utils::LOG_INFO, "success\n");
 
@@ -38,7 +38,7 @@ namespace {
       return program;
    };
 
-   void reload_program(gl::program & program, std::string name) {
+   void reload_program(glpp::program & program, std::string name) {
       utils::log(utils::LOG_INFO, "reloading '%s' shader programs... ", name.c_str());
 
       program.reload(vert_shader(name), frag_shader(name));
@@ -55,18 +55,18 @@ namespace {
    // turns key presses into a directional vector. consumed by entity controller
    class player_controls_t {
    public:
-      using action_func = std::function < bool(gl::Key, gl::KeyAction) > ;
+      using action_func = std::function < bool(glpp::Key, glpp::KeyAction) > ;
 
       player_controls_t()
          : dir_flags_(0), direction_(0., 0.) {
       }
 
-      void register_action_handler(gl::Key k, gl::KeyAction a, action_func f) { actions_[{k, a}] = f; }
+      void register_action_handler(glpp::Key k, glpp::KeyAction a, action_func f) { actions_[{k, a}] = f; }
 
       bool is_moving() const { return dir_flags_ != 0; }
       glm::vec2 const & direction() const { return direction_; }
 
-      void handle_key_action(gl::Key key, gl::KeyAction action) {
+      void handle_key_action(glpp::Key key, glpp::KeyAction action) {
          auto action_it = actions_.find({ key, action });
          if (actions_.end() != action_it) {
             if (action_it->second(key, action)) return;
@@ -76,17 +76,17 @@ namespace {
 
          auto key_dir = [key] {
             switch (key) {
-            case gl::KEY_A: case gl::KEY_LEFT: return dir::left;
-            case gl::KEY_S: case gl::KEY_DOWN: return dir::down;
-            case gl::KEY_D: case gl::KEY_RIGHT: return dir::right;
-            case gl::KEY_W: case gl::KEY_UP: return dir::up;
+            case glpp::KEY_A: case glpp::KEY_LEFT: return dir::left;
+            case glpp::KEY_S: case glpp::KEY_DOWN: return dir::down;
+            case glpp::KEY_D: case glpp::KEY_RIGHT: return dir::right;
+            case glpp::KEY_W: case glpp::KEY_UP: return dir::up;
             default: return dir::none;
             }
          }();
 
          if (key_dir == dir::none) return;
-         if (action == gl::KEY_ACTION_PRESS) dir_flags_ |= static_cast<uint16_t>(key_dir);
-         if (action == gl::KEY_ACTION_RELEASE) dir_flags_ &= ~static_cast<uint16_t>(key_dir);
+         if (action == glpp::KEY_ACTION_PRESS) dir_flags_ |= static_cast<uint16_t>(key_dir);
+         if (action == glpp::KEY_ACTION_RELEASE) dir_flags_ &= ~static_cast<uint16_t>(key_dir);
 
          float horiz_vec = 0.;
          if (dir_flags_ & static_cast<uint16_t>(dir::left)) horiz_vec -= 1.f;
@@ -102,7 +102,7 @@ namespace {
    private:
       std::uint16_t dir_flags_;
       glm::vec2 direction_;
-      using action_key = std::pair < gl::Key, gl::KeyAction > ;
+      using action_key = std::pair < glpp::Key, glpp::KeyAction > ;
       std::map<action_key, action_func> actions_;
    };
 }
@@ -177,7 +177,7 @@ int main()
    auto * node = scene->mRootNode;
    if (node) print_node_info(*node);
 
-#if 0
+#if 1
    auto mat_name = [scene](unsigned idx) {
       aiString name;
       auto & m = *scene->mMaterials[idx];
@@ -242,7 +242,7 @@ int main()
    };
 
    try {
-      gl::init();
+      glpp::init();
    }
    catch (std::exception const & ex) {
       utils::log(utils::LOG_ERROR, "%s\n", ex.what());
@@ -254,16 +254,16 @@ int main()
 
    try {
       bool should_reload_program = false;
-      auto key_handler = [&](gl::context & ctx, gl::Key key, int scancode, gl::KeyAction action, int mods) {
-         if (key == gl::KEY_ESCAPE && action == gl::KEY_ACTION_PRESS)
+      auto key_handler = [&](glpp::context & ctx, glpp::Key key, int scancode, glpp::KeyAction action, int mods) {
+         if (key == glpp::KEY_ESCAPE && action == glpp::KEY_ACTION_PRESS)
             ctx.win().set_should_close();
-         if (key == gl::KEY_R && action == gl::KEY_ACTION_PRESS)
+         if (key == glpp::KEY_R && action == glpp::KEY_ACTION_PRESS)
             should_reload_program = true;
 
          controls.handle_key_action(key, action);
       };
 
-      gl::context context{ key_handler };
+      glpp::context context{ key_handler };
 
 #ifdef USE_GLEW
       GLenum err = glewInit();
@@ -282,11 +282,12 @@ int main()
 
       utils::log(utils::LOG_INFO, "%s\n", context.info().c_str());
 
-      GL_VERIFY(glEnable(GL_DEPTH_TEST));
-      GL_VERIFY(glEnable(GL_CULL_FACE));
-      //GL_VERIFY(glEnable(GL_MULTISAMPLE));
-      GL_VERIFY(glEnable(GL_BLEND));
-      GL_VERIFY(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+      gl::enable(gl::enable_cap_t::depth_test);
+      gl::enable(gl::enable_cap_t::cull_face);
+      //gl::enable(gl::enable_cap_t::multisample);
+      gl::enable(gl::enable_cap_t::blend);
+
+      gl::blend_func(gl::blending_factor_src_t::src_alpha, gl::blending_factor_dest_t::one_minus_src_alpha);
       
       //
       // load game data
@@ -330,11 +331,11 @@ int main()
             })
          { }
 
-         gl::sprite_t const & find_creature_sprite(game::creature_t const & creature) const override {
+         glpp::sprite_t const & find_creature_sprite(game::creature_t const & creature) const override {
             return player_sprite_;
          }
 
-         float creature_sprite_updating(std::size_t db_idx, game::creature_t const & creature, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
+         float creature_sprite_updating(std::size_t db_idx, game::creature_t const & creature, glpp::sprite_cursor_t & cursor, game::moment_t & moment) const override {
             auto const & plan = creature_db_.plan(db_idx);
             if (plan.type == game::plan_t::type_t::walk_on_spot) return 1.;
 
@@ -356,22 +357,22 @@ int main()
             return 1.;
          }
 
-         gl::sprite_t const & find_particle_sprite(game::particle_t const & particle) const override {
+         glpp::sprite_t const & find_particle_sprite(game::particle_t const & particle) const override {
             return bullet_sprite_;
          }
 
-         float particle_sprite_updating(std::size_t db_idx, game::particle_t const & particle, gl::sprite_cursor_t & cursor, game::moment_t & moment) const override {
+         float particle_sprite_updating(std::size_t db_idx, game::particle_t const & particle, glpp::sprite_cursor_t & cursor, game::moment_t & moment) const override {
             return 1.;
          }
 
       private:
          game::creature_info_table const & creature_db_;
 
-         gl::sprite_sheet player_sprite_sheet_;
-         gl::sprite_sheet bullet_sprite_sheet_;
-         gl::sprite_t player_sprite_;
-         gl::sprite_t bullet_sprite_;
-         gl::sprite_t big_rock_sprite_;
+         glpp::sprite_sheet player_sprite_sheet_;
+         glpp::sprite_sheet bullet_sprite_sheet_;
+         glpp::sprite_t player_sprite_;
+         glpp::sprite_t bullet_sprite_;
+         glpp::sprite_t big_rock_sprite_;
       };
 
       game::creature_info_table creature_db;
@@ -387,14 +388,14 @@ int main()
          world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
       }
 
-      struct sprite_render_callback_t : public gl::pass_t::render_callback {
+      struct sprite_render_callback_t : public glpp::pass_t::render_callback {
          sprite_render_callback_t(game::world_view_t::iterator itBegin, game::world_view_t::iterator itEnd)
          : itBegin_(itBegin)
          , itEnd_(itEnd)
          , it_(itBegin_) {
          }
 
-         virtual bool prepare_next(gl::program & p) const override {
+         virtual bool prepare_next(glpp::program & p) const override {
             if (it_ == itEnd_) return false;
 
             auto & current_render_info = *it_;
@@ -411,7 +412,7 @@ int main()
             if (should_set_texture) {
                auto sprite_tex = sprite.current_animation().texture();
                p.uniform("texture_wh").set(glm::vec2(sprite_tex.dims().x, sprite_tex.dims().y));
-               gl::texture_unit_t tex_unit{ 1 };
+               glpp::texture_unit_t tex_unit{ 1 };
                tex_unit.activate();
                sprite_tex.bind();
                p.uniform("texture").set(tex_unit);
@@ -427,14 +428,14 @@ int main()
          game::world_view_t::iterator itBegin_;
          game::world_view_t::iterator itEnd_;
          mutable game::world_view_t::iterator it_;
-         mutable gl::texture_t::id_type current_tex_id_ = 0;
+         mutable glpp::texture_t::id_type current_tex_id_ = 0;
 
          sprite_render_callback_t(sprite_render_callback_t const &) {}
          sprite_render_callback_t & operator=(sprite_render_callback_t const &) { return *this; }
       };
 
 
-      controls.register_action_handler(gl::Key::KEY_SPACE, gl::KeyAction::KEY_ACTION_PRESS, [&](gl::Key, gl::KeyAction){
+      controls.register_action_handler(glpp::Key::KEY_SPACE, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          auto & player = creature_db.moment(world.player_id());
          auto bullet_pos = player.pos() + glm::vec2(0., 30.f) + player.dir() * 40.f;
          auto bullet_vel = player.vel() + player.dir() * 400.f;
@@ -472,7 +473,7 @@ int main()
          1, 2, 3,
       };
 
-      auto screen_vertices_spec = gl::describe_buffer({ unit_square_verts, unit_square_indices })
+      auto screen_vertices_spec = glpp::describe_buffer({ unit_square_verts, unit_square_indices })
          .attrib("p", 2)
          .attrib("tex_coords", 2);
 
@@ -486,21 +487,21 @@ int main()
 
       // https://github.com/adobe/angle adobe wrapper??
 
-      auto set_time_cb = [](gl::uniform & u){u.set(static_cast<float>(gl::get_time())); };
-      auto set_dims_cb = [&context](gl::uniform & u){
+      auto set_time_cb = [](glpp::uniform & u){u.set(static_cast<float>(glpp::get_time())); };
+      auto set_dims_cb = [&context](glpp::uniform & u){
          auto dims = context.win().frame_buffer_dims();
          u.set(glm::vec2{ dims.x, dims.y });
       };
 
       auto bg_pass = prg_2d.pass()
          .with(screen_vertices_spec)
-         .set_uniform("texture", gl::texture_t{ "bg_green.png" });
+         .set_uniform("texture", glpp::texture_t{ "bg_green.png" });
 
-      auto post_tex = std::unique_ptr<gl::texture_t>();
-      auto tex_fbo = std::unique_ptr<gl::frame_buffer_t>();
-      auto msaa_fbo = std::unique_ptr<gl::frame_buffer_t>();
+      auto post_tex = std::unique_ptr<glpp::texture_t>();
+      auto tex_fbo = std::unique_ptr<glpp::frame_buffer_t>();
+      auto msaa_fbo = std::unique_ptr<glpp::frame_buffer_t>();
 
-      auto set_post_tex_cb = [&post_tex](gl::uniform & u) { gl::texture_unit_t tu{ 2 }; tu.activate(); post_tex->bind();  u.set(tu); };
+      auto set_post_tex_cb = [&post_tex](glpp::uniform & u) { glpp::texture_unit_t tu{ 2 }; tu.activate(); post_tex->bind();  u.set(tu); };
       auto post_pass = prg_post.pass()
          .with(screen_vertices_spec)
          .set_uniform_action("texture", set_post_tex_cb)
@@ -518,7 +519,7 @@ int main()
          1, 2, 3,
       };
 
-      auto sprite_vertices_spec = gl::describe_buffer({ sprite_verts, sprite_indices })
+      auto sprite_vertices_spec = glpp::describe_buffer({ sprite_verts, sprite_indices })
          .attrib("p", 2)
          .attrib("tex_coords", 2);
 
@@ -530,7 +531,7 @@ int main()
 
 
 
-      auto make_mesh_vert_buffer = [](aiMesh const & m) -> gl::buffer_t {
+      auto make_mesh_vert_buffer = [](aiMesh const & m) -> glpp::buffer_t {
          auto get_mesh_indices = [](aiMesh const & m) {
             std::vector<uint32_t> indices;
             indices.reserve(m.mNumFaces * 3);
@@ -565,7 +566,7 @@ int main()
          };
       };
 
-      auto make_mesh_normal_buffer = [](aiMesh const & m) -> gl::buffer_t {
+      auto make_mesh_normal_buffer = [](aiMesh const & m) -> glpp::buffer_t {
          assert(m.HasNormals());
          auto * raw_data = reinterpret_cast<float*>(m.mNormals);
          auto elem_count = m.mNumVertices * 3;
@@ -577,22 +578,22 @@ int main()
 
 
 
-      auto set_view_cb = [](gl::uniform & u) {
+      auto set_view_cb = [](glpp::uniform & u) {
          auto xpos = 0;
          auto ypos = 100.f;
          auto zpos = 100.f;
          u.set(glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. }));
       };
 
-      auto set_model_cb = [](gl::uniform & u) {
+      auto set_model_cb = [](glpp::uniform & u) {
          u.set(glm::scale(glm::mat4{}, glm::vec3{ 32. }));
       };
 
-      auto make_pass = [&](gl::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
-         auto verts = gl::describe_buffer(make_mesh_vert_buffer(mesh))
+      auto make_pass = [&](glpp::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
+         auto verts = glpp::describe_buffer(make_mesh_vert_buffer(mesh))
             .attrib("p", 3);
 
-         auto normals = gl::describe_buffer(make_mesh_normal_buffer(mesh))
+         auto normals = glpp::describe_buffer(make_mesh_normal_buffer(mesh))
             .attrib("normal", 3);
 
          aiColor4D color(1.f, 0.f, 1.f, 1.f);
@@ -610,7 +611,7 @@ int main()
             .set_uniform_action("t", set_time_cb);
       };
 
-      std::vector<gl::pass_t> body_passes;
+      std::vector<glpp::pass_t> body_passes;
 
       aiNode * node = scene->mRootNode;
       if (node) for_each_mesh(*scene, *node, glm::mat4{}, [&](aiMesh const & mesh, glm::mat4 const & pos) {
@@ -621,14 +622,14 @@ int main()
 
 
 
-      struct mesh_render_callback_t : public gl::pass_t::render_callback {
+      struct mesh_render_callback_t : public glpp::pass_t::render_callback {
          mesh_render_callback_t(game::world_view_t::iterator itBegin, game::world_view_t::iterator itEnd)
             : itBegin_(itBegin)
             , itEnd_(itEnd)
             , it_(itBegin_) {
          }
 
-         virtual bool prepare_next(gl::program & p) const override {
+         virtual bool prepare_next(glpp::program & p) const override {
             if (it_ == itEnd_) return false;
 
             auto & current_render_info = *it_;
@@ -644,7 +645,7 @@ int main()
          game::world_view_t::iterator itBegin_;
          game::world_view_t::iterator itEnd_;
          mutable game::world_view_t::iterator it_;
-         mutable gl::texture_t::id_type current_tex_id_ = 0;
+         mutable glpp::texture_t::id_type current_tex_id_ = 0;
 
          mesh_render_callback_t(mesh_render_callback_t const &) {}
          mesh_render_callback_t & operator=(mesh_render_callback_t const &) { return *this; }
@@ -656,7 +657,7 @@ int main()
       // game loop
       //
 
-      double last_tick = gl::get_time();
+      double last_tick = glpp::get_time();
 
       while (!context.win().closing())
       {
@@ -667,7 +668,7 @@ int main()
                ::reload_program(prg_3d, "3d");
                ::reload_program(prg_sprite, "sprite");
             }
-            catch (gl::shader_compile_error const & ex) {
+            catch (glpp::shader_compile_error const & ex) {
                utils::log(utils::LOG_ERROR, "%s\n", ex.what());
                utils::log(utils::LOG_ERROR, "%s\n", ex.log().c_str());
             }
@@ -678,18 +679,18 @@ int main()
 
          if (!tex_fbo || tex_fbo->dims() != dims) {
 #ifdef WIN32 
-            gl::texture_t::Format fmt = gl::texture_t::BGRA;
+            glpp::texture_t::Format fmt = glpp::texture_t::BGRA;
 #else
-            gl::texture_t::Format fmt = gl::texture_t::RGBA;
+            glpp::texture_t::Format fmt = glpp::texture_t::RGBA;
 #endif
-            post_tex.reset(new gl::texture_t(dims, fmt));
-            tex_fbo.reset(new gl::frame_buffer_t(*post_tex));
+            post_tex.reset(new glpp::texture_t(dims, fmt));
+            tex_fbo.reset(new glpp::frame_buffer_t(*post_tex));
          }
          if (!msaa_fbo || msaa_fbo->dims() != dims) {
-            msaa_fbo.reset(new gl::frame_buffer_t(dims, 8));
+            msaa_fbo.reset(new glpp::frame_buffer_t(dims, 8));
          }
 
-         double this_tick = gl::get_time();
+         double this_tick = glpp::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
          //
@@ -704,48 +705,59 @@ int main()
          // render
          //
 
-         glClearColor(.7f, .87f, .63f, 1.);
-         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-         glViewport(0, 0, dims.x, dims.y);
+         gl::clear_color(.7f, .87f, .63f, 1.);
+         gl::clear(
+            gl::clear_buffer_flags_t::color_buffer_bit |
+            gl::clear_buffer_flags_t::depth_buffer_bit);
+         gl::viewport(0, 0, dims.x, dims.y);
 
          msaa_fbo->bind();
          {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            bg_pass.draw(gl::DrawMode::Triangles);
+            gl::clear(
+               gl::clear_buffer_flags_t::color_buffer_bit |
+               gl::clear_buffer_flags_t::depth_buffer_bit);
+            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            bg_pass.draw(glpp::DrawMode::Triangles);
 
-            glClear(GL_DEPTH_BUFFER_BIT);
+            gl::clear(gl::clear_buffer_flags_t::color_buffer_bit);
+            //glClear(GL_DEPTH_BUFFER_BIT);
             //sprite_pass.draw_batch(
             //   sprite_render_callback_t{
             //      world_view.creatures_begin(),
             //      world_view.creatures_end() },
-            //      gl::DrawMode::Triangles);
+            //      glpp::DrawMode::Triangles);
 
             sprite_pass.draw_batch(
                sprite_render_callback_t{
                   world_view.particles_begin(),
                   world_view.particles_end() },
-                  gl::DrawMode::Triangles);
+                  glpp::DrawMode::Triangles);
 
-            glClear(GL_DEPTH_BUFFER_BIT);
+            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+            //glClear(GL_DEPTH_BUFFER_BIT);
             for (auto & pass : body_passes) {
                pass.draw_batch(
                   mesh_render_callback_t{
                      world_view.creatures_begin(),
                      world_view.creatures_end() },
-                     gl::DrawMode::Triangles);
+                     glpp::DrawMode::Triangles);
             }
          }
          // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
-         tex_fbo->bind(gl::frame_buffer_t::Draw);
-         msaa_fbo->bind(gl::frame_buffer_t::Read);
+         tex_fbo->bind(glpp::frame_buffer_t::Draw);
+         msaa_fbo->bind(glpp::frame_buffer_t::Read);
          {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            gl::clear(
+               gl::clear_buffer_flags_t::color_buffer_bit |
+               gl::clear_buffer_flags_t::depth_buffer_bit);
+
+            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             msaa_fbo->blit_to_draw_buffer();
          }
          tex_fbo->unbind();
          msaa_fbo->unbind();
 
-         post_pass.draw(gl::DrawMode::Triangles);
+         post_pass.draw(glpp::DrawMode::Triangles);
 
          last_tick = this_tick;
 
@@ -754,19 +766,19 @@ int main()
 
       exit(EXIT_SUCCESS);
    }
-   catch (gl::shader_compile_error const & ex) {
+   catch (glpp::shader_compile_error const & ex) {
       utils::log(utils::LOG_ERROR, "%s\n", ex.what());
       utils::log(utils::LOG_ERROR, "%s\n", ex.log().c_str());
 
-      gl::shutdown();
+      glpp::shutdown();
       exit(EXIT_FAILURE);
    }
    catch (std::exception const & ex) {
       utils::log(utils::LOG_ERROR, "%s\n", ex.what());
 
-      gl::shutdown();
+      glpp::shutdown();
       exit(EXIT_FAILURE);
    }
 
-   gl::shutdown();
+   glpp::shutdown();
 }

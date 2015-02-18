@@ -1,4 +1,4 @@
-#include "gl.h"
+#include <glpp/glpp.h>
 
 #ifdef WIN32
 #  include <GLES2/gl2.h>
@@ -6,10 +6,9 @@
 #  include <GLES2/gl2ext.h>
 
 #  define USE_OPENGL_ES_2
-#else  // LINUX, OSX
-#  include <GL/glew.h>
-
-#  define USE_GLEW
+#else
+#   include <GL/glew.h>
+#   define USE_GLEW
 #endif
 
 #include <SOIL2/SOIL2.h>
@@ -23,17 +22,17 @@
 #include <mutex>
 #include <cassert>
 
-#include "utils.h"
+#include <glpp/utils.h>
 
 
 void checkOpenGLError(const char* function, const char* file, int line) {
    GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
-   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", gl::openGlErrorString(err), err, function, file, line);
+   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", glpp::openGlErrorString(err), err, function, file, line);
 }
 
 void checkOpenGLError(const char* stmt, const char* function, const char* file, int line) {
    GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
-   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", gl::openGlErrorString(err), err, stmt, function, file, line);
+   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", glpp::openGlErrorString(err), err, stmt, function, file, line);
 }
 
 namespace {
@@ -42,7 +41,7 @@ namespace {
       return strstr(extString, extName.c_str()) != NULL;
    }
 
-   std::string get_shader_info_log(gl::id_t shader_id)
+   std::string get_shader_info_log(glpp::id_t shader_id)
    {
       GLint  length;
       glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &length);
@@ -59,7 +58,7 @@ namespace {
       return "";
    }
 
-   void delete_program_shaders(gl::id_t id) {
+   void delete_program_shaders(glpp::id_t id) {
       if (0 == id) return;
 
       GLint shader_count;
@@ -71,182 +70,182 @@ namespace {
       for (auto s : shaders) { glDeleteShader(s); }
    }
 
-   GLenum to_glenum(gl::shader::Type type) {
+   GLenum to_glenum(glpp::shader::Type type) {
       switch (type) {
-      case gl::shader::Vertex: return GL_VERTEX_SHADER;
-      case gl::shader::Fragment: return GL_FRAGMENT_SHADER;
-      default: throw gl::error("unsupported shader type");
+      case glpp::shader::Vertex: return GL_VERTEX_SHADER;
+      case glpp::shader::Fragment: return GL_FRAGMENT_SHADER;
+      default: throw glpp::error("unsupported shader type");
       }
    }
 
-   gl::ValueType gl_to_value_type(GLuint type) {
+   glpp::ValueType gl_to_value_type(GLuint type) {
       switch (type) {
-      case GL_BYTE: return gl::ValueType::Byte;
-      case GL_UNSIGNED_BYTE: return gl::ValueType::UByte;
-      case GL_SHORT: return gl::ValueType::Short;
-      case GL_UNSIGNED_SHORT: return gl::ValueType::UShort;
-      case GL_INT: return gl::ValueType::Int;
-      case GL_UNSIGNED_INT: return gl::ValueType::UInt;
-      case GL_FLOAT: return gl::ValueType::Float;
-      case GL_FIXED: return gl::ValueType::Fixed;
+      case GL_BYTE: return glpp::ValueType::Byte;
+      case GL_UNSIGNED_BYTE: return glpp::ValueType::UByte;
+      case GL_SHORT: return glpp::ValueType::Short;
+      case GL_UNSIGNED_SHORT: return glpp::ValueType::UShort;
+      case GL_INT: return glpp::ValueType::Int;
+      case GL_UNSIGNED_INT: return glpp::ValueType::UInt;
+      case GL_FLOAT: return glpp::ValueType::Float;
+      case GL_FIXED: return glpp::ValueType::Fixed;
 
-      case GL_FLOAT_VEC2: return gl::ValueType::FloatVec2;
-      case GL_FLOAT_VEC3: return gl::ValueType::FloatVec3;
-      case GL_FLOAT_VEC4: return gl::ValueType::FloatVec4;
-      case GL_INT_VEC2: return gl::ValueType::IntVec2;
-      case GL_INT_VEC3: return gl::ValueType::IntVec3;
-      case GL_INT_VEC4: return gl::ValueType::IntVec4;
-      case GL_BOOL: return gl::ValueType::Bool;
-      case GL_BOOL_VEC2: return gl::ValueType::BoolVec2;
-      case GL_BOOL_VEC3: return gl::ValueType::BoolVec3;
-      case GL_BOOL_VEC4: return gl::ValueType::BoolVec4;
-      case GL_FLOAT_MAT2: return gl::ValueType::FloatMat2;
-      case GL_FLOAT_MAT3: return gl::ValueType::FloatMat3;
-      case GL_FLOAT_MAT4: return gl::ValueType::FloatMat4;
-      case GL_SAMPLER_2D: return gl::ValueType::Sampler2d;
-      case GL_SAMPLER_CUBE: return gl::ValueType::SamplerCube;
-      default: return gl::ValueType::Unknown;
+      case GL_FLOAT_VEC2: return glpp::ValueType::FloatVec2;
+      case GL_FLOAT_VEC3: return glpp::ValueType::FloatVec3;
+      case GL_FLOAT_VEC4: return glpp::ValueType::FloatVec4;
+      case GL_INT_VEC2: return glpp::ValueType::IntVec2;
+      case GL_INT_VEC3: return glpp::ValueType::IntVec3;
+      case GL_INT_VEC4: return glpp::ValueType::IntVec4;
+      case GL_BOOL: return glpp::ValueType::Bool;
+      case GL_BOOL_VEC2: return glpp::ValueType::BoolVec2;
+      case GL_BOOL_VEC3: return glpp::ValueType::BoolVec3;
+      case GL_BOOL_VEC4: return glpp::ValueType::BoolVec4;
+      case GL_FLOAT_MAT2: return glpp::ValueType::FloatMat2;
+      case GL_FLOAT_MAT3: return glpp::ValueType::FloatMat3;
+      case GL_FLOAT_MAT4: return glpp::ValueType::FloatMat4;
+      case GL_SAMPLER_2D: return glpp::ValueType::Sampler2d;
+      case GL_SAMPLER_CUBE: return glpp::ValueType::SamplerCube;
+      default: return glpp::ValueType::Unknown;
       }
    }
 
-   std::string to_string(gl::ValueType type) {
+   std::string to_string(glpp::ValueType type) {
       switch (type) {
-      case gl::ValueType::Unknown: return "Unknown";
-      case gl::ValueType::Int: return "Int";
-      case gl::ValueType::UInt: return "UInt";
-      case gl::ValueType::Float: return "Float";
-      case gl::ValueType::FloatVec2: return "FloatVec2";
-      case gl::ValueType::FloatVec3: return "FloatVec3";
-      case gl::ValueType::FloatVec4: return "FloatVec4";
-      case gl::ValueType::IntVec2: return "IntVec2";
-      case gl::ValueType::IntVec3: return "IntVec3";
-      case gl::ValueType::IntVec4: return "IntVec4";
-      case gl::ValueType::FloatMat2: return "FloatMat2";
-      case gl::ValueType::FloatMat3: return "FloatMat3";
-      case gl::ValueType::FloatMat4: return "FloatMat4";
+      case glpp::ValueType::Unknown: return "Unknown";
+      case glpp::ValueType::Int: return "Int";
+      case glpp::ValueType::UInt: return "UInt";
+      case glpp::ValueType::Float: return "Float";
+      case glpp::ValueType::FloatVec2: return "FloatVec2";
+      case glpp::ValueType::FloatVec3: return "FloatVec3";
+      case glpp::ValueType::FloatVec4: return "FloatVec4";
+      case glpp::ValueType::IntVec2: return "IntVec2";
+      case glpp::ValueType::IntVec3: return "IntVec3";
+      case glpp::ValueType::IntVec4: return "IntVec4";
+      case glpp::ValueType::FloatMat2: return "FloatMat2";
+      case glpp::ValueType::FloatMat3: return "FloatMat3";
+      case glpp::ValueType::FloatMat4: return "FloatMat4";
 
-      case gl::ValueType::Bool: return "Bool";
-      case gl::ValueType::Byte: return "Byte";
-      case gl::ValueType::UByte: return "UByte";
-      case gl::ValueType::Short: return "Short";
-      case gl::ValueType::UShort: return "UShort";
-      case gl::ValueType::Fixed: return "Fixed";
-      case gl::ValueType::BoolVec2: return "BoolVec2";
-      case gl::ValueType::BoolVec3: return "BoolVec3";
-      case gl::ValueType::BoolVec4: return "BoolVec4";
-      case gl::ValueType::Sampler2d: return "Sampler2d";
-      case gl::ValueType::SamplerCube: return "SamplerCube";
+      case glpp::ValueType::Bool: return "Bool";
+      case glpp::ValueType::Byte: return "Byte";
+      case glpp::ValueType::UByte: return "UByte";
+      case glpp::ValueType::Short: return "Short";
+      case glpp::ValueType::UShort: return "UShort";
+      case glpp::ValueType::Fixed: return "Fixed";
+      case glpp::ValueType::BoolVec2: return "BoolVec2";
+      case glpp::ValueType::BoolVec3: return "BoolVec3";
+      case glpp::ValueType::BoolVec4: return "BoolVec4";
+      case glpp::ValueType::Sampler2d: return "Sampler2d";
+      case glpp::ValueType::SamplerCube: return "SamplerCube";
 
-      case gl::ValueType::FloatMat2x3: return "FloatMat2x3";
-      case gl::ValueType::FloatMat2x4: return "FloatMat2x4";
-      case gl::ValueType::FloatMat3x2: return "FloatMat3x2";
-      case gl::ValueType::FloatMat3x4: return "FloatMat3x4";
-      case gl::ValueType::FloatMat4x2: return "FloatMat4x2";
-      case gl::ValueType::FloatMat4x3: return "FloatMat4x3";
-      case gl::ValueType::UIntVec2: return "UIntVec2";
-      case gl::ValueType::UIntVec3: return "UIntVec3";
-      case gl::ValueType::UIntVec4: return "UIntVec4";
-      case gl::ValueType::Double: return "Double";
-      case gl::ValueType::DoubleVec2: return "DoubleVec2";
-      case gl::ValueType::DoubleVec3: return "DoubleVec3";
-      case gl::ValueType::DoubleVec4: return "DoubleVec4";
-      case gl::ValueType::DoubleMat2: return "DoubleMat2";
-      case gl::ValueType::DoubleMat3: return "DoubleMat3";
-      case gl::ValueType::DoubleMat4: return "DoubleMat4";
-      case gl::ValueType::DoubleMat2x3: return "DoubleMat2x3";
-      case gl::ValueType::DoubleMat2x4: return "DoubleMat2x4";
-      case gl::ValueType::DoubleMat3x2: return "DoubleMat3x2";
-      case gl::ValueType::DoubleMat3x4: return "DoubleMat3x4";
-      case gl::ValueType::DoubleMat4x2: return "DoubleMat4x2";
-      case gl::ValueType::DoubleMat4x3: return "DoubleMat4x3";
+      case glpp::ValueType::FloatMat2x3: return "FloatMat2x3";
+      case glpp::ValueType::FloatMat2x4: return "FloatMat2x4";
+      case glpp::ValueType::FloatMat3x2: return "FloatMat3x2";
+      case glpp::ValueType::FloatMat3x4: return "FloatMat3x4";
+      case glpp::ValueType::FloatMat4x2: return "FloatMat4x2";
+      case glpp::ValueType::FloatMat4x3: return "FloatMat4x3";
+      case glpp::ValueType::UIntVec2: return "UIntVec2";
+      case glpp::ValueType::UIntVec3: return "UIntVec3";
+      case glpp::ValueType::UIntVec4: return "UIntVec4";
+      case glpp::ValueType::Double: return "Double";
+      case glpp::ValueType::DoubleVec2: return "DoubleVec2";
+      case glpp::ValueType::DoubleVec3: return "DoubleVec3";
+      case glpp::ValueType::DoubleVec4: return "DoubleVec4";
+      case glpp::ValueType::DoubleMat2: return "DoubleMat2";
+      case glpp::ValueType::DoubleMat3: return "DoubleMat3";
+      case glpp::ValueType::DoubleMat4: return "DoubleMat4";
+      case glpp::ValueType::DoubleMat2x3: return "DoubleMat2x3";
+      case glpp::ValueType::DoubleMat2x4: return "DoubleMat2x4";
+      case glpp::ValueType::DoubleMat3x2: return "DoubleMat3x2";
+      case glpp::ValueType::DoubleMat3x4: return "DoubleMat3x4";
+      case glpp::ValueType::DoubleMat4x2: return "DoubleMat4x2";
+      case glpp::ValueType::DoubleMat4x3: return "DoubleMat4x3";
 
       default: return "UNRECOGNISED TYPE";
       }
    }
 
    
-   std::size_t attrib_atomic_val_bytes(gl::ValueType type) {
+   std::size_t attrib_atomic_val_bytes(glpp::ValueType type) {
       switch (type) {
-      case gl::ValueType::Byte:
-      case gl::ValueType::UByte:
+      case glpp::ValueType::Byte:
+      case glpp::ValueType::UByte:
          return 1;
 
-      case gl::ValueType::Short:
-      case gl::ValueType::UShort:
+      case glpp::ValueType::Short:
+      case glpp::ValueType::UShort:
          return 2;
 
-      case gl::ValueType::Int:
-      case gl::ValueType::UInt:
-      case gl::ValueType::Float:
-      case gl::ValueType::FloatVec2:
-      case gl::ValueType::FloatVec3:
-      case gl::ValueType::FloatVec4:
-      case gl::ValueType::IntVec2:
-      case gl::ValueType::IntVec3:
-      case gl::ValueType::IntVec4:
-      case gl::ValueType::FloatMat2:
-      case gl::ValueType::FloatMat3:
-      case gl::ValueType::FloatMat4:
+      case glpp::ValueType::Int:
+      case glpp::ValueType::UInt:
+      case glpp::ValueType::Float:
+      case glpp::ValueType::FloatVec2:
+      case glpp::ValueType::FloatVec3:
+      case glpp::ValueType::FloatVec4:
+      case glpp::ValueType::IntVec2:
+      case glpp::ValueType::IntVec3:
+      case glpp::ValueType::IntVec4:
+      case glpp::ValueType::FloatMat2:
+      case glpp::ValueType::FloatMat3:
+      case glpp::ValueType::FloatMat4:
 
-      case gl::ValueType::FloatMat2x3:
-      case gl::ValueType::FloatMat2x4:
-      case gl::ValueType::FloatMat3x2:
-      case gl::ValueType::FloatMat3x4:
-      case gl::ValueType::FloatMat4x2:
-      case gl::ValueType::FloatMat4x3:
-      case gl::ValueType::UIntVec2:
-      case gl::ValueType::UIntVec3:
-      case gl::ValueType::UIntVec4:
+      case glpp::ValueType::FloatMat2x3:
+      case glpp::ValueType::FloatMat2x4:
+      case glpp::ValueType::FloatMat3x2:
+      case glpp::ValueType::FloatMat3x4:
+      case glpp::ValueType::FloatMat4x2:
+      case glpp::ValueType::FloatMat4x3:
+      case glpp::ValueType::UIntVec2:
+      case glpp::ValueType::UIntVec3:
+      case glpp::ValueType::UIntVec4:
          return 4;
 
-      case gl::ValueType::Double:
-      case gl::ValueType::DoubleVec2:
-      case gl::ValueType::DoubleVec3:
-      case gl::ValueType::DoubleVec4:
-      case gl::ValueType::DoubleMat2:
-      case gl::ValueType::DoubleMat3:
-      case gl::ValueType::DoubleMat4:
-      case gl::ValueType::DoubleMat2x3:
-      case gl::ValueType::DoubleMat2x4:
-      case gl::ValueType::DoubleMat3x2:
-      case gl::ValueType::DoubleMat3x4:
-      case gl::ValueType::DoubleMat4x2:
-      case gl::ValueType::DoubleMat4x3:
+      case glpp::ValueType::Double:
+      case glpp::ValueType::DoubleVec2:
+      case glpp::ValueType::DoubleVec3:
+      case glpp::ValueType::DoubleVec4:
+      case glpp::ValueType::DoubleMat2:
+      case glpp::ValueType::DoubleMat3:
+      case glpp::ValueType::DoubleMat4:
+      case glpp::ValueType::DoubleMat2x3:
+      case glpp::ValueType::DoubleMat2x4:
+      case glpp::ValueType::DoubleMat3x2:
+      case glpp::ValueType::DoubleMat3x4:
+      case glpp::ValueType::DoubleMat4x2:
+      case glpp::ValueType::DoubleMat4x3:
          return 8;
 
-      default: throw gl::error("cannot calculate primitive size of invalid attribute type");
+      default: throw glpp::error("cannot calculate primitive size of invalid attribute type");
       }
    }
 
 
-   GLuint attrib_atomic_gl_type(gl::ValueType type) {
+   GLuint attrib_atomic_gl_type(glpp::ValueType type) {
       switch (type) {
-      case gl::ValueType::Byte: return GL_BYTE;
-      case gl::ValueType::UByte: return GL_UNSIGNED_BYTE;
-      case gl::ValueType::Short: return GL_SHORT;
-      case gl::ValueType::UShort: return GL_UNSIGNED_SHORT;
-      case gl::ValueType::Int: return GL_INT;
-      case gl::ValueType::UInt: return GL_UNSIGNED_INT;
-      case gl::ValueType::Float: return GL_FLOAT;
-      case gl::ValueType::Double: return GL_DOUBLE;
+      case glpp::ValueType::Byte: return GL_BYTE;
+      case glpp::ValueType::UByte: return GL_UNSIGNED_BYTE;
+      case glpp::ValueType::Short: return GL_SHORT;
+      case glpp::ValueType::UShort: return GL_UNSIGNED_SHORT;
+      case glpp::ValueType::Int: return GL_INT;
+      case glpp::ValueType::UInt: return GL_UNSIGNED_INT;
+      case glpp::ValueType::Float: return GL_FLOAT;
+      case glpp::ValueType::Double: return GL_DOUBLE;
 
-      case gl::ValueType::FloatVec2: return GL_FLOAT;
-      case gl::ValueType::FloatVec3: return GL_FLOAT;
-      case gl::ValueType::FloatVec4: return GL_FLOAT;
-      case gl::ValueType::IntVec2: return GL_INT;
-      case gl::ValueType::IntVec3: return GL_INT;
-      case gl::ValueType::IntVec4: return GL_INT;
+      case glpp::ValueType::FloatVec2: return GL_FLOAT;
+      case glpp::ValueType::FloatVec3: return GL_FLOAT;
+      case glpp::ValueType::FloatVec4: return GL_FLOAT;
+      case glpp::ValueType::IntVec2: return GL_INT;
+      case glpp::ValueType::IntVec3: return GL_INT;
+      case glpp::ValueType::IntVec4: return GL_INT;
 
-      case gl::ValueType::FloatMat2: return GL_FLOAT;
-      case gl::ValueType::FloatMat3: return GL_FLOAT;
-      case gl::ValueType::FloatMat4: return GL_FLOAT;
+      case glpp::ValueType::FloatMat2: return GL_FLOAT;
+      case glpp::ValueType::FloatMat3: return GL_FLOAT;
+      case glpp::ValueType::FloatMat4: return GL_FLOAT;
 
-      default: throw gl::error("invalid data value type when drawing");
+      default: throw glpp::error("invalid data value type when drawing");
       }
    }
 }
 
-namespace gl
+namespace glpp
 {
    /**
     * utils
@@ -310,7 +309,7 @@ namespace gl
          &width, &height, &resized_width, &resized_height, &channels);
 
       if (!id_) {
-         throw gl::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
+         throw glpp::error(std::string("Could not load texture from '") + filename + "': " + SOIL_last_result());
       }
 
       dims_.x = width;
@@ -712,7 +711,7 @@ namespace gl
             return false;
          }
 
-         gl::set_uniform(u.location(), val);
+         glpp::set_uniform(u.location(), val);
          return true;
       }
    }
@@ -1053,8 +1052,8 @@ namespace gl
       std::vector<buffer_spec_t> vertex_buffers_;
       int index_buffer_idx_ = -1;
       std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
-      std::vector<std::pair<gl::uniform, texture_t>> texture_bindings_without_tex_units_;
-      std::vector<std::pair<gl::uniform, uniform_action_t>> uniform_actions_;
+      std::vector<std::pair<glpp::uniform, texture_t>> texture_bindings_without_tex_units_;
+      std::vector<std::pair<glpp::uniform, uniform_action_t>> uniform_actions_;
    };
 
 
@@ -1304,7 +1303,7 @@ namespace gl
          }
       }
 
-      for (auto & v : state_->vertex_buffers_) gl::bind(v);
+      for (auto & v : state_->vertex_buffers_) glpp::bind(v);
    }
 
 
@@ -1469,7 +1468,7 @@ namespace gl
       }
 
       // not found, create and start tracking an invalid uniform
-      auto new_uniform = gl::uniform{ name };
+      auto new_uniform = glpp::uniform{ name };
       state_->uniforms_.push_back(new_uniform);
       return new_uniform;
    }
@@ -1480,7 +1479,7 @@ namespace gl
       }
 
       // not found, create and start tracking an invalid attrib
-      auto new_attrib = gl::attrib{ name };
+      auto new_attrib = glpp::attrib{ name };
       state_->attribs_.push_back(new_attrib);
       return new_attrib;
    }
@@ -1610,17 +1609,17 @@ namespace gl
       void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
          window_key_callbacks_.invoke(
             window, 
-            gl::from_glfw_key(key), 
+            glpp::from_glfw_key(key), 
             scancode, 
-            gl::from_glfw_key_action(action), 
-            gl::from_glfw_key_mods(mods));
+            glpp::from_glfw_key_action(action), 
+            glpp::from_glfw_key_mods(mods));
       }
    }
 
    context::context(key_callback_t key_handler)
    : win_(*this), impl_(nullptr)
    {
-      if (!initialized_) { throw error("runtime not initialised - call gl::init() first"); }
+      if (!initialized_) { throw error("runtime not initialised - call glpp::init() first"); }
 
       // some more info on extensions: http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-12-opengl-extensions/
       // glfwOpenWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1); 
@@ -1678,7 +1677,7 @@ namespace gl
    // class sprite_sheet
    //
 
-   sprite_sheet::sprite_sheet(gl::texture_t texture, std::vector<frame_ref> frames)
+   sprite_sheet::sprite_sheet(glpp::texture_t texture, std::vector<frame_ref> frames)
       : texture_(texture) {
       for (auto & s : frames) {
          if (s.dimensions.x > max_frame_width_) max_frame_width_ = s.dimensions.x;
@@ -1691,7 +1690,7 @@ namespace gl
    }
 
    namespace {
-      std::vector<sprite_sheet::frame_ref> calculate_frames(gl::texture_t const & texture, int frame_x, int frame_y) {
+      std::vector<sprite_sheet::frame_ref> calculate_frames(glpp::texture_t const & texture, int frame_x, int frame_y) {
          auto tex_dims = texture.dims();
          std::vector<sprite_sheet::frame_ref> frames;
          for (auto y = 0; y < tex_dims.y; y += frame_y) {
@@ -1709,11 +1708,11 @@ namespace gl
       }
    }
 
-   sprite_sheet::sprite_sheet(gl::texture_t texture, int frame_x, int frame_y)
+   sprite_sheet::sprite_sheet(glpp::texture_t texture, int frame_x, int frame_y)
       : sprite_sheet(texture, calculate_frames(texture, frame_x, frame_y)) {
    }
 
-   sprite_sheet::sprite_sheet(gl::texture_t texture)
+   sprite_sheet::sprite_sheet(glpp::texture_t texture)
       : texture_(texture)
       , max_frame_width_(texture.dims().x)
       , max_frame_height_(texture.dims().y) {
@@ -1731,7 +1730,7 @@ namespace gl
       , indices_(std::begin(indices), std::end(indices))
    {}
 
-   gl::texture_t animation_t::texture() const {
+   glpp::texture_t animation_t::texture() const {
       return frames_.texture();
    }
 
@@ -1847,7 +1846,7 @@ namespace gl
             }
          }();
          auto message = std::string("could not initialize GLFW - ") + description + " (" + errstr + ")";
-         throw gl::error(message);
+         throw glpp::error(message);
       };
 
       glfwSetErrorCallback(throwing_error_callback);

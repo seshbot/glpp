@@ -1,8 +1,8 @@
-#include "input.h"
+#include <glpp/input.h>
 
 #include "GLFW/glfw3.h"
 
-namespace gl {
+namespace glpp {
 
    std::string to_string(KeyModFlag mods) {
       
