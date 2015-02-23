@@ -3,8 +3,6 @@
  * Command line: src/gen.py assets/gl.xml -p assets/gl-patch.xml -o build/lib/ --force --cpp --es2only
  */
 
-#define GL_GLEXT_PROTOTYPES
-
 #include <GLES2/gl2.h>
 #include <glpp/gles2/commands.h>
 

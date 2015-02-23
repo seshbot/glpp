@@ -77,7 +77,7 @@ lowp vec4 colour_with_border() {
 }
 
 void main() {
-   lowp vec4 colour = texture2D(texture, v_tex_coords);
+   lowp vec4 colour = sqrt(texture2D(texture, v_tex_coords)); // 2.0 gamma correction (TODO: use 2.2 ?)
 
    //colour = hsv_adjust(colour, sin(2. * t));
    lowp vec3 post_colour = post_adjust(colour.rgb, v_tex_coords);

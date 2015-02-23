@@ -9,7 +9,7 @@
 #ifndef ANGLE_EXTENSION_MACROS__H
 #define ANGLE_EXTENSION_MACROS__H
 
-#if ANGLE_BUILD
+#if GLPP_USING_ANGLE
 
 
 // some ANGLE extensions dont appear to conform to the spec

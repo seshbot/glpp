@@ -20,8 +20,8 @@
 
 
 namespace {
-   glpp::shader vert_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../shaders/%s.vert", name.c_str()), glpp::shader::Vertex); }
-   glpp::shader frag_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../shaders/%s.frag", name.c_str()), glpp::shader::Fragment); }
+   glpp::shader vert_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../../shaders/%s.vert", name.c_str()), glpp::shader::Vertex); }
+   glpp::shader frag_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../../shaders/%s.frag", name.c_str()), glpp::shader::Fragment); }
 
    glpp::program create_program(std::string name) {
       utils::log(utils::LOG_INFO, "compiling '%s' shader programs... ", name.c_str());
@@ -307,8 +307,8 @@ int main()
       public:
          sprite_repository(game::creature_info_table const & creature_db)
             : creature_db_(creature_db)
-            , player_sprite_sheet_({ "../res/dude-walk.png" }, 64, 72)
-            , bullet_sprite_sheet_({ "../res/sprites.png" }, {
+            , player_sprite_sheet_({ "../../res/dude-walk.png" }, 64, 72)
+            , bullet_sprite_sheet_({ "../../res/sprites.png" }, {
                { { 0, 608 }, { 32, 32 } },
                { { 0, 544 }, { 64, 64 } },
             })
@@ -495,7 +495,7 @@ int main()
 
       auto bg_pass = prg_2d.pass()
          .with(screen_vertices_spec)
-         .set_uniform("texture", glpp::texture_t{ "bg_green.png" });
+         .set_uniform("texture", glpp::texture_t{ "../../res/dude-walk.png" });
 
       auto post_tex = std::unique_ptr<glpp::texture_t>();
       auto tex_fbo = std::unique_ptr<glpp::frame_buffer_t>();
