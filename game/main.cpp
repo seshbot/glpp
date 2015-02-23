@@ -495,7 +495,7 @@ int main()
 
       auto bg_pass = prg_2d.pass()
          .with(screen_vertices_spec)
-         .set_uniform("texture", glpp::texture_t{ "../../res/dude-walk.png" });
+         .set_uniform("texture", glpp::texture_t{ "../../res/bg_green.png" });
 
       auto post_tex = std::unique_ptr<glpp::texture_t>();
       auto tex_fbo = std::unique_ptr<glpp::frame_buffer_t>();
@@ -716,11 +716,9 @@ int main()
             gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);
-            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             bg_pass.draw(glpp::DrawMode::Triangles);
 
-            gl::clear(gl::clear_buffer_flags_t::color_buffer_bit);
-            //glClear(GL_DEPTH_BUFFER_BIT);
+            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
             //sprite_pass.draw_batch(
             //   sprite_render_callback_t{
             //      world_view.creatures_begin(),
@@ -734,7 +732,6 @@ int main()
                   glpp::DrawMode::Triangles);
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
-            //glClear(GL_DEPTH_BUFFER_BIT);
             for (auto & pass : body_passes) {
                pass.draw_batch(
                   mesh_render_callback_t{
@@ -751,7 +748,6 @@ int main()
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);
 
-            //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             msaa_fbo->blit_to_draw_buffer();
          }
          tex_fbo->unbind();
