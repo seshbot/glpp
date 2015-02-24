@@ -17,7 +17,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 
-
+namespace gl {
+   using namespace gles2;
+}
 
 namespace {
    glpp::shader vert_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../../shaders/%s.vert", name.c_str()), glpp::shader::Vertex); }

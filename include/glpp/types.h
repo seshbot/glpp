@@ -59,16 +59,16 @@ namespace gl {
       bitmask(FieldsT f1, FieldsT f2, FieldsT f3, FieldsT f4, FieldsT f5) : value(static_cast<value_type>(f1) | static_cast<value_type>(f2) | static_cast<value_type>(f3) | static_cast<value_type>(f4) | static_cast<value_type>(f5)) {}
       bitmask(FieldsT f1, FieldsT f2, FieldsT f3, FieldsT f4, FieldsT f5, FieldsT f6) : value(static_cast<value_type>(f1) | static_cast<value_type>(f2) | static_cast<value_type>(f3) | static_cast<value_type>(f4) | static_cast<value_type>(f5) | static_cast<value_type>(f6)) {}
 
-      friend bitmask<FieldsT> operator|(bitmask<FieldsT> f1, bitmask<FieldsT> f2) { return bitmask<FieldsT>::or(f1.value, f2.value); }
-      friend bitmask<FieldsT> operator&(bitmask<FieldsT> f1, bitmask<FieldsT> f2) { return bitmask<FieldsT>::and(f1.value, f2.value); }
-      friend bitmask<FieldsT> operator^(bitmask<FieldsT> f1, bitmask<FieldsT> f2) { return bitmask<FieldsT>::xor(f1.value, f2.value); }
-      friend bitmask<FieldsT> operator~(bitmask<FieldsT> f1) { return bitmask<FieldsT>::not(f1.value); }
+      friend bitmask<FieldsT> operator|(bitmask<FieldsT> f1, bitmask<FieldsT> f2) { return bitmask<FieldsT>::or_(f1.value, f2.value); }
+      friend bitmask<FieldsT> operator&(bitmask<FieldsT> f1, bitmask<FieldsT> f2) { return bitmask<FieldsT>::and_(f1.value, f2.value); }
+      friend bitmask<FieldsT> operator^(bitmask<FieldsT> f1, bitmask<FieldsT> f2) { return bitmask<FieldsT>::xor_(f1.value, f2.value); }
+      friend bitmask<FieldsT> operator~(bitmask<FieldsT> f1) { return bitmask<FieldsT>::not_(f1.value); }
 
       static bitmask<FieldsT> from_underlying(value_type mask) { return{ mask }; }
-      static bitmask<FieldsT> or(FieldsT f1, FieldsT f2) { return{ f1.value, f2.value }; }
-      static bitmask<FieldsT> and(FieldsT f1, FieldsT f2) { return from_underlying(static_cast<value_type>(f1) & static_cast<value_type>(f2)); }
-      static bitmask<FieldsT> xor(FieldsT f1, FieldsT f2) { return from_underlying(static_cast<value_type>(f1) ^ static_cast<value_type>(f2)); }
-      static bitmask<FieldsT> not(FieldsT f1) { return from_underlying(~static_cast<value_type>(f1)); }
+      static bitmask<FieldsT> or_(FieldsT f1, FieldsT f2) { return{ f1.value, f2.value }; }
+      static bitmask<FieldsT> and_(FieldsT f1, FieldsT f2) { return from_underlying(static_cast<value_type>(f1) & static_cast<value_type>(f2)); }
+      static bitmask<FieldsT> xor_(FieldsT f1, FieldsT f2) { return from_underlying(static_cast<value_type>(f1) ^ static_cast<value_type>(f2)); }
+      static bitmask<FieldsT> not_(FieldsT f1) { return from_underlying(~static_cast<value_type>(f1)); }
 
    private:
       bitmask(value_type mask) : value(mask) {}
@@ -76,11 +76,11 @@ namespace gl {
 
    // VC compiler cannot find these if they are declared as nested friend functions unfortunately
    #define CREATE_ENUM_BITMASK_TYPE(type_name, e) \
-      using type_name = bitmask<e>; \
-      inline bitmask<e> operator|(e f1, e f2) { return{ f1, f2 }; } \
-      inline bitmask<e> operator&(e f1, e f2) { return bitmask<e>::and(f1, f2); } \
-      inline bitmask<e> operator^(e f1, e f2) { return bitmask<e>::xor(f1, f2); } \
-      inline bitmask<e> operator~(e f1) { return bitmask<e>::not(f1); } 
+      using type_name = ::gl::bitmask<e>; \
+      inline ::gl::bitmask<e> operator|(e f1, e f2) { return{ f1, f2 }; } \
+      inline ::gl::bitmask<e> operator&(e f1, e f2) { return ::gl::bitmask<e>::and_(f1, f2); } \
+      inline ::gl::bitmask<e> operator^(e f1, e f2) { return ::gl::bitmask<e>::xor_(f1, f2); } \
+      inline ::gl::bitmask<e> operator~(e f1) { return ::gl::bitmask<e>::not_(f1); } 
 }
 
 #endif // #ifndef TYPES__H
