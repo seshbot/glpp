@@ -41,9 +41,9 @@ namespace utils
    void log(LogType type, const char * format, ...) {
       va_list args;
       va_start(args, format);
-      char buffer[1024];
+      char buffer[4096];
 #ifdef _WIN32
-      _vsnprintf_s(buffer, 1024, _TRUNCATE, format, args);
+      _vsnprintf_s(buffer, 4096, _TRUNCATE, format, args);
 #else
       vsnprintf(buffer, 1024, format, args);
 #endif

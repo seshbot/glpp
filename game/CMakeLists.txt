@@ -27,10 +27,13 @@ add_custom_command(TARGET glgame POST_BUILD
         ${PROJECT_SOURCE_DIR}/shaders
         ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
-add_custom_command(TARGET glgame POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${PROJECT_SOURCE_DIR}/thirdparty/angle/bin/$<CONFIGURATION>
-        $<TARGET_FILE_DIR:glgame>)
+
+if (WIN32)
+  add_custom_command(TARGET glgame POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${PROJECT_SOURCE_DIR}/thirdparty/angle/bin/$<CONFIGURATION>
+          $<TARGET_FILE_DIR:glgame>)
+endif ()
 
 # add_custom_command(TARGET glgame POST_BUILD
 #     COMMAND ${CMAKE_COMMAND} -E copy_directory

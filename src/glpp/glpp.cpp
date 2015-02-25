@@ -2,7 +2,6 @@
 
 #ifdef WIN32
 #  include <GLES2/gl2.h>
-#  define GL_GLEXT_PROTOTYPES
 #  include <GLES2/gl2ext.h>
 
 #  define USE_OPENGL_ES_2
@@ -23,7 +22,6 @@
 #include <cassert>
 
 #include <glpp/utils.h>
-
 
 void checkOpenGLError(const char* function, const char* file, int line) {
    GLenum err = glGetError(); if (err == GL_NO_ERROR) return;
@@ -1655,7 +1653,7 @@ namespace glpp
       destroy();
    }
 
-   std::string context::info() const {
+   std::string context::info(bool with_extensions) const {
       std::string buf;
       buf += "GLFW version        : "; buf += glfwGetVersionString();
       buf += "\nGL_VERSION          : "; buf += (const char *)glGetString(GL_VERSION);
@@ -1664,6 +1662,26 @@ namespace glpp
 #ifdef GL_SHADING_LANGUAGE_VERSION
       buf += "\nGL_SHADING_LANGUAGE_VERSION : "; buf += (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
 #endif
+
+      if (with_extensions) {
+         std::vector<std::string> extensions;
+         auto es = glGetString(GL_EXTENSIONS);
+         for (auto i = 0, iTokBegin = 0; es[i]; i++) {
+            auto endOfToken = es[i + 1] == ' ' || es[i + 1] == '\0';
+            if (!endOfToken) continue;
+
+            auto token = std::string{ es + iTokBegin, es + i + 1 };
+            auto tokenIsEmpty = std::string::npos == token.find_last_not_of(" \t");
+
+            if (!tokenIsEmpty)
+               extensions.push_back(token);
+
+            iTokBegin = i + 2;
+         }
+
+         buf += "\nGL EXTENSIONS [" + std::to_string(extensions.size()) + "]:";
+         for (auto e : extensions) buf += "\n - " + e;
+      }
 
       return buf;
    }

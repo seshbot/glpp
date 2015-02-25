@@ -538,7 +538,7 @@ namespace glpp {
       context & operator=(context const &) = delete;
       ~context();
 
-      std::string info() const;
+      std::string info(bool with_extensions = true) const;
 
       void destroy(); // optional, will be invoked by dtor
 
