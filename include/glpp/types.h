@@ -10,6 +10,8 @@
 
 namespace gl {
    // TODO: should we be using KHR for this stuff?
+   using gl_proc = void(*)();
+   using get_gl_proc_func = gl_proc(*)(const char *);
 
    using enum_t = unsigned int;
    using bitfield_t = unsigned int;

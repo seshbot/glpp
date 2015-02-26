@@ -761,8 +761,6 @@ int main()
 
          context.win().swap();
       }
-
-      exit(EXIT_SUCCESS);
    }
    catch (glpp::shader_compile_error const & ex) {
       utils::log(utils::LOG_ERROR, "%s\n", ex.what());
@@ -779,4 +777,6 @@ int main()
    }
 
    glpp::shutdown();
+
+   exit(EXIT_SUCCESS);
 }

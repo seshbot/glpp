@@ -17,9 +17,6 @@ target_link_libraries(glpp gles2)
 
 if (WIN32)
     include_directories(SYSTEM ${ANGLE_INCLUDES})
-    
-    add_definitions(-DGLPP_USING_ANGLE)
-
     target_link_libraries(glpp ${ANGLE_LIBRARIES})
 else ()
     include_directories(SYSTEM ${GLEW_INCLUDES})

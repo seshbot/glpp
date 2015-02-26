@@ -46,7 +46,7 @@ namespace glpp {
    inline bool operator==(dim_t const & d1, dim_t const & d2) { return d1.x == d2.x && d1.y == d2.y; }
    inline bool operator!=(dim_t const & d1, dim_t const & d2) { return !(d1 == d2); }
 
-   const char * openGlErrorString(id_t err);
+   //const char * openGlErrorString(id_t err);
 
    struct error : public std::runtime_error {
       error() : std::runtime_error("") { }

@@ -6,6 +6,11 @@ project (GLpp)
 
 add_definitions(-DGL_GLEXT_PROTOTYPES)
 
+if (WIN32)
+    add_definitions(-DGLPP_USING_ANGLE)
+    add_definitions(-DGLPP_USING_GLES2)
+endif ()
+
 add_subdirectory(thirdparty)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
