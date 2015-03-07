@@ -14,6 +14,11 @@ endif ()
 add_subdirectory(thirdparty)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-add_subdirectory(src/gles2)
+if (WIN32)
+  add_subdirectory(src/gles2)
+else ()
+  add_subdirectory(src/gl2)
+endif ()
+
 add_subdirectory(src/glpp)
 add_subdirectory(game)

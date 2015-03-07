@@ -173,20 +173,22 @@ namespace gles2 {
         
         return nullptr;
      }
-  }
 
-  bool is_core_proc(const char* proc_name) {
-    return nullptr != get_proc_address_impl(proc_name);
-  }
+    bool is_core_proc(const char* proc_name) {
+      return nullptr != get_proc_address_impl(proc_name);
+    }
 
-  gl_proc get_core_proc_address(const char* proc_name) {
-    return get_proc_address_impl(proc_name);
-  }
-
-  gl_proc get_proc_address(const char* proc_name) {
-    if (is_core_proc(proc_name))
+    gl_proc get_core_proc_address(const char* proc_name) {
       return get_proc_address_impl(proc_name);
+    }
+  }
 
-    return eglGetProcAddress(proc_name);
+  namespace angle {
+    gl_proc get_proc_address(const char* proc_name) {
+      if (is_core_proc(proc_name))
+        return get_proc_address_impl(proc_name);
+
+      return eglGetProcAddress(proc_name);
+    }
   }
 }

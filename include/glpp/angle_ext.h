@@ -3,8 +3,8 @@
 
 #include "types.h"
 
-namespace gles2 {  
+namespace gles2 { namespace angle {
   gl::gl_proc get_proc_address(const char* proc_name);
-}
+} }
 
 #endif // #ifndef ANGLE_LOADER__H

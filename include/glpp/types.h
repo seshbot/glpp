@@ -4,9 +4,23 @@
 #ifndef TYPES__H
 #define TYPES__H
 
+#if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN 1
+#endif
+#include <windows.h>
+#endif
+
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+#ifndef APIENTRYP
+#define APIENTRYP APIENTRY *
+#endif
 
 namespace gl {
    // TODO: should we be using KHR for this stuff?
@@ -33,9 +47,9 @@ namespace gl {
    using sizeiptr_t = std::ptrdiff_t;
    using intptr_t = std::ptrdiff_t;
 
-   using DEBUGPROC_t = void(*)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
-   using DEBUGPROCARB_t = void(*)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
-   using DEBUGPROCKHR_t = void(*)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
+   using DEBUGPROC_t = void(APIENTRY *)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
+   using DEBUGPROCARB_t = void(APIENTRY *)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
+   using DEBUGPROCKHR_t = void(APIENTRY *)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
 
    using sync_t = struct __GLsync *;
    using eglImageOES_t = void *;

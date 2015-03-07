@@ -1707,6 +1707,8 @@ namespace glpp
 
       glfwMakeContextCurrent(window);
 
+      gles2::init();
+
       window_key_callbacks_.set(window, *this, key_handler);
       glfwSetKeyCallback(window, key_callback);
 
