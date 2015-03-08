@@ -3244,7 +3244,7 @@ GLAPI PFNGLSTENCILTHENCOVERFILLPATHINSTANCEDNVPROC glad_glStencilThenCoverFillPa
 typedef void (APIENTRYP PFNGLSTENCILTHENCOVERSTROKEPATHINSTANCEDNVPROC)(GLsizei, GLenum, const void*, GLuint, GLint, GLuint, GLenum, GLenum, const GLfloat*);
 GLAPI PFNGLSTENCILTHENCOVERSTROKEPATHINSTANCEDNVPROC glad_glStencilThenCoverStrokePathInstancedNV;
 #define glStencilThenCoverStrokePathInstancedNV glad_glStencilThenCoverStrokePathInstancedNV
-typedef GLenum (APIENTRYP PFNGLPATHGLYPHINDEXRANGENVPROC)(GLenum, const void*, GLbitfield, GLuint, GLfloat, GLuint);
+typedef GLenum (APIENTRYP PFNGLPATHGLYPHINDEXRANGENVPROC)(GLenum, const void*, GLbitfield, GLuint, GLfloat, GLuint*);
 GLAPI PFNGLPATHGLYPHINDEXRANGENVPROC glad_glPathGlyphIndexRangeNV;
 #define glPathGlyphIndexRangeNV glad_glPathGlyphIndexRangeNV
 typedef GLenum (APIENTRYP PFNGLPATHGLYPHINDEXARRAYNVPROC)(GLuint, GLenum, const void*, GLbitfield, GLuint, GLsizei, GLuint, GLfloat);
