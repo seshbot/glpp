@@ -1,16 +1,16 @@
 #ifdef WIN32
 #  include <windows.h>
-//#  include <GLES2/gl2.h>
-#else  // LINUX, OSX
-#  include <GL/glew.h>
-#  define USE_GLEW
 #endif
 
 #include <map>
 #include "game.h"
 #include <glpp/glpp.h>
 #include <glpp/utils.h>
-#include <glpp/gles2.h>
+#ifdef _MSC_VER
+#   include <glpp/gles2.h>
+#else
+#   include <glpp/gl2.h>
+#endif
 
 // TODO: remove this
 #define GLM_FORCE_RADIANS
@@ -18,7 +18,7 @@
 #include <algorithm>
 
 namespace gl {
-   using namespace gles2;
+   using namespace gl2;
 }
 
 namespace {

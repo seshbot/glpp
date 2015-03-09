@@ -3,9 +3,10 @@
 #ifdef WIN32
 #  include <glpp/gles2.h>
 #else
-#   include <GL/glew.h>
-#   define USE_GLEW
+#  include <glpp/gl2.h>
 #endif
+
+namespace gles2 = gl2;
 
 /**
 INITIALIZATION: 
@@ -45,7 +46,9 @@ namespace {
          //case gles2::error_code_t::stack_overflow: return "GL_STACK_OVERFLOW";
          //case gles2::error_code_t::stack_underflow: return "GL_STACK_UNDERFLOW";
       case gles2::error_code_t::out_of_memory: return "GL_OUT_OF_MEMORY";
+#ifdef _MSC_VER
       case gles2::error_code_t::invalid_framebuffer_operation: return "GL_INVALID_FRAMEBUFFER_OPERATION";
+#endif
          //case gles2::error_code_t::table_too_large1: return "GL_TABLE_TOO_LARGE1";
       default: return "unrecognised";
       }
@@ -518,8 +521,8 @@ namespace glpp
       if (samples_ == 0) GL_VERIFY(gles2::renderbuffer_storage(gles2::renderbuffer_target_t::renderbuffer, gles2::internal_format_t::bgra8_ext, dims_.x, dims_.y));
       else GL_VERIFY(gles2::renderbuffer_storage_multisample_angle(gles2::renderbuffer_target_t::renderbuffer, samples_, gles2::internal_format_t::bgra8_ext, dims_.x, dims_.y));
 #else
-      if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, dims_.x, dims_.y));
-      else GL_VERIFY(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples_, GL_RGBA8, dims_.x, dims_.y));
+      if (samples_ == 0) GL_VERIFY(gles2::renderbuffer_storage(gles2::renderbuffer_target_t::renderbuffer, gles2::internal_format_t::rgb8, dims_.x, dims_.y));
+      else GL_VERIFY(gles2::renderbuffer_storage_multisample(gles2::renderbuffer_target_t::renderbuffer, samples_, gles2::internal_format_t::rgb8, dims_.x, dims_.y));
 #endif
       GL_VERIFY(gles2::framebuffer_renderbuffer(gles2::framebuffer_target_t::framebuffer, gles2::framebuffer_attachment_t::color_attachment0, gles2::renderbuffer_target_t::renderbuffer, colour_rbo_id_));
 
@@ -529,8 +532,8 @@ namespace glpp
       if (samples_ == 0) GL_VERIFY(gles2::renderbuffer_storage(gles2::renderbuffer_target_t::renderbuffer, gles2::internal_format_t::depth_component16, dims_.x, dims_.y));
       else GL_VERIFY(gles2::renderbuffer_storage_multisample_angle(gles2::renderbuffer_target_t::renderbuffer, samples_, gles2::internal_format_t::depth_component16, dims_.x, dims_.y));
 #else
-      if (samples_ == 0) GL_VERIFY(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
-      else GL_VERIFY(glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples_, GL_DEPTH_COMPONENT16, dims_.x, dims_.y));
+      if (samples_ == 0) GL_VERIFY(gles2::renderbuffer_storage(gles2::renderbuffer_target_t::renderbuffer, gles2::internal_format_t::depth_component16, dims_.x, dims_.y));
+      else GL_VERIFY(gles2::renderbuffer_storage_multisample(gles2::renderbuffer_target_t::renderbuffer, samples_, gles2::internal_format_t::depth_component16, dims_.x, dims_.y));
 #endif
       GL_VERIFY(gles2::framebuffer_renderbuffer(gles2::framebuffer_target_t::framebuffer, gles2::framebuffer_attachment_t::depth_attachment, gles2::renderbuffer_target_t::renderbuffer, depth_rbo_id_));
 
@@ -582,7 +585,8 @@ namespace glpp
       gl::int_t TMP_GL_NEAREST = 0x2600;
       GL_VERIFY(gles2::blit_framebuffer_angle(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gles2::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
 #else
-      GL_VERIFY(glBlitFramebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+      gl::int_t TMP_GL_NEAREST = 0x2600;
+      GL_VERIFY(gles2::blit_framebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gles2::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
 #endif
    }
 

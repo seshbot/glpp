@@ -15,7 +15,10 @@ add_subdirectory(thirdparty)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_subdirectory(src/gl2)
-add_subdirectory(src/gles2)
+if (APPLE)
+else ()
+   add_subdirectory(src/gles2)
+endif ()
 
 add_subdirectory(src/glpp)
 add_subdirectory(game)

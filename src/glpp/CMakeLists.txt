@@ -13,13 +13,12 @@ target_include_directories(glpp SYSTEM PUBLIC ${GLM_INCLUDES})
 target_include_directories(glpp SYSTEM PRIVATE ${SOIL_INCLUDES})
 
 target_link_libraries(glpp glfw soil ${OPENGL_GLU_LIBRARY} ${GLFW_LIBRARIES})
-target_link_libraries(glpp gles2)
 
 if (WIN32)
-    include_directories(SYSTEM ${ANGLE_INCLUDES})
-    target_link_libraries(glpp ${ANGLE_LIBRARIES})
-else ()
-    include_directories(SYSTEM ${GLEW_INCLUDES})
+   target_link_libraries(glpp gles2)
 
-    target_link_libraries(glpp ${GLEW_LIBRARIES})
+   include_directories(SYSTEM ${ANGLE_INCLUDES})
+   target_link_libraries(glpp ${ANGLE_LIBRARIES})
+else ()
+   target_link_libraries(glpp gl2)
 endif ()

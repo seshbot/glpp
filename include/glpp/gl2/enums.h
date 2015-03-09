@@ -712,13 +712,13 @@ namespace gl2 {
 
   enum class logic_op_t : unsigned int {
     clear = 0x1500,
-    and = 0x1501,
+    and_ = 0x1501,
     and_reverse = 0x1502,
     copy = 0x1503,
     and_inverted = 0x1504,
     noop = 0x1505,
-    xor = 0x1506,
-    or = 0x1507,
+    xor_ = 0x1506,
+    or_ = 0x1507,
     nor = 0x1508,
     equiv = 0x1509,
     invert = 0x150A,

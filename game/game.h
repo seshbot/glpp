@@ -111,7 +111,7 @@ namespace game {
       entity_id_t entity;
 
       static plan_t do_nothing() { return{ type_t::do_nothing }; }
-      static plan_t move_to(glm::vec2 & loc) { return{ type_t::move_to, 0., loc }; }
+      static plan_t move_to(glm::vec2 const & loc) { return{ type_t::move_to, 0., loc }; }
       static plan_t wait_for(double time) { return{ type_t::wait_for, time }; }
       static plan_t follow_for(entity_id_t entity, double time) { return{ type_t::follow_for, time, {}, entity }; }
    };

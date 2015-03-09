@@ -18,7 +18,7 @@ target_include_directories(glgame SYSTEM PRIVATE ${GLFW_SOURCE_DIR}/include ${GL
 target_include_directories(glgame SYSTEM PRIVATE ${ASSIMP_INCLUDES})
 
 target_link_libraries(glgame PRIVATE glfw ${OPENGL_GLU_LIBRARY} ${GLFW_LIBRARIES} ${ASSIMP_LIBRARIES})
-target_link_libraries(glgame PRIVATE gles2 glpp)
+target_link_libraries(glgame PRIVATE glpp)
 
 message(STATUS "copying shaders from ${PROJECT_SOURCE_DIR}/shaders to ${CMAKE_BINARY_DIR}/shaders")
 
