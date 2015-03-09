@@ -27,6 +27,7 @@ namespace gl {
    using gl_proc = void(*)();
    using get_gl_proc_func = gl_proc(*)(const char *);
 
+   using boolean_t = unsigned char;
    using enum_t = unsigned int;
    using bitfield_t = unsigned int;
    using byte_t = std::int8_t;
@@ -47,9 +48,31 @@ namespace gl {
    using sizeiptr_t = std::ptrdiff_t;
    using intptr_t = std::ptrdiff_t;
 
+   using halfARB_t = unsigned short;
+   using half_t = unsigned short;
+   using intptrARB_t = ptrdiff_t;
+   using sizeiptrARB_t = ptrdiff_t;
+   using int64EXT_t = int64_t;
+   using uint64EXT_t = uint64_t;
+   struct _cl_context_t;
+   struct _cl_event_t;
+
    using DEBUGPROC_t = void(APIENTRY *)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
    using DEBUGPROCARB_t = void(APIENTRY *)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
    using DEBUGPROCKHR_t = void(APIENTRY *)(enum_t source, enum_t type, uint_t id, enum_t severity, sizei_t length, const char_t *message, const void *userParam);
+   using DEBUGPROCAMD_t = void(APIENTRY *)(uint_t id, enum_t category, enum_t severity, sizei_t length, const char_t *message, void *userParam);
+
+   using clampd_t = double;
+   using intptrARB_t = ptrdiff_t;
+   using halfNV_t = unsigned short;
+
+   using charARB_t = char;
+   using vdpauSurfaceNV_t = intptr_t;
+#ifdef __APPLE__
+   using handleARB_t = void *;
+#else
+   using handleARB_t = unsigned int;
+#endif
 
    using sync_t = struct __GLsync *;
    using eglImageOES_t = void *;

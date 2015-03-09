@@ -1,3 +1,9 @@
+#
+# GLAD
+#
+
+add_subdirectory(glad)
+
 
 #
 # Angle
@@ -28,19 +34,6 @@ if (WIN32)
 endif ()
 
 add_subdirectory(glfw-3.0.4)
-
-#
-# GLEW
-#
-
-if (NOT WIN32)
-    set(glew-cmake_BUILD_STATIC OFF CACHE BOOL "" FORCE)
-    set(GLEW_LIBRARIES libglew_shared CACHE INTERNAL "")
-
-    add_subdirectory(glew-cmake)
-
-    set(GLEW_INCLUDES ${glew_SOURCE_DIR}/include CACHE INTERNAL "")
-endif ()
 
 #
 # GLM

@@ -970,7 +970,7 @@ namespace glpp
 
          GL_VERIFY(gles2::vertex_attrib_pointer(
             attrib_info.attrib.location(), attrib_info.count, gl_type,
-            gles2::boolean_t::false_, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
+            false, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
 
          GL_VERIFY(gles2::enable_vertex_attrib_array(attrib_info.attrib.location()));
       }
@@ -1956,9 +1956,9 @@ namespace glpp
    }
 
    // TODO: ensure program is bound
-   void set_uniform(int location, glm::mat4 const & mat) { GL_VERIFY(gles2::uniform_matrix_4fv(location, 1, gles2::boolean_t::false_, glm::value_ptr(mat))); }
-   void set_uniform(int location, glm::mat3 const & mat) { GL_VERIFY(gles2::uniform_matrix_3fv(location, 1, gles2::boolean_t::false_, glm::value_ptr(mat))); }
-   void set_uniform(int location, glm::mat2 const & mat) { GL_VERIFY(gles2::uniform_matrix_2fv(location, 1, gles2::boolean_t::false_, glm::value_ptr(mat))); }
+   void set_uniform(int location, glm::mat4 const & mat) { GL_VERIFY(gles2::uniform_matrix_4fv(location, 1, false, glm::value_ptr(mat))); }
+   void set_uniform(int location, glm::mat3 const & mat) { GL_VERIFY(gles2::uniform_matrix_3fv(location, 1, false, glm::value_ptr(mat))); }
+   void set_uniform(int location, glm::mat2 const & mat) { GL_VERIFY(gles2::uniform_matrix_2fv(location, 1, false, glm::value_ptr(mat))); }
    void set_uniform(int location, glm::vec4 const & vec) { GL_VERIFY(gles2::uniform_4f(location, vec.x, vec.y, vec.z, vec.w)); }
    void set_uniform(int location, glm::vec3 const & vec) { GL_VERIFY(gles2::uniform_3f(location, vec.x, vec.y, vec.z)); }
    void set_uniform(int location, glm::vec2 const & vec) { GL_VERIFY(gles2::uniform_2f(location, vec.x, vec.y)); }
