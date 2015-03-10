@@ -11,8 +11,8 @@
 
 namespace gl2 {
   enum class color_table_parameter_p_name_sgi_t : unsigned int {
-    color_table_scale_sgi = 0x80D6,
     color_table_scale = 0x80D6,
+    color_table_scale_sgi = 0x80D6,
     color_table_bias = 0x80D7,
     color_table_bias_sgi = 0x80D7,
   };
@@ -26,8 +26,8 @@ namespace gl2 {
     proxy_color_table_sgi = 0x80D3,
     proxy_post_convolution_color_table = 0x80D4,
     proxy_post_convolution_color_table_sgi = 0x80D4,
-    proxy_post_color_matrix_color_table_sgi = 0x80D5,
     proxy_post_color_matrix_color_table = 0x80D5,
+    proxy_post_color_matrix_color_table_sgi = 0x80D5,
   };
 
   enum class context_flag_flags_t : unsigned int {
@@ -231,8 +231,8 @@ namespace gl2 {
     bold_bit_nv = 0x01,
     glyph_width_bit_nv = 0x01,
     font_max_advance_width_bit_nv = 0x01000000,
-    italic_bit_nv = 0x02,
     glyph_height_bit_nv = 0x02,
+    italic_bit_nv = 0x02,
     font_max_advance_height_bit_nv = 0x02000000,
     glyph_horizontal_bearing_x_bit_nv = 0x04,
     font_underline_position_bit_nv = 0x04000000,
@@ -272,8 +272,8 @@ namespace gl2 {
   };
 
   enum class sample_pattern_sgis_t : unsigned int {
-    _1pass_sgis = 0x80A1,
     _1pass_ext = 0x80A1,
+    _1pass_sgis = 0x80A1,
     _2pass_0_ext = 0x80A2,
     _2pass_0_sgis = 0x80A2,
     _2pass_1_ext = 0x80A3,
@@ -311,15 +311,15 @@ namespace gl2 {
     vertex_shader_bit_ext = 0x00000001,
     fragment_shader_bit = 0x00000002,
     fragment_shader_bit_ext = 0x00000002,
-    geometry_shader_bit_oes = 0x00000004,
     geometry_shader_bit = 0x00000004,
     geometry_shader_bit_ext = 0x00000004,
-    tess_control_shader_bit_oes = 0x00000008,
+    geometry_shader_bit_oes = 0x00000004,
     tess_control_shader_bit = 0x00000008,
     tess_control_shader_bit_ext = 0x00000008,
+    tess_control_shader_bit_oes = 0x00000008,
     tess_evaluation_shader_bit = 0x00000010,
-    tess_evaluation_shader_bit_oes = 0x00000010,
     tess_evaluation_shader_bit_ext = 0x00000010,
+    tess_evaluation_shader_bit_oes = 0x00000010,
     compute_shader_bit = 0x00000020,
     all_shader_bits = 0xFFFFFFFF,
     all_shader_bits_ext = 0xFFFFFFFF,

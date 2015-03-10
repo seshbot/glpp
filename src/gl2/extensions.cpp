@@ -469,11 +469,11 @@ namespace gl2 {
     }
 
     void bind_program_arb(gl::enum_t target, gl::uint_t program) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glBindProgramARB(target, program);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glBindProgramARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glBindProgramARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -2755,11 +2755,11 @@ namespace gl2 {
     }
 
     void delete_programs_arb(gl::sizei_t n, const  gl::uint_t * programs) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glDeleteProgramsARB(n, programs);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glDeleteProgramsARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glDeleteProgramsARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -4186,11 +4186,11 @@ namespace gl2 {
     }
 
     void framebuffer_texture_layer_ext(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::uint_t texture, gl::int_t level, gl::int_t layer) {
-      if ( GLAD_GL_NV_geometry_program4 || GLAD_GL_EXT_texture_array ) {
+      if ( GLAD_GL_EXT_texture_array || GLAD_GL_NV_geometry_program4 ) {
         glFramebufferTextureLayerEXT(static_cast<GLenum>(target), static_cast<GLenum>(attachment), texture, level, layer);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glFramebufferTextureLayerEXT' not available on this platform (extensions: GL_NV_geometry_program4, GL_EXT_texture_array)");
+        throw std::runtime_error("OpenGL command 'glFramebufferTextureLayerEXT' not available on this platform (extensions: GL_EXT_texture_array, GL_NV_geometry_program4)");
       }
     }
 
@@ -4330,11 +4330,11 @@ namespace gl2 {
     }
 
     void gen_programs_arb(gl::sizei_t n, gl::uint_t * programs) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glGenProgramsARB(n, programs);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glGenProgramsARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glGenProgramsARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -6301,20 +6301,20 @@ namespace gl2 {
     }
 
     void get_program_env_parameterdv_arb(gl::enum_t target, gl::uint_t index, gl::double_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glGetProgramEnvParameterdvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glGetProgramEnvParameterdvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glGetProgramEnvParameterdvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void get_program_env_parameterfv_arb(gl::enum_t target, gl::uint_t index, gl::float_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glGetProgramEnvParameterfvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glGetProgramEnvParameterfvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glGetProgramEnvParameterfvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -6346,20 +6346,20 @@ namespace gl2 {
     }
 
     void get_program_local_parameterdv_arb(gl::enum_t target, gl::uint_t index, gl::double_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glGetProgramLocalParameterdvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glGetProgramLocalParameterdvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glGetProgramLocalParameterdvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void get_program_local_parameterfv_arb(gl::enum_t target, gl::uint_t index, gl::float_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glGetProgramLocalParameterfvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glGetProgramLocalParameterfvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glGetProgramLocalParameterfvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -6481,11 +6481,11 @@ namespace gl2 {
     }
 
     void get_program_string_arb(gl::enum_t target, gl::enum_t pname, void * string) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glGetProgramStringARB(target, pname, string);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glGetProgramStringARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glGetProgramStringARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -6508,11 +6508,11 @@ namespace gl2 {
     }
 
     void get_programiv_arb(gl::enum_t target, get_programiv_p_name_t pname, gl::int_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glGetProgramivARB(target, static_cast<GLenum>(pname), params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glGetProgramivARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glGetProgramivARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -8209,11 +8209,11 @@ namespace gl2 {
     }
 
     gl::boolean_t is_program_arb(gl::uint_t program) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         return glIsProgramARB(program);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glIsProgramARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glIsProgramARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -11422,38 +11422,38 @@ namespace gl2 {
     }
 
     void program_env_parameter_4d_arb(gl::enum_t target, gl::uint_t index, gl::double_t x, gl::double_t y, gl::double_t z, gl::double_t w) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramEnvParameter4dARB(target, index, x, y, z, w);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4dARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4dARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void program_env_parameter_4dv_arb(gl::enum_t target, gl::uint_t index, const  gl::double_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramEnvParameter4dvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4dvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4dvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void program_env_parameter_4f_arb(gl::enum_t target, gl::uint_t index, gl::float_t x, gl::float_t y, gl::float_t z, gl::float_t w) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramEnvParameter4fARB(target, index, x, y, z, w);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4fARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4fARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void program_env_parameter_4fv_arb(gl::enum_t target, gl::uint_t index, const  gl::float_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramEnvParameter4fvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4fvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramEnvParameter4fvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -11521,38 +11521,38 @@ namespace gl2 {
     }
 
     void program_local_parameter_4d_arb(gl::enum_t target, gl::uint_t index, gl::double_t x, gl::double_t y, gl::double_t z, gl::double_t w) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramLocalParameter4dARB(target, index, x, y, z, w);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4dARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4dARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void program_local_parameter_4dv_arb(gl::enum_t target, gl::uint_t index, const  gl::double_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramLocalParameter4dvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4dvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4dvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void program_local_parameter_4f_arb(gl::enum_t target, gl::uint_t index, gl::float_t x, gl::float_t y, gl::float_t z, gl::float_t w) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramLocalParameter4fARB(target, index, x, y, z, w);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4fARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4fARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
     void program_local_parameter_4fv_arb(gl::enum_t target, gl::uint_t index, const  gl::float_t * params) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramLocalParameter4fvARB(target, index, params);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4fvARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramLocalParameter4fvARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -11746,11 +11746,11 @@ namespace gl2 {
     }
 
     void program_string_arb(gl::enum_t target, gl::enum_t format, gl::sizei_t len, const  void * string) {
-      if ( GLAD_GL_ARB_vertex_program || GLAD_GL_ARB_fragment_program ) {
+      if ( GLAD_GL_ARB_fragment_program || GLAD_GL_ARB_vertex_program ) {
         glProgramStringARB(target, format, len, string);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glProgramStringARB' not available on this platform (extensions: GL_ARB_vertex_program, GL_ARB_fragment_program)");
+        throw std::runtime_error("OpenGL command 'glProgramStringARB' not available on this platform (extensions: GL_ARB_fragment_program, GL_ARB_vertex_program)");
       }
     }
 
@@ -12997,11 +12997,11 @@ namespace gl2 {
     }
 
     void raster_samples_ext(gl::uint_t samples, gl::boolean_t fixedsamplelocations) {
-      if ( GLAD_GL_EXT_raster_multisample || GLAD_GL_NV_framebuffer_mixed_samples || GLAD_GL_EXT_texture_filter_minmax ) {
+      if ( GLAD_GL_EXT_raster_multisample || GLAD_GL_EXT_texture_filter_minmax || GLAD_GL_NV_framebuffer_mixed_samples ) {
         glRasterSamplesEXT(samples, fixedsamplelocations);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glRasterSamplesEXT' not available on this platform (extensions: GL_EXT_raster_multisample, GL_NV_framebuffer_mixed_samples, GL_EXT_texture_filter_minmax)");
+        throw std::runtime_error("OpenGL command 'glRasterSamplesEXT' not available on this platform (extensions: GL_EXT_raster_multisample, GL_EXT_texture_filter_minmax, GL_NV_framebuffer_mixed_samples)");
       }
     }
 

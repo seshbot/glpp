@@ -458,29 +458,29 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void get_tex_parameter_iiv_ext(texture_target_t target, get_texture_parameter_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void get_tex_parameter_iuiv_ext(texture_target_t target, get_texture_parameter_t pname, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void tex_parameter_iiv_ext(texture_target_t target, texture_parameter_name_t pname, const  gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void tex_parameter_iuiv_ext(texture_target_t target, texture_parameter_name_t pname, const  gl::uint_t * params);
 
@@ -2178,15 +2178,15 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_instanced_arrays (gles2)
     *  - GL_EXT_draw_instanced (gles2,gl)
+    *  - GL_EXT_instanced_arrays (gles2)
     */
     void draw_arrays_instanced_ext(primitive_type_t mode, gl::int_t start, gl::sizei_t count, gl::sizei_t primcount);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_instanced_arrays (gles2)
     *  - GL_EXT_draw_instanced (gles2,gl)
+    *  - GL_EXT_instanced_arrays (gles2)
     */
     void draw_elements_instanced_ext(primitive_type_t mode, gl::sizei_t count, draw_elements_type_t type, const  void * indices, gl::sizei_t primcount);
 
@@ -3152,31 +3152,31 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (glcore,gles2,gl)
     */
     gl::enum_t get_graphics_reset_status();
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (glcore,gles2,gl)
     */
     void getn_uniformfv(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (glcore,gles2,gl)
     */
     void getn_uniformiv(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (glcore,gles2,gl)
     */
     void getn_uniformuiv(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (glcore,gles2,gl)
     */
     void readn_pixels(gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * data);
 
@@ -4064,134 +4064,134 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void bind_program_arb(gl::enum_t target, gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void delete_programs_arb(gl::sizei_t n, const  gl::uint_t * programs);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void gen_programs_arb(gl::sizei_t n, gl::uint_t * programs);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void get_program_env_parameterdv_arb(gl::enum_t target, gl::uint_t index, gl::double_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void get_program_env_parameterfv_arb(gl::enum_t target, gl::uint_t index, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void get_program_local_parameterdv_arb(gl::enum_t target, gl::uint_t index, gl::double_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void get_program_local_parameterfv_arb(gl::enum_t target, gl::uint_t index, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void get_program_string_arb(gl::enum_t target, gl::enum_t pname, void * string);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void get_programiv_arb(gl::enum_t target, get_programiv_p_name_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     gl::boolean_t is_program_arb(gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_env_parameter_4d_arb(gl::enum_t target, gl::uint_t index, gl::double_t x, gl::double_t y, gl::double_t z, gl::double_t w);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_env_parameter_4dv_arb(gl::enum_t target, gl::uint_t index, const  gl::double_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_env_parameter_4f_arb(gl::enum_t target, gl::uint_t index, gl::float_t x, gl::float_t y, gl::float_t z, gl::float_t w);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_env_parameter_4fv_arb(gl::enum_t target, gl::uint_t index, const  gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_local_parameter_4d_arb(gl::enum_t target, gl::uint_t index, gl::double_t x, gl::double_t y, gl::double_t z, gl::double_t w);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_local_parameter_4dv_arb(gl::enum_t target, gl::uint_t index, const  gl::double_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_local_parameter_4f_arb(gl::enum_t target, gl::uint_t index, gl::float_t x, gl::float_t y, gl::float_t z, gl::float_t w);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_local_parameter_4fv_arb(gl::enum_t target, gl::uint_t index, const  gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_program (gl)
     *  - GL_ARB_fragment_program (gl)
+    *  - GL_ARB_vertex_program (gl)
     */
     void program_string_arb(gl::enum_t target, gl::enum_t format, gl::sizei_t len, const  void * string);
 
@@ -5139,61 +5139,61 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void debug_message_callback(gl::DEBUGPROC_t callback, const  void * userParam);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void debug_message_control(gl::enum_t source, gl::enum_t type, gl::enum_t severity, gl::sizei_t count, const  gl::uint_t * ids, gl::boolean_t enabled);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void debug_message_insert(gl::enum_t source, gl::enum_t type, gl::uint_t id, gl::enum_t severity, gl::sizei_t length, const  gl::char_t * buf);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     gl::uint_t get_debug_message_log(gl::uint_t count, gl::sizei_t bufSize, gl::enum_t * sources, gl::enum_t * types, gl::uint_t * ids, gl::enum_t * severities, gl::sizei_t * lengths, gl::char_t * messageLog);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void get_object_label(gl::enum_t identifier, gl::uint_t name, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void get_object_ptr_label(const  void * ptr, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void object_label(gl::enum_t identifier, gl::uint_t name, gl::sizei_t length, const  gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void object_ptr_label(const  void * ptr, gl::sizei_t length, const  gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void pop_debug_group();
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (glcore,gles2,gl)
     */
     void push_debug_group(gl::enum_t source, gl::uint_t id, gl::sizei_t length, const  gl::char_t * message);
 
@@ -5457,8 +5457,8 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_geometry_program4 (gl)
     *  - GL_EXT_texture_array (gl)
+    *  - GL_NV_geometry_program4 (gl)
     */
     void framebuffer_texture_layer_ext(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::uint_t texture, gl::int_t level, gl::int_t layer);
 
@@ -8308,22 +8308,22 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
     *  - GL_EXT_direct_state_access (gl)
+    *  - GL_EXT_texture_storage (gles2,gles1)
     */
     void texture_storage_1dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
     *  - GL_EXT_direct_state_access (gl)
+    *  - GL_EXT_texture_storage (gles2,gles1)
     */
     void texture_storage_2dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
     *  - GL_EXT_direct_state_access (gl)
+    *  - GL_EXT_texture_storage (gles2,gles1)
     */
     void texture_storage_3dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth);
 
@@ -9408,8 +9408,8 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_geometry_program4 (gl)
     *  - GL_EXT_geometry_shader (gles2)
+    *  - GL_NV_geometry_program4 (gl)
     */
     void framebuffer_texture_ext(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::uint_t texture, gl::int_t level);
 
@@ -10318,8 +10318,8 @@ namespace gl2 {
    /**
     * Required by extensions:
     *  - GL_EXT_raster_multisample (gl)
-    *  - GL_NV_framebuffer_mixed_samples (gl)
     *  - GL_EXT_texture_filter_minmax (gl)
+    *  - GL_NV_framebuffer_mixed_samples (gl)
     */
     void raster_samples_ext(gl::uint_t samples, gl::boolean_t fixedsamplelocations);
 
@@ -11334,22 +11334,22 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_OES_texture_cube_map (gles1)
     *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_texture_cube_map (gles1)
     */
     void get_tex_genxv_oes(gl::enum_t coord, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_texture_cube_map (gles1)
     *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_texture_cube_map (gles1)
     */
     void tex_genx_oes(gl::enum_t coord, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_texture_cube_map (gles1)
     *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_texture_cube_map (gles1)
     */
     void tex_genxv_oes(gl::enum_t coord, gl::enum_t pname, const  gl::fixed_t * params);
 

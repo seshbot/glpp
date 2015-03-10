@@ -70,13 +70,13 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_multi_draw_arrays (gles1,gles2,gl)
+    *  - GL_EXT_multi_draw_arrays (gl,gles1,gles2)
     */
     void multi_draw_arrays_ext(primitive_type_t mode, const  gl::int_t * first, const  gl::sizei_t * count, gl::sizei_t primcount);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_multi_draw_arrays (gles1,gles2,gl)
+    *  - GL_EXT_multi_draw_arrays (gl,gles1,gles2)
     */
     void multi_draw_elements_ext(primitive_type_t mode, const  gl::sizei_t * count, draw_elements_type_t type, const  void * * indices, gl::sizei_t primcount);
 
@@ -136,79 +136,79 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_tiled_rendering (gles2,gles1)
+    *  - GL_QCOM_tiled_rendering (gles1,gles2)
     */
     void end_tiling_qcom(gl::bitfield_t preserveMask);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_tiled_rendering (gles2,gles1)
+    *  - GL_QCOM_tiled_rendering (gles1,gles2)
     */
     void start_tiling_qcom(gl::uint_t x, gl::uint_t y, gl::uint_t width, gl::uint_t height, gl::bitfield_t preserveMask);
 
    /**
     * Required by extensions:
-    *  - GL_NV_blend_equation_advanced (gles2,gl)
+    *  - GL_NV_blend_equation_advanced (gl,gles2)
     */
     void blend_barrier_nv();
 
    /**
     * Required by extensions:
-    *  - GL_NV_blend_equation_advanced (gles2,gl)
+    *  - GL_NV_blend_equation_advanced (gl,gles2)
     */
     void blend_parameteri_nv(gl::enum_t pname, gl::int_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void delete_fences_nv(gl::sizei_t n, const  gl::uint_t * fences);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void finish_fence_nv(gl::uint_t fence);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void gen_fences_nv(gl::sizei_t n, gl::uint_t * fences);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void get_fenceiv_nv(gl::uint_t fence, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     gl::boolean_t is_fence_nv(gl::uint_t fence);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void set_fence_nv(gl::uint_t fence, gl::enum_t condition);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     gl::boolean_t test_fence_nv(gl::uint_t fence);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_map_buffer_range (gles2,gles1)
+    *  - GL_EXT_map_buffer_range (gles1,gles2)
     */
     void flush_mapped_buffer_range_ext(buffer_target_arb_t target, gl::intptr_t offset, gl::sizeiptr_t length);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_map_buffer_range (gles2,gles1)
+    *  - GL_EXT_map_buffer_range (gles1,gles2)
     */
     void * map_buffer_range_ext(buffer_target_arb_t target, gl::intptr_t offset, gl::sizeiptr_t length, gl::bitfield_t access);
 
@@ -220,19 +220,19 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_OES_mapbuffer (gles2,gles1)
+    *  - GL_OES_mapbuffer (gles1,gles2)
     */
     void get_buffer_pointerv_oes(buffer_target_arb_t target, gl::enum_t pname, void ** params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_mapbuffer (gles2,gles1)
+    *  - GL_OES_mapbuffer (gles1,gles2)
     */
     void * map_buffer_oes(buffer_target_arb_t target, gl::enum_t access);
 
    /**
     * Required by extensions:
-    *  - GL_OES_mapbuffer (gles2,gles1)
+    *  - GL_OES_mapbuffer (gles1,gles2)
     */
     gl::boolean_t unmap_buffer_oes(buffer_target_arb_t target);
 
@@ -274,43 +274,43 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get2 (gles2,gles1)
+    *  - GL_QCOM_extended_get2 (gles1,gles2)
     */
     void ext_get_program_binary_source_qcom(gl::uint_t program, gl::enum_t shadertype, gl::char_t * source, gl::int_t * length);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get2 (gles2,gles1)
+    *  - GL_QCOM_extended_get2 (gles1,gles2)
     */
     void ext_get_programs_qcom(gl::uint_t * programs, gl::int_t maxPrograms, gl::int_t * numPrograms);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get2 (gles2,gles1)
+    *  - GL_QCOM_extended_get2 (gles1,gles2)
     */
     void ext_get_shaders_qcom(gl::uint_t * shaders, gl::int_t maxShaders, gl::int_t * numShaders);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get2 (gles2,gles1)
+    *  - GL_QCOM_extended_get2 (gles1,gles2)
     */
     gl::boolean_t ext_is_program_binary_qcom(gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_marker (gles2,gl)
+    *  - GL_EXT_debug_marker (gl,gles2)
     */
     void insert_event_marker_ext(gl::sizei_t length, const  gl::char_t * marker);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_marker (gles2,gl)
+    *  - GL_EXT_debug_marker (gl,gles2)
     */
     void pop_group_marker_ext();
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_marker (gles2,gl)
+    *  - GL_EXT_debug_marker (gl,gles2)
     */
     void push_group_marker_ext(gl::sizei_t length, const  gl::char_t * marker);
 
@@ -340,13 +340,13 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_label (gles2,gl)
+    *  - GL_EXT_debug_label (gl,gles2)
     */
     void get_object_label_ext(gl::enum_t type, gl::uint_t object, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_label (gles2,gl)
+    *  - GL_EXT_debug_label (gl,gles2)
     */
     void label_object_ext(gl::enum_t type, gl::uint_t object, gl::sizei_t length, const  gl::char_t * label);
 
@@ -358,26 +358,26 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_multisampled_render_to_texture (gles2,gles1)
+    *  - GL_EXT_multisampled_render_to_texture (gles1,gles2)
     */
     void framebuffer_texture_2d_multisample_ext(gl::enum_t target, gl::enum_t attachment, gl::enum_t textarget, gl::uint_t texture, gl::int_t level, gl::sizei_t samples);
 
    /**
     * Required by extensions:
     *  - GL_EXT_framebuffer_multisample (gl)
-    *  - GL_EXT_multisampled_render_to_texture (gles2,gles1)
+    *  - GL_EXT_multisampled_render_to_texture (gles1,gles2)
     */
     void renderbuffer_storage_multisample_ext(renderbuffer_target_t target, gl::sizei_t samples, internal_format_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_IMG_multisampled_render_to_texture (gles2,gles1)
+    *  - GL_IMG_multisampled_render_to_texture (gles1,gles2)
     */
     void framebuffer_texture_2d_multisample_img(gl::enum_t target, gl::enum_t attachment, gl::enum_t textarget, gl::uint_t texture, gl::int_t level, gl::sizei_t samples);
 
    /**
     * Required by extensions:
-    *  - GL_IMG_multisampled_render_to_texture (gles2,gles1)
+    *  - GL_IMG_multisampled_render_to_texture (gles1,gles2)
     */
     void renderbuffer_storage_multisample_img(gl::enum_t target, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
@@ -389,67 +389,67 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void begin_perf_monitor_amd(gl::uint_t monitor);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void delete_perf_monitors_amd(gl::sizei_t n, gl::uint_t * monitors);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void end_perf_monitor_amd(gl::uint_t monitor);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void gen_perf_monitors_amd(gl::sizei_t n, gl::uint_t * monitors);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counter_data_amd(gl::uint_t monitor, gl::enum_t pname, gl::sizei_t dataSize, gl::uint_t * data, gl::int_t * bytesWritten);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counter_info_amd(gl::uint_t group, gl::uint_t counter, gl::enum_t pname, void * data);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counter_string_amd(gl::uint_t group, gl::uint_t counter, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * counterString);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counters_amd(gl::uint_t group, gl::int_t * numCounters, gl::int_t * maxActiveCounters, gl::sizei_t counterSize, gl::uint_t * counters);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_group_string_amd(gl::uint_t group, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * groupString);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_groups_amd(gl::int_t * numGroups, gl::sizei_t groupsSize, gl::uint_t * groups);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void select_perf_monitor_counters_amd(gl::uint_t monitor, gl::boolean_t enable, gl::uint_t group, gl::int_t numCounters, gl::uint_t * counterList);
 
@@ -468,231 +468,231 @@ namespace gles2 {
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_1f_ext(gl::uint_t program, gl::int_t location, gl::float_t v0);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_1fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_1i_ext(gl::uint_t program, gl::int_t location, gl::int_t v0);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_1iv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_1ui_ext(gl::uint_t program, gl::int_t location, gl::uint_t v0);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_1uiv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_2f_ext(gl::uint_t program, gl::int_t location, gl::float_t v0, gl::float_t v1);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_2fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_2i_ext(gl::uint_t program, gl::int_t location, gl::int_t v0, gl::int_t v1);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_2iv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_2ui_ext(gl::uint_t program, gl::int_t location, gl::uint_t v0, gl::uint_t v1);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_2uiv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_3f_ext(gl::uint_t program, gl::int_t location, gl::float_t v0, gl::float_t v1, gl::float_t v2);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_3fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_3i_ext(gl::uint_t program, gl::int_t location, gl::int_t v0, gl::int_t v1, gl::int_t v2);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_3iv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_3ui_ext(gl::uint_t program, gl::int_t location, gl::uint_t v0, gl::uint_t v1, gl::uint_t v2);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_3uiv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_4f_ext(gl::uint_t program, gl::int_t location, gl::float_t v0, gl::float_t v1, gl::float_t v2, gl::float_t v3);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_4fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_4i_ext(gl::uint_t program, gl::int_t location, gl::int_t v0, gl::int_t v1, gl::int_t v2, gl::int_t v3);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_4iv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_4ui_ext(gl::uint_t program, gl::int_t location, gl::uint_t v0, gl::uint_t v1, gl::uint_t v2, gl::uint_t v3);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_4uiv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_2fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_2x_3fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_2x_4fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_3fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_3x_2fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_3x_4fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_4fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_4x_2fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_uniform_matrix_4x_3fv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
@@ -806,61 +806,61 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void active_shader_program_ext(gl::uint_t pipeline, gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void bind_program_pipeline_ext(gl::uint_t pipeline);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     gl::uint_t create_shader_programv_ext(gl::enum_t type, gl::sizei_t count, const  gl::char_t ** strings);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void delete_program_pipelines_ext(gl::sizei_t n, const  gl::uint_t * pipelines);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void gen_program_pipelines_ext(gl::sizei_t n, gl::uint_t * pipelines);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void get_program_pipeline_info_log_ext(gl::uint_t pipeline, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * infoLog);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void get_program_pipelineiv_ext(gl::uint_t pipeline, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     gl::boolean_t is_program_pipeline_ext(gl::uint_t pipeline);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void use_program_stages_ext(gl::uint_t pipeline, gl::bitmask<use_program_stage_flags_t> stages, gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void validate_program_pipeline_ext(gl::uint_t pipeline);
 
@@ -915,13 +915,13 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_framebuffer_multisample (gles2,gles1)
+    *  - GL_APPLE_framebuffer_multisample (gles1,gles2)
     */
     void renderbuffer_storage_multisample_apple(renderbuffer_target_t target, gl::sizei_t samples, internal_format_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_framebuffer_multisample (gles2,gles1)
+    *  - GL_APPLE_framebuffer_multisample (gles1,gles2)
     */
     void resolve_multisample_framebuffer_apple();
 
@@ -933,7 +933,7 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_copy_texture_levels (gles2,gles1)
+    *  - GL_APPLE_copy_texture_levels (gles1,gles2)
     */
     void copy_texture_levels_apple(gl::uint_t destinationTexture, gl::uint_t sourceTexture, gl::int_t sourceBaseLevel, gl::sizei_t sourceLevelCount);
 
@@ -975,61 +975,61 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_OES_EGL_image (gles2,gles1)
+    *  - GL_OES_EGL_image (gles1,gles2)
     */
     void egl_image_target_renderbuffer_storage_oes(gl::enum_t target, gl::eglImageOES_t image);
 
    /**
     * Required by extensions:
-    *  - GL_OES_EGL_image (gles2,gles1)
+    *  - GL_OES_EGL_image (gles1,gles2)
     */
     void egl_image_target_texture_2does(gl::enum_t target, gl::eglImageOES_t image);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_get_buffer_pointerv_qcom(gl::enum_t target, void ** params);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_get_buffers_qcom(gl::uint_t * buffers, gl::int_t maxBuffers, gl::int_t * numBuffers);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_get_framebuffers_qcom(gl::uint_t * framebuffers, gl::int_t maxFramebuffers, gl::int_t * numFramebuffers);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_get_renderbuffers_qcom(gl::uint_t * renderbuffers, gl::int_t maxRenderbuffers, gl::int_t * numRenderbuffers);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_get_tex_level_parameteriv_qcom(gl::uint_t texture, gl::enum_t face, gl::int_t level, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_get_tex_sub_image_qcom(gl::enum_t target, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::enum_t format, gl::enum_t type, void * texels);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_get_textures_qcom(gl::uint_t * textures, gl::int_t maxTextures, gl::int_t * numTextures);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_extended_get (gles2,gles1)
+    *  - GL_QCOM_extended_get (gles1,gles2)
     */
     void ext_tex_object_state_overridei_qcom(gl::enum_t target, gl::enum_t pname, gl::int_t param);
 
@@ -1041,343 +1041,343 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void copy_path_nv(gl::uint_t resultPath, gl::uint_t srcPath);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_fill_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_fill_path_nv(gl::uint_t path, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_stroke_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_stroke_path_nv(gl::uint_t path, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void delete_paths_nv(gl::uint_t path, gl::sizei_t range);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::uint_t gen_paths_nv(gl::sizei_t range);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_commands_nv(gl::uint_t path, gl::ubyte_t * commands);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_coords_nv(gl::uint_t path, gl::float_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_dash_array_nv(gl::uint_t path, gl::float_t * dashArray);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::float_t get_path_length_nv(gl::uint_t path, gl::sizei_t startSegment, gl::sizei_t numSegments);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_metric_range_nv(gl::bitfield_t metricQueryMask, gl::uint_t firstPathName, gl::sizei_t numPaths, gl::sizei_t stride, gl::float_t * metrics);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_metrics_nv(gl::bitfield_t metricQueryMask, gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::sizei_t stride, gl::float_t * metrics);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_parameterfv_nv(gl::uint_t path, gl::enum_t pname, gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_parameteriv_nv(gl::uint_t path, gl::enum_t pname, gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_spacing_nv(gl::enum_t pathListMode, gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::float_t advanceScale, gl::float_t kerningScale, gl::enum_t transformType, gl::float_t * returnedSpacing);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_program_resourcefv_nv(gl::uint_t program, gl::enum_t programInterface, gl::uint_t index, gl::sizei_t propCount, const  gl::enum_t * props, gl::sizei_t bufSize, gl::sizei_t * length, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void interpolate_paths_nv(gl::uint_t resultPath, gl::uint_t pathA, gl::uint_t pathB, gl::float_t weight);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t is_path_nv(gl::uint_t path);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t is_point_in_fill_path_nv(gl::uint_t path, gl::uint_t mask, gl::float_t x, gl::float_t y);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t is_point_in_stroke_path_nv(gl::uint_t path, gl::float_t x, gl::float_t y);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_load_3x_2f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_load_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_load_transpose_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_mult_3x_2f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_mult_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_mult_transpose_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_commands_nv(gl::uint_t path, gl::sizei_t numCommands, const  gl::ubyte_t * commands, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_coords_nv(gl::uint_t path, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_cover_depth_func_nv(depth_function_t func);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_dash_array_nv(gl::uint_t path, gl::sizei_t dashCount, const  gl::float_t * dashArray);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::enum_t path_glyph_index_array_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::uint_t firstGlyphIndex, gl::sizei_t numGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::enum_t path_glyph_index_range_nv(gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::uint_t pathParameterTemplate, gl::float_t emScale, gl::uint_t * baseAndCount);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_glyph_range_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::uint_t firstGlyph, gl::sizei_t numGlyphs, gl::enum_t handleMissingGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_glyphs_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::sizei_t numGlyphs, gl::enum_t type, const  void * charcodes, gl::enum_t handleMissingGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::enum_t path_memory_glyph_index_array_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, gl::sizeiptr_t fontSize, const  void * fontData, gl::sizei_t faceIndex, gl::uint_t firstGlyphIndex, gl::sizei_t numGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameterf_nv(gl::uint_t path, gl::enum_t pname, gl::float_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameterfv_nv(gl::uint_t path, gl::enum_t pname, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameteri_nv(gl::uint_t path, gl::enum_t pname, gl::int_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameteriv_nv(gl::uint_t path, gl::enum_t pname, const  gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_stencil_depth_offset_nv(gl::float_t factor, gl::float_t units);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_stencil_func_nv(stencil_function_t func, gl::int_t ref, gl::uint_t mask);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_string_nv(gl::uint_t path, gl::enum_t format, gl::sizei_t length, const  void * pathString);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_sub_commands_nv(gl::uint_t path, gl::sizei_t commandStart, gl::sizei_t commandsToDelete, gl::sizei_t numCommands, const  gl::ubyte_t * commands, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_sub_coords_nv(gl::uint_t path, gl::sizei_t coordStart, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t point_along_path_nv(gl::uint_t path, gl::sizei_t startSegment, gl::sizei_t numSegments, gl::float_t distance, gl::float_t * x, gl::float_t * y, gl::float_t * tangentX, gl::float_t * tangentY);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void program_path_fragment_input_gen_nv(gl::uint_t program, gl::int_t location, gl::enum_t genMode, gl::int_t components, const  gl::float_t * coeffs);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_fill_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t fillMode, gl::uint_t mask, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_fill_path_nv(gl::uint_t path, gl::enum_t fillMode, gl::uint_t mask);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_stroke_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::int_t reference, gl::uint_t mask, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_stroke_path_nv(gl::uint_t path, gl::int_t reference, gl::uint_t mask);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_fill_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t fillMode, gl::uint_t mask, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_fill_path_nv(gl::uint_t path, gl::enum_t fillMode, gl::uint_t mask, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_stroke_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::int_t reference, gl::uint_t mask, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_stroke_path_nv(gl::uint_t path, gl::int_t reference, gl::uint_t mask, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void transform_path_nv(gl::uint_t resultPath, gl::uint_t srcPath, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void weight_paths_nv(gl::uint_t resultPath, gl::sizei_t numPaths, const  gl::uint_t * paths, const  gl::float_t * weights);
 
@@ -1491,15 +1491,15 @@ namespace gles2 {
 
    /**
     * Required by extensions:
+    *  - GL_EXT_draw_instanced (gl,gles2)
     *  - GL_EXT_instanced_arrays (gles2)
-    *  - GL_EXT_draw_instanced (gles2,gl)
     */
     void draw_arrays_instanced_ext(primitive_type_t mode, gl::int_t start, gl::sizei_t count, gl::sizei_t primcount);
 
    /**
     * Required by extensions:
+    *  - GL_EXT_draw_instanced (gl,gles2)
     *  - GL_EXT_instanced_arrays (gles2)
-    *  - GL_EXT_draw_instanced (gles2,gl)
     */
     void draw_elements_instanced_ext(primitive_type_t mode, gl::sizei_t count, draw_elements_type_t type, const  void * indices, gl::sizei_t primcount);
 
@@ -1547,179 +1547,179 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_robustness (gles2,gles1)
+    *  - GL_EXT_robustness (gles1,gles2)
     */
     gl::enum_t get_graphics_reset_status_ext();
 
    /**
     * Required by extensions:
-    *  - GL_EXT_robustness (gles2,gles1)
+    *  - GL_EXT_robustness (gles1,gles2)
     */
     void getn_uniformfv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_robustness (gles2,gles1)
+    *  - GL_EXT_robustness (gles1,gles2)
     */
     void getn_uniformiv_ext(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_robustness (gles2,gles1)
+    *  - GL_EXT_robustness (gles1,gles2)
     */
     void readn_pixels_ext(gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * data);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void begin_perf_query_intel(gl::uint_t queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void create_perf_query_intel(gl::uint_t queryId, gl::uint_t * queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void delete_perf_query_intel(gl::uint_t queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void end_perf_query_intel(gl::uint_t queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_first_perf_query_id_intel(gl::uint_t * queryId);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_next_perf_query_id_intel(gl::uint_t queryId, gl::uint_t * nextQueryId);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_counter_info_intel(gl::uint_t queryId, gl::uint_t counterId, gl::uint_t counterNameLength, gl::char_t * counterName, gl::uint_t counterDescLength, gl::char_t * counterDesc, gl::uint_t * counterOffset, gl::uint_t * counterDataSize, gl::uint_t * counterTypeEnum, gl::uint_t * counterDataTypeEnum, gl::uint64_t * rawCounterMaxValue);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_query_data_intel(gl::uint_t queryHandle, gl::uint_t flags, gl::sizei_t dataSize, void * data, gl::uint_t * bytesWritten);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_query_id_by_name_intel(gl::char_t * queryName, gl::uint_t * queryId);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_query_info_intel(gl::uint_t queryId, gl::uint_t queryNameLength, gl::char_t * queryName, gl::uint_t * dataSize, gl::uint_t * noCounters, gl::uint_t * noInstances, gl::uint_t * capsMask);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void debug_message_callback_khr(gl::DEBUGPROCKHR_t callback, const  void * userParam);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void debug_message_control_khr(gl::enum_t source, gl::enum_t type, gl::enum_t severity, gl::sizei_t count, const  gl::uint_t * ids, gl::boolean_t enabled);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void debug_message_insert_khr(gl::enum_t source, gl::enum_t type, gl::uint_t id, gl::enum_t severity, gl::sizei_t length, const  gl::char_t * buf);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     gl::uint_t get_debug_message_log_khr(gl::uint_t count, gl::sizei_t bufSize, gl::enum_t * sources, gl::enum_t * types, gl::uint_t * ids, gl::enum_t * severities, gl::sizei_t * lengths, gl::char_t * messageLog);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void get_object_label_khr(gl::enum_t identifier, gl::uint_t name, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void get_object_ptr_label_khr(const  void * ptr, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void get_pointerv_khr(get_pointerv_p_name_t pname, void ** params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void object_label_khr(gl::enum_t identifier, gl::uint_t name, gl::sizei_t length, const  gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void object_ptr_label_khr(const  void * ptr, gl::sizei_t length, const  gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void pop_debug_group_khr();
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (gles2,gl,glcore)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void push_debug_group_khr(gl::enum_t source, gl::uint_t id, gl::sizei_t length, const  gl::char_t * message);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void get_tex_parameter_iiv_ext(texture_target_t target, get_texture_parameter_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void get_tex_parameter_iuiv_ext(texture_target_t target, get_texture_parameter_t pname, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void tex_parameter_iiv_ext(texture_target_t target, texture_parameter_name_t pname, const  gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_integer (gl)
     *  - GL_EXT_texture_border_clamp (gles2)
+    *  - GL_EXT_texture_integer (gl)
     */
     void tex_parameter_iuiv_ext(texture_target_t target, texture_parameter_name_t pname, const  gl::uint_t * params);
 
@@ -1743,79 +1743,79 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::uint64_t get_image_handle_nv(gl::uint_t texture, gl::int_t level, gl::boolean_t layered, gl::int_t layer, gl::enum_t format);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::uint64_t get_texture_handle_nv(gl::uint_t texture);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::uint64_t get_texture_sampler_handle_nv(gl::uint_t texture, gl::uint_t sampler);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::boolean_t is_image_handle_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::boolean_t is_texture_handle_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_image_handle_non_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_image_handle_resident_nv(gl::uint64_t handle, gl::enum_t access);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_texture_handle_non_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_texture_handle_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void program_uniform_handleui_64nv(gl::uint_t program, gl::int_t location, gl::uint64_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void program_uniform_handleui_64v_nv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint64_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void uniform_handleui_64nv(gl::int_t location, gl::uint64_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void uniform_handleui_64v_nv(gl::int_t location, gl::sizei_t count, const  gl::uint64_t * value);
 
@@ -1894,8 +1894,8 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
     *  - GL_EXT_geometry_shader4 (gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void program_parameteri_ext(gl::uint_t program, gl::enum_t pname, gl::int_t value);
 
@@ -1913,53 +1913,53 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_OES_vertex_array_object (gles2,gles1)
+    *  - GL_OES_vertex_array_object (gles1,gles2)
     */
     void bind_vertex_array_oes(gl::uint_t array);
 
    /**
     * Required by extensions:
-    *  - GL_OES_vertex_array_object (gles2,gles1)
+    *  - GL_OES_vertex_array_object (gles1,gles2)
     */
     void delete_vertex_arrays_oes(gl::sizei_t n, const  gl::uint_t * arrays);
 
    /**
     * Required by extensions:
-    *  - GL_OES_vertex_array_object (gles2,gles1)
+    *  - GL_OES_vertex_array_object (gles1,gles2)
     */
     void gen_vertex_arrays_oes(gl::sizei_t n, gl::uint_t * arrays);
 
    /**
     * Required by extensions:
-    *  - GL_OES_vertex_array_object (gles2,gles1)
+    *  - GL_OES_vertex_array_object (gles1,gles2)
     */
     gl::boolean_t is_vertex_array_oes(gl::uint_t array);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
     *  - GL_EXT_direct_state_access (gl)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void texture_storage_1dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
     *  - GL_EXT_direct_state_access (gl)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void texture_storage_2dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
     *  - GL_EXT_direct_state_access (gl)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void texture_storage_3dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth);
 
    /**
     * Required by extensions:
-    *  - GL_NV_geometry_program4 (gl)
     *  - GL_EXT_geometry_shader (gles2)
+    *  - GL_NV_geometry_program4 (gl)
     */
     void framebuffer_texture_ext(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::uint_t texture, gl::int_t level);
 
@@ -1971,13 +1971,13 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_conditional_render (gles2,gl)
+    *  - GL_NV_conditional_render (gl,gles2)
     */
     void begin_conditional_render_nv(gl::uint_t id, gl::enum_t mode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_conditional_render (gles2,gl)
+    *  - GL_NV_conditional_render (gl,gles2)
     */
     void end_conditional_render_nv();
 
@@ -2001,13 +2001,13 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_discard_framebuffer (gles2,gles1)
+    *  - GL_EXT_discard_framebuffer (gles1,gles2)
     */
     void discard_framebuffer_ext(gl::enum_t target, gl::sizei_t numAttachments, const  gl::enum_t * attachments);
 
    /**
     * Required by extensions:
-    *  - GL_NV_internalformat_sample_query (gles2,gl)
+    *  - GL_NV_internalformat_sample_query (gl,gles2)
     */
     void get_internalformat_sampleiv_nv(gl::enum_t target, gl::enum_t internalformat, gl::sizei_t samples, gl::enum_t pname, gl::sizei_t bufSize, gl::int_t * params);
 
@@ -2025,121 +2025,121 @@ namespace gles2 {
 
    /**
     * Required by extensions:
-    *  - GL_KHR_blend_equation_advanced (gles2,gl)
+    *  - GL_KHR_blend_equation_advanced (gl,gles2)
     */
     void blend_barrier_khr();
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_sync (gles2,gles1)
+    *  - GL_APPLE_sync (gles1,gles2)
     */
     gl::enum_t client_wait_sync_apple(gl::sync_t sync, gl::bitfield_t flags, gl::uint64_t timeout);
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_sync (gles2,gles1)
+    *  - GL_APPLE_sync (gles1,gles2)
     */
     void delete_sync_apple(gl::sync_t sync);
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_sync (gles2,gles1)
+    *  - GL_APPLE_sync (gles1,gles2)
     */
     gl::sync_t fence_sync_apple(gl::enum_t condition, gl::bitfield_t flags);
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_sync (gles2,gles1)
+    *  - GL_APPLE_sync (gles1,gles2)
     */
     void get_integer_64v_apple(gl::enum_t pname, gl::int64_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_sync (gles2,gles1)
+    *  - GL_APPLE_sync (gles1,gles2)
     */
     void get_synciv_apple(gl::sync_t sync, gl::enum_t pname, gl::sizei_t bufSize, gl::sizei_t * length, gl::int_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_sync (gles2,gles1)
+    *  - GL_APPLE_sync (gles1,gles2)
     */
     gl::boolean_t is_sync_apple(gl::sync_t sync);
 
    /**
     * Required by extensions:
-    *  - GL_APPLE_sync (gles2,gles1)
+    *  - GL_APPLE_sync (gles1,gles2)
     */
     void wait_sync_apple(gl::sync_t sync, gl::bitfield_t flags, gl::uint64_t timeout);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void tex_storage_1dext(gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void tex_storage_2dext(gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_texture_storage (gles2,gles1)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void tex_storage_3dext(gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     gl::enum_t get_graphics_reset_status_khr();
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void getn_uniformfv_khr(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void getn_uniformiv_khr(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void getn_uniformuiv_khr(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (gles2,gl,glcore)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void readn_pixels_khr(gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height, pixel_format_t format, pixel_type_t type, gl::sizei_t bufSize, void * data);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_driver_control (gles2,gles1)
+    *  - GL_QCOM_driver_control (gles1,gles2)
     */
     void disable_driver_control_qcom(gl::uint_t driverControl);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_driver_control (gles2,gles1)
+    *  - GL_QCOM_driver_control (gles1,gles2)
     */
     void enable_driver_control_qcom(gl::uint_t driverControl);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_driver_control (gles2,gles1)
+    *  - GL_QCOM_driver_control (gles1,gles2)
     */
     void get_driver_control_string_qcom(gl::uint_t driverControl, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * driverControlString);
 
    /**
     * Required by extensions:
-    *  - GL_QCOM_driver_control (gles2,gles1)
+    *  - GL_QCOM_driver_control (gles1,gles2)
     */
     void get_driver_controls_qcom(gl::int_t * num, gl::sizei_t size, gl::uint_t * driverControls);
 

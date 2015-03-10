@@ -6,7 +6,7 @@
 #include <glad/glad.h>
 #include <stdexcept>
 #include <glpp/gles2/extensions.h>
-#include "angle_extension_macros.h"
+
 
 namespace gles2 {
     void active_shader_program_ext(gl::uint_t pipeline, gl::uint_t program) {
@@ -550,11 +550,11 @@ namespace gles2 {
     }
 
     void draw_arrays_instanced_ext(primitive_type_t mode, gl::int_t start, gl::sizei_t count, gl::sizei_t primcount) {
-      if ( GLAD_GL_EXT_instanced_arrays || GLAD_GL_EXT_draw_instanced ) {
+      if ( GLAD_GL_EXT_draw_instanced || GLAD_GL_EXT_instanced_arrays ) {
         glDrawArraysInstancedEXT(static_cast<GLenum>(mode), start, count, primcount);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glDrawArraysInstancedEXT' not available on this platform (extensions: GL_EXT_instanced_arrays, GL_EXT_draw_instanced)");
+        throw std::runtime_error("OpenGL command 'glDrawArraysInstancedEXT' not available on this platform (extensions: GL_EXT_draw_instanced, GL_EXT_instanced_arrays)");
       }
     }
 
@@ -658,11 +658,11 @@ namespace gles2 {
     }
 
     void draw_elements_instanced_ext(primitive_type_t mode, gl::sizei_t count, draw_elements_type_t type, const  void * indices, gl::sizei_t primcount) {
-      if ( GLAD_GL_EXT_instanced_arrays || GLAD_GL_EXT_draw_instanced ) {
+      if ( GLAD_GL_EXT_draw_instanced || GLAD_GL_EXT_instanced_arrays ) {
         glDrawElementsInstancedEXT(static_cast<GLenum>(mode), count, static_cast<GLenum>(type), indices, primcount);
       }
       else {
-        throw std::runtime_error("OpenGL command 'glDrawElementsInstancedEXT' not available on this platform (extensions: GL_EXT_instanced_arrays, GL_EXT_draw_instanced)");
+        throw std::runtime_error("OpenGL command 'glDrawElementsInstancedEXT' not available on this platform (extensions: GL_EXT_draw_instanced, GL_EXT_instanced_arrays)");
       }
     }
 
