@@ -140,49 +140,49 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     void get_active_subroutine_name(gl::uint_t program, gl::enum_t shadertype, gl::uint_t index, gl::sizei_t bufsize, gl::sizei_t * length, gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     void get_active_subroutine_uniform_name(gl::uint_t program, gl::enum_t shadertype, gl::uint_t index, gl::sizei_t bufsize, gl::sizei_t * length, gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     void get_active_subroutine_uniformiv(gl::uint_t program, gl::enum_t shadertype, gl::uint_t index, gl::enum_t pname, gl::int_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     void get_program_stageiv(gl::uint_t program, gl::enum_t shadertype, gl::enum_t pname, gl::int_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     gl::uint_t get_subroutine_index(gl::uint_t program, gl::enum_t shadertype, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     gl::int_t get_subroutine_uniform_location(gl::uint_t program, gl::enum_t shadertype, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     void get_uniform_subroutineuiv(gl::enum_t shadertype, gl::int_t location, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_subroutine (glcore,gl)
+    *  - GL_ARB_shader_subroutine (gl,glcore)
     */
     void uniform_subroutinesuiv(gl::enum_t shadertype, gl::sizei_t count, const  gl::uint_t * indices);
 
@@ -206,25 +206,25 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_storage_multisample (glcore,gl)
+    *  - GL_ARB_texture_storage_multisample (gl,glcore)
     */
     void tex_storage_2d_multisample(gl::enum_t target, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::boolean_t fixedsamplelocations);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_storage_multisample (glcore,gl)
+    *  - GL_ARB_texture_storage_multisample (gl,glcore)
     */
     void tex_storage_3d_multisample(gl::enum_t target, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::boolean_t fixedsamplelocations);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_barrier (glcore,gl)
+    *  - GL_ARB_texture_barrier (gl,glcore)
     */
     void texture_barrier();
 
    /**
     * Required by extensions:
-    *  - GL_ARB_clip_control (glcore,gl)
+    *  - GL_ARB_clip_control (gl,glcore)
     */
     void clip_control(gl::enum_t origin, gl::enum_t depth);
 
@@ -236,43 +236,43 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void delete_fences_nv(gl::sizei_t n, const  gl::uint_t * fences);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void finish_fence_nv(gl::uint_t fence);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void gen_fences_nv(gl::sizei_t n, gl::uint_t * fences);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void get_fenceiv_nv(gl::uint_t fence, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     gl::boolean_t is_fence_nv(gl::uint_t fence);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     void set_fence_nv(gl::uint_t fence, gl::enum_t condition);
 
    /**
     * Required by extensions:
-    *  - GL_NV_fence (gles1,gles2,gl)
+    *  - GL_NV_fence (gl,gles1,gles2)
     */
     gl::boolean_t test_fence_nv(gl::uint_t fence);
 
@@ -338,55 +338,55 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_binding (glcore,gl)
+    *  - GL_ARB_vertex_attrib_binding (gl,glcore)
     */
     void bind_vertex_buffer(gl::uint_t bindingindex, gl::uint_t buffer, gl::intptr_t offset, gl::sizei_t stride);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_binding (glcore,gl)
+    *  - GL_ARB_vertex_attrib_binding (gl,glcore)
     */
     void vertex_attrib_binding(gl::uint_t attribindex, gl::uint_t bindingindex);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_binding (glcore,gl)
+    *  - GL_ARB_vertex_attrib_binding (gl,glcore)
     */
     void vertex_attrib_format(gl::uint_t attribindex, gl::int_t size, gl::enum_t type, gl::boolean_t normalized, gl::uint_t relativeoffset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_binding (glcore,gl)
+    *  - GL_ARB_vertex_attrib_binding (gl,glcore)
     */
     void vertex_attrib_i_format(gl::uint_t attribindex, gl::int_t size, gl::enum_t type, gl::uint_t relativeoffset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_binding (glcore,gl)
+    *  - GL_ARB_vertex_attrib_binding (gl,glcore)
     */
     void vertex_attrib_l_format(gl::uint_t attribindex, gl::int_t size, gl::enum_t type, gl::uint_t relativeoffset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_binding (glcore,gl)
+    *  - GL_ARB_vertex_attrib_binding (gl,glcore)
     */
     void vertex_binding_divisor(gl::uint_t bindingindex, gl::uint_t divisor);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_no_attachments (glcore,gl)
+    *  - GL_ARB_framebuffer_no_attachments (gl,glcore)
     */
     void framebuffer_parameteri(gl::enum_t target, gl::enum_t pname, gl::int_t param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_no_attachments (glcore,gl)
+    *  - GL_ARB_framebuffer_no_attachments (gl,glcore)
     */
     void get_framebuffer_parameteriv(gl::enum_t target, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_view (glcore,gl)
+    *  - GL_ARB_texture_view (gl,glcore)
     */
     void texture_view(gl::uint_t texture, gl::enum_t target, gl::uint_t origtexture, gl::enum_t internalformat, gl::uint_t minlevel, gl::uint_t numlevels, gl::uint_t minlayer, gl::uint_t numlayers);
 
@@ -452,7 +452,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_cl_event (glcore,gl)
+    *  - GL_ARB_cl_event (gl,glcore)
     */
     gl::sync_t create_sync_from_c_levent_arb(gl::_cl_context_t * context, gl::_cl_event_t * event, gl::bitfield_t flags);
 
@@ -498,97 +498,97 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     gl::uint64_t get_image_handle_arb(gl::uint_t texture, gl::int_t level, gl::boolean_t layered, gl::int_t layer, gl::enum_t format);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     gl::uint64_t get_texture_handle_arb(gl::uint_t texture);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     gl::uint64_t get_texture_sampler_handle_arb(gl::uint_t texture, gl::uint_t sampler);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void get_vertex_attrib_lui_64v_arb(gl::uint_t index, gl::enum_t pname, gl::uint64EXT_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     gl::boolean_t is_image_handle_resident_arb(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     gl::boolean_t is_texture_handle_resident_arb(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void make_image_handle_non_resident_arb(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void make_image_handle_resident_arb(gl::uint64_t handle, gl::enum_t access);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void make_texture_handle_non_resident_arb(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void make_texture_handle_resident_arb(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void program_uniform_handleui_64arb(gl::uint_t program, gl::int_t location, gl::uint64_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void program_uniform_handleui_64v_arb(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint64_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void uniform_handleui_64arb(gl::int_t location, gl::uint64_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void uniform_handleui_64v_arb(gl::int_t location, gl::sizei_t count, const  gl::uint64_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void vertex_attrib_l1ui_64arb(gl::uint_t index, gl::uint64EXT_t x);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_bindless_texture (glcore,gl)
+    *  - GL_ARB_bindless_texture (gl,glcore)
     */
     void vertex_attrib_l1ui_64v_arb(gl::uint_t index, const  gl::uint64EXT_t * v);
 
@@ -654,43 +654,43 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_OES_query_matrix (gles1,gl)
+    *  - GL_OES_query_matrix (gl,gles1)
     */
     gl::bitfield_t query_matrixx_oes(gl::fixed_t * mantissa, gl::int_t * exponent);
 
    /**
     * Required by extensions:
-    *  - GL_OES_single_precision (gles1,gl)
+    *  - GL_OES_single_precision (gl,gles1)
     */
     void clear_depthf_oes(gl::clampf_t depth);
 
    /**
     * Required by extensions:
-    *  - GL_OES_single_precision (gles1,gl)
+    *  - GL_OES_single_precision (gl,gles1)
     */
     void clip_planef_oes(gl::enum_t plane, const  gl::float_t * equation);
 
    /**
     * Required by extensions:
-    *  - GL_OES_single_precision (gles1,gl)
+    *  - GL_OES_single_precision (gl,gles1)
     */
     void depth_rangef_oes(gl::clampf_t n, gl::clampf_t f);
 
    /**
     * Required by extensions:
-    *  - GL_OES_single_precision (gles1,gl)
+    *  - GL_OES_single_precision (gl,gles1)
     */
     void frustumf_oes(gl::float_t l, gl::float_t r, gl::float_t b, gl::float_t t, gl::float_t n, gl::float_t f);
 
    /**
     * Required by extensions:
-    *  - GL_OES_single_precision (gles1,gl)
+    *  - GL_OES_single_precision (gl,gles1)
     */
     void get_clip_planef_oes(gl::enum_t plane, gl::float_t * equation);
 
    /**
     * Required by extensions:
-    *  - GL_OES_single_precision (gles1,gl)
+    *  - GL_OES_single_precision (gl,gles1)
     */
     void orthof_oes(gl::float_t l, gl::float_t r, gl::float_t b, gl::float_t t, gl::float_t n, gl::float_t f);
 
@@ -2178,14 +2178,14 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_draw_instanced (gles2,gl)
+    *  - GL_EXT_draw_instanced (gl,gles2)
     *  - GL_EXT_instanced_arrays (gles2)
     */
     void draw_arrays_instanced_ext(primitive_type_t mode, gl::int_t start, gl::sizei_t count, gl::sizei_t primcount);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_draw_instanced (gles2,gl)
+    *  - GL_EXT_draw_instanced (gl,gles2)
     *  - GL_EXT_instanced_arrays (gles2)
     */
     void draw_elements_instanced_ext(primitive_type_t mode, gl::sizei_t count, draw_elements_type_t type, const  void * indices, gl::sizei_t primcount);
@@ -2204,43 +2204,43 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_program_interface_query (glcore,gl)
+    *  - GL_ARB_program_interface_query (gl,glcore)
     */
     void get_program_interfaceiv(gl::uint_t program, gl::enum_t programInterface, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_program_interface_query (glcore,gl)
+    *  - GL_ARB_program_interface_query (gl,glcore)
     */
     gl::uint_t get_program_resource_index(gl::uint_t program, gl::enum_t programInterface, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_program_interface_query (glcore,gl)
+    *  - GL_ARB_program_interface_query (gl,glcore)
     */
     gl::int_t get_program_resource_location(gl::uint_t program, gl::enum_t programInterface, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_program_interface_query (glcore,gl)
+    *  - GL_ARB_program_interface_query (gl,glcore)
     */
     gl::int_t get_program_resource_location_index(gl::uint_t program, gl::enum_t programInterface, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_program_interface_query (glcore,gl)
+    *  - GL_ARB_program_interface_query (gl,glcore)
     */
     void get_program_resource_name(gl::uint_t program, gl::enum_t programInterface, gl::uint_t index, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_program_interface_query (glcore,gl)
+    *  - GL_ARB_program_interface_query (gl,glcore)
     */
     void get_program_resourceiv(gl::uint_t program, gl::enum_t programInterface, gl::uint_t index, gl::sizei_t propCount, const  gl::enum_t * props, gl::sizei_t bufSize, gl::sizei_t * length, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_storage_buffer_object (glcore,gl)
+    *  - GL_ARB_shader_storage_buffer_object (gl,glcore)
     */
     void shader_storage_block_binding(gl::uint_t program, gl::uint_t storageBlockIndex, gl::uint_t storageBlockBinding);
 
@@ -2930,7 +2930,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_copy_buffer (glcore,gl)
+    *  - GL_ARB_copy_buffer (gl,glcore)
     */
     void copy_buffer_sub_data(gl::enum_t readTarget, gl::enum_t writeTarget, gl::intptr_t readOffset, gl::intptr_t writeOffset, gl::sizeiptr_t size);
 
@@ -3008,7 +3008,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_buffer_storage (glcore,gl)
+    *  - GL_ARB_buffer_storage (gl,glcore)
     */
     void buffer_storage(gl::enum_t target, gl::sizeiptr_t size, const  void * data, gl::bitfield_t flags);
 
@@ -3116,67 +3116,67 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_bind (glcore,gl)
+    *  - GL_ARB_multi_bind (gl,glcore)
     */
     void bind_buffers_base(gl::enum_t target, gl::uint_t first, gl::sizei_t count, const  gl::uint_t * buffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_bind (glcore,gl)
+    *  - GL_ARB_multi_bind (gl,glcore)
     */
     void bind_buffers_range(gl::enum_t target, gl::uint_t first, gl::sizei_t count, const  gl::uint_t * buffers, const  gl::intptr_t * offsets, const  gl::sizeiptr_t * sizes);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_bind (glcore,gl)
+    *  - GL_ARB_multi_bind (gl,glcore)
     */
     void bind_image_textures(gl::uint_t first, gl::sizei_t count, const  gl::uint_t * textures);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_bind (glcore,gl)
+    *  - GL_ARB_multi_bind (gl,glcore)
     */
     void bind_samplers(gl::uint_t first, gl::sizei_t count, const  gl::uint_t * samplers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_bind (glcore,gl)
+    *  - GL_ARB_multi_bind (gl,glcore)
     */
     void bind_textures(gl::uint_t first, gl::sizei_t count, const  gl::uint_t * textures);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_bind (glcore,gl)
+    *  - GL_ARB_multi_bind (gl,glcore)
     */
     void bind_vertex_buffers(gl::uint_t first, gl::sizei_t count, const  gl::uint_t * buffers, const  gl::intptr_t * offsets, const  gl::sizei_t * strides);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (glcore,gles2,gl)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     gl::enum_t get_graphics_reset_status();
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (glcore,gles2,gl)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void getn_uniformfv(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (glcore,gles2,gl)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void getn_uniformiv(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (glcore,gles2,gl)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void getn_uniformuiv(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_robustness (glcore,gles2,gl)
+    *  - GL_KHR_robustness (gl,glcore,gles2)
     */
     void readn_pixels(gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * data);
 
@@ -3368,7 +3368,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_provoking_vertex (glcore,gl)
+    *  - GL_ARB_provoking_vertex (gl,glcore)
     */
     void provoking_vertex(gl::enum_t mode);
 
@@ -3590,7 +3590,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_buffer_range (glcore,gl)
+    *  - GL_ARB_texture_buffer_range (gl,glcore)
     */
     void tex_buffer_range(gl::enum_t target, gl::enum_t internalformat, gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t size);
 
@@ -3680,31 +3680,31 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_clear_texture (glcore,gl)
+    *  - GL_ARB_clear_texture (gl,glcore)
     */
     void clear_tex_image(gl::uint_t texture, gl::int_t level, gl::enum_t format, gl::enum_t type, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_clear_texture (glcore,gl)
+    *  - GL_ARB_clear_texture (gl,glcore)
     */
     void clear_tex_sub_image(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::enum_t format, gl::enum_t type, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_image_load_store (glcore,gl)
+    *  - GL_ARB_shader_image_load_store (gl,glcore)
     */
     void bind_image_texture(gl::uint_t unit, gl::uint_t texture, gl::int_t level, gl::boolean_t layered, gl::int_t layer, gl::enum_t access, gl::enum_t format);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_image_load_store (glcore,gl)
+    *  - GL_ARB_shader_image_load_store (gl,glcore)
     */
     void memory_barrier(gl::bitfield_t barriers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sparse_texture (glcore,gl)
+    *  - GL_ARB_sparse_texture (gl,glcore)
     */
     void tex_page_commitment_arb(gl::enum_t target, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::boolean_t resident);
 
@@ -3716,7 +3716,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shader_atomic_counters (glcore,gl)
+    *  - GL_ARB_shader_atomic_counters (gl,glcore)
     */
     void get_active_atomic_counter_bufferiv(gl::uint_t program, gl::uint_t bufferIndex, gl::enum_t pname, gl::int_t * params);
 
@@ -3746,55 +3746,55 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_uniform_buffer_object (glcore,gl)
+    *  - GL_ARB_uniform_buffer_object (gl,glcore)
     */
     void get_active_uniform_block_name(gl::uint_t program, gl::uint_t uniformBlockIndex, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * uniformBlockName);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_uniform_buffer_object (glcore,gl)
+    *  - GL_ARB_uniform_buffer_object (gl,glcore)
     */
     void get_active_uniform_blockiv(gl::uint_t program, gl::uint_t uniformBlockIndex, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_uniform_buffer_object (glcore,gl)
+    *  - GL_ARB_uniform_buffer_object (gl,glcore)
     */
     void get_active_uniform_name(gl::uint_t program, gl::uint_t uniformIndex, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * uniformName);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_uniform_buffer_object (glcore,gl)
+    *  - GL_ARB_uniform_buffer_object (gl,glcore)
     */
     void get_active_uniformsiv(gl::uint_t program, gl::sizei_t uniformCount, const  gl::uint_t * uniformIndices, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_uniform_buffer_object (glcore,gl)
+    *  - GL_ARB_uniform_buffer_object (gl,glcore)
     */
     gl::uint_t get_uniform_block_index(gl::uint_t program, const  gl::char_t * uniformBlockName);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_uniform_buffer_object (glcore,gl)
+    *  - GL_ARB_uniform_buffer_object (gl,glcore)
     */
     void get_uniform_indices(gl::uint_t program, gl::sizei_t uniformCount, const  gl::char_t ** uniformNames, gl::uint_t * uniformIndices);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_uniform_buffer_object (glcore,gl)
+    *  - GL_ARB_uniform_buffer_object (gl,glcore)
     */
     void uniform_block_binding(gl::uint_t program, gl::uint_t uniformBlockIndex, gl::uint_t uniformBlockBinding);
 
    /**
     * Required by extensions:
-    *  - GL_NV_blend_equation_advanced (gles2,gl)
+    *  - GL_NV_blend_equation_advanced (gl,gles2)
     */
     void blend_barrier_nv();
 
    /**
     * Required by extensions:
-    *  - GL_NV_blend_equation_advanced (gles2,gl)
+    *  - GL_NV_blend_equation_advanced (gl,gles2)
     */
     void blend_parameteri_nv(gl::enum_t pname, gl::int_t value);
 
@@ -3860,205 +3860,205 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback2 (glcore,gl)
+    *  - GL_ARB_transform_feedback2 (gl,glcore)
     */
     void bind_transform_feedback(gl::enum_t target, gl::uint_t id);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback2 (glcore,gl)
+    *  - GL_ARB_transform_feedback2 (gl,glcore)
     */
     void delete_transform_feedbacks(gl::sizei_t n, const  gl::uint_t * ids);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback2 (glcore,gl)
+    *  - GL_ARB_transform_feedback2 (gl,glcore)
     */
     void draw_transform_feedback(primitive_type_t mode, gl::uint_t id);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback2 (glcore,gl)
+    *  - GL_ARB_transform_feedback2 (gl,glcore)
     */
     void gen_transform_feedbacks(gl::sizei_t n, gl::uint_t * ids);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback2 (glcore,gl)
+    *  - GL_ARB_transform_feedback2 (gl,glcore)
     */
     gl::boolean_t is_transform_feedback(gl::uint_t id);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback2 (glcore,gl)
+    *  - GL_ARB_transform_feedback2 (gl,glcore)
     */
     void pause_transform_feedback();
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback2 (glcore,gl)
+    *  - GL_ARB_transform_feedback2 (gl,glcore)
     */
     void resume_transform_feedback();
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback3 (glcore,gl)
+    *  - GL_ARB_transform_feedback3 (gl,glcore)
     */
     void begin_query_indexed(gl::enum_t target, gl::uint_t index, gl::uint_t id);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback3 (glcore,gl)
+    *  - GL_ARB_transform_feedback3 (gl,glcore)
     */
     void draw_transform_feedback_stream(primitive_type_t mode, gl::uint_t id, gl::uint_t stream);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback3 (glcore,gl)
+    *  - GL_ARB_transform_feedback3 (gl,glcore)
     */
     void end_query_indexed(gl::enum_t target, gl::uint_t index);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback3 (glcore,gl)
+    *  - GL_ARB_transform_feedback3 (gl,glcore)
     */
     void get_query_indexediv(gl::enum_t target, gl::uint_t index, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     gl::enum_t get_graphics_reset_status_arb();
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_color_table_arb(gl::enum_t target, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * table);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_compressed_tex_image_arb(gl::enum_t target, gl::int_t lod, gl::sizei_t bufSize, void * img);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_convolution_filter_arb(gl::enum_t target, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * image);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_histogram_arb(gl::enum_t target, gl::boolean_t reset, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_mapdv_arb(gl::enum_t target, gl::enum_t query, gl::sizei_t bufSize, gl::double_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_mapfv_arb(gl::enum_t target, gl::enum_t query, gl::sizei_t bufSize, gl::float_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_mapiv_arb(gl::enum_t target, gl::enum_t query, gl::sizei_t bufSize, gl::int_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_minmax_arb(gl::enum_t target, gl::boolean_t reset, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_pixel_mapfv_arb(gl::enum_t map, gl::sizei_t bufSize, gl::float_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_pixel_mapuiv_arb(gl::enum_t map, gl::sizei_t bufSize, gl::uint_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_pixel_mapusv_arb(gl::enum_t map, gl::sizei_t bufSize, gl::ushort_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_polygon_stipple_arb(gl::sizei_t bufSize, gl::ubyte_t * pattern);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_separable_filter_arb(gl::enum_t target, gl::enum_t format, gl::enum_t type, gl::sizei_t rowBufSize, void * row, gl::sizei_t columnBufSize, void * column, void * span);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_tex_image_arb(gl::enum_t target, gl::int_t level, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * img);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_uniformdv_arb(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::double_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_uniformfv_arb(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_uniformiv_arb(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void getn_uniformuiv_arb(gl::uint_t program, gl::int_t location, gl::sizei_t bufSize, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_robustness (glcore,gl)
+    *  - GL_ARB_robustness (gl,glcore)
     */
     void readn_pixels_arb(gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * data);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_marker (gles2,gl)
+    *  - GL_EXT_debug_marker (gl,gles2)
     */
     void insert_event_marker_ext(gl::sizei_t length, const  gl::char_t * marker);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_marker (gles2,gl)
+    *  - GL_EXT_debug_marker (gl,gles2)
     */
     void pop_group_marker_ext();
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_marker (gles2,gl)
+    *  - GL_EXT_debug_marker (gl,gles2)
     */
     void push_group_marker_ext(gl::sizei_t length, const  gl::char_t * marker);
 
@@ -4365,19 +4365,19 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_timer_query (glcore,gl)
+    *  - GL_ARB_timer_query (gl,glcore)
     */
     void get_query_objecti_64v(gl::uint_t id, gl::enum_t pname, gl::int64_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_timer_query (glcore,gl)
+    *  - GL_ARB_timer_query (gl,glcore)
     */
     void get_query_objectui_64v(gl::uint_t id, gl::enum_t pname, gl::uint64_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_timer_query (glcore,gl)
+    *  - GL_ARB_timer_query (gl,glcore)
     */
     void query_counter(gl::uint_t id, gl::enum_t target);
 
@@ -4467,31 +4467,31 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_array_object (glcore,gl)
+    *  - GL_ARB_vertex_array_object (gl,glcore)
     */
     void bind_vertex_array(gl::uint_t array);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_array_object (glcore,gl)
+    *  - GL_ARB_vertex_array_object (gl,glcore)
     */
     void delete_vertex_arrays(gl::sizei_t n, const  gl::uint_t * arrays);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_array_object (glcore,gl)
+    *  - GL_ARB_vertex_array_object (gl,glcore)
     */
     void gen_vertex_arrays(gl::sizei_t n, gl::uint_t * arrays);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_array_object (glcore,gl)
+    *  - GL_ARB_vertex_array_object (gl,glcore)
     */
     gl::boolean_t is_vertex_array(gl::uint_t array);
 
    /**
     * Required by extensions:
-    *  - GL_NV_internalformat_sample_query (gles2,gl)
+    *  - GL_NV_internalformat_sample_query (gl,gles2)
     */
     void get_internalformat_sampleiv_nv(gl::enum_t target, gl::enum_t internalformat, gl::sizei_t samples, gl::enum_t pname, gl::sizei_t bufSize, gl::int_t * params);
 
@@ -4611,25 +4611,25 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_map_buffer_range (glcore,gl)
+    *  - GL_ARB_map_buffer_range (gl,glcore)
     */
     void flush_mapped_buffer_range(buffer_target_arb_t target, gl::intptr_t offset, gl::sizeiptr_t length);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_map_buffer_range (glcore,gl)
+    *  - GL_ARB_map_buffer_range (gl,glcore)
     */
     void * map_buffer_range(buffer_target_arb_t target, gl::intptr_t offset, gl::sizeiptr_t length, gl::bitfield_t access);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_get_texture_sub_image (glcore,gl)
+    *  - GL_ARB_get_texture_sub_image (gl,glcore)
     */
     void get_compressed_texture_sub_image(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::sizei_t bufSize, void * pixels);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_get_texture_sub_image (glcore,gl)
+    *  - GL_ARB_get_texture_sub_image (gl,glcore)
     */
     void get_texture_sub_image(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * pixels);
 
@@ -5001,199 +5001,199 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::uint64_t get_image_handle_nv(gl::uint_t texture, gl::int_t level, gl::boolean_t layered, gl::int_t layer, gl::enum_t format);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::uint64_t get_texture_handle_nv(gl::uint_t texture);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::uint64_t get_texture_sampler_handle_nv(gl::uint_t texture, gl::uint_t sampler);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::boolean_t is_image_handle_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     gl::boolean_t is_texture_handle_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_image_handle_non_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_image_handle_resident_nv(gl::uint64_t handle, gl::enum_t access);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_texture_handle_non_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void make_texture_handle_resident_nv(gl::uint64_t handle);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void program_uniform_handleui_64nv(gl::uint_t program, gl::int_t location, gl::uint64_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void program_uniform_handleui_64v_nv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint64_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void uniform_handleui_64nv(gl::int_t location, gl::uint64_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_bindless_texture (gles2,gl)
+    *  - GL_NV_bindless_texture (gl,gles2)
     */
     void uniform_handleui_64v_nv(gl::int_t location, gl::sizei_t count, const  gl::uint64_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void begin_perf_query_intel(gl::uint_t queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void create_perf_query_intel(gl::uint_t queryId, gl::uint_t * queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void delete_perf_query_intel(gl::uint_t queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void end_perf_query_intel(gl::uint_t queryHandle);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_first_perf_query_id_intel(gl::uint_t * queryId);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_next_perf_query_id_intel(gl::uint_t queryId, gl::uint_t * nextQueryId);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_counter_info_intel(gl::uint_t queryId, gl::uint_t counterId, gl::uint_t counterNameLength, gl::char_t * counterName, gl::uint_t counterDescLength, gl::char_t * counterDesc, gl::uint_t * counterOffset, gl::uint_t * counterDataSize, gl::uint_t * counterTypeEnum, gl::uint_t * counterDataTypeEnum, gl::uint64_t * rawCounterMaxValue);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_query_data_intel(gl::uint_t queryHandle, gl::uint_t flags, gl::sizei_t dataSize, void * data, gl::uint_t * bytesWritten);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_query_id_by_name_intel(gl::char_t * queryName, gl::uint_t * queryId);
 
    /**
     * Required by extensions:
-    *  - GL_INTEL_performance_query (gles2,gl)
+    *  - GL_INTEL_performance_query (gl,gles2)
     */
     void get_perf_query_info_intel(gl::uint_t queryId, gl::uint_t queryNameLength, gl::char_t * queryName, gl::uint_t * dataSize, gl::uint_t * noCounters, gl::uint_t * noInstances, gl::uint_t * capsMask);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void debug_message_callback(gl::DEBUGPROC_t callback, const  void * userParam);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void debug_message_control(gl::enum_t source, gl::enum_t type, gl::enum_t severity, gl::sizei_t count, const  gl::uint_t * ids, gl::boolean_t enabled);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void debug_message_insert(gl::enum_t source, gl::enum_t type, gl::uint_t id, gl::enum_t severity, gl::sizei_t length, const  gl::char_t * buf);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     gl::uint_t get_debug_message_log(gl::uint_t count, gl::sizei_t bufSize, gl::enum_t * sources, gl::enum_t * types, gl::uint_t * ids, gl::enum_t * severities, gl::sizei_t * lengths, gl::char_t * messageLog);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void get_object_label(gl::enum_t identifier, gl::uint_t name, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void get_object_ptr_label(const  void * ptr, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void object_label(gl::enum_t identifier, gl::uint_t name, gl::sizei_t length, const  gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void object_ptr_label(const  void * ptr, gl::sizei_t length, const  gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void pop_debug_group();
 
    /**
     * Required by extensions:
-    *  - GL_KHR_debug (glcore,gles2,gl)
+    *  - GL_KHR_debug (gl,glcore,gles2)
     */
     void push_debug_group(gl::enum_t source, gl::uint_t id, gl::sizei_t length, const  gl::char_t * message);
 
@@ -5217,31 +5217,31 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_get_program_binary (glcore,gl)
+    *  - GL_ARB_get_program_binary (gl,glcore)
     */
     void get_program_binary(gl::uint_t program, gl::sizei_t bufSize, gl::sizei_t * length, gl::enum_t * binaryFormat, void * binary);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_get_program_binary (glcore,gl)
+    *  - GL_ARB_get_program_binary (gl,glcore)
     */
     void program_binary(gl::uint_t program, gl::enum_t binaryFormat, const  void * binary, gl::sizei_t length);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_get_program_binary (glcore,gl)
+    *  - GL_ARB_get_program_binary (gl,glcore)
     */
     void program_parameteri(gl::uint_t program, gl::enum_t pname, gl::int_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback_instanced (glcore,gl)
+    *  - GL_ARB_transform_feedback_instanced (gl,glcore)
     */
     void draw_transform_feedback_instanced(primitive_type_t mode, gl::uint_t id, gl::sizei_t instancecount);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_transform_feedback_instanced (glcore,gl)
+    *  - GL_ARB_transform_feedback_instanced (gl,glcore)
     */
     void draw_transform_feedback_stream_instanced(primitive_type_t mode, gl::uint_t id, gl::uint_t stream, gl::sizei_t instancecount);
 
@@ -5433,13 +5433,13 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_indirect (glcore,gl)
+    *  - GL_ARB_draw_indirect (gl,glcore)
     */
     void draw_arrays_indirect(primitive_type_t mode, const  void * indirect);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_indirect (glcore,gl)
+    *  - GL_ARB_draw_indirect (gl,glcore)
     */
     void draw_elements_indirect(primitive_type_t mode, gl::enum_t type, const  void * indirect);
 
@@ -5807,31 +5807,31 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_ES2_compatibility (glcore,gl)
+    *  - GL_ARB_ES2_compatibility (gl,glcore)
     */
     void clear_depthf(gl::float_t d);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_ES2_compatibility (glcore,gl)
+    *  - GL_ARB_ES2_compatibility (gl,glcore)
     */
     void depth_rangef(gl::float_t n, gl::float_t f);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_ES2_compatibility (glcore,gl)
+    *  - GL_ARB_ES2_compatibility (gl,glcore)
     */
     void get_shader_precision_format(shader_type_t shadertype, precision_type_t precisiontype, gl::int_t * range, gl::int_t * precision);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_ES2_compatibility (glcore,gl)
+    *  - GL_ARB_ES2_compatibility (gl,glcore)
     */
     void release_shader_compiler();
 
    /**
     * Required by extensions:
-    *  - GL_ARB_ES2_compatibility (glcore,gl)
+    *  - GL_ARB_ES2_compatibility (gl,glcore)
     */
     void shader_binary(gl::sizei_t count, const  gl::uint_t * shaders, gl::enum_t binaryformat, const  void * binary, gl::sizei_t length);
 
@@ -5945,7 +5945,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_KHR_blend_equation_advanced (gles2,gl)
+    *  - GL_KHR_blend_equation_advanced (gl,gles2)
     */
     void blend_barrier_khr();
 
@@ -6494,25 +6494,25 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_debug_output (glcore,gl)
+    *  - GL_ARB_debug_output (gl,glcore)
     */
     void debug_message_callback_arb(gl::DEBUGPROCARB_t callback, const  void * userParam);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_debug_output (glcore,gl)
+    *  - GL_ARB_debug_output (gl,glcore)
     */
     void debug_message_control_arb(gl::enum_t source, gl::enum_t type, gl::enum_t severity, gl::sizei_t count, const  gl::uint_t * ids, gl::boolean_t enabled);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_debug_output (glcore,gl)
+    *  - GL_ARB_debug_output (gl,glcore)
     */
     void debug_message_insert_arb(gl::enum_t source, gl::enum_t type, gl::uint_t id, gl::enum_t severity, gl::sizei_t length, const  gl::char_t * buf);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_debug_output (glcore,gl)
+    *  - GL_ARB_debug_output (gl,glcore)
     */
     gl::uint_t get_debug_message_log_arb(gl::uint_t count, gl::sizei_t bufSize, gl::enum_t * sources, gl::enum_t * types, gl::uint_t * ids, gl::enum_t * severities, gl::sizei_t * lengths, gl::char_t * messageLog);
 
@@ -6832,229 +6832,229 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void color_p3ui(gl::enum_t type, gl::uint_t color);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void color_p3uiv(gl::enum_t type, const  gl::uint_t * color);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void color_p4ui(gl::enum_t type, gl::uint_t color);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void color_p4uiv(gl::enum_t type, const  gl::uint_t * color);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p1ui(gl::enum_t texture, gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p1uiv(gl::enum_t texture, gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p2ui(gl::enum_t texture, gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p2uiv(gl::enum_t texture, gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p3ui(gl::enum_t texture, gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p3uiv(gl::enum_t texture, gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p4ui(gl::enum_t texture, gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void multi_tex_coord_p4uiv(gl::enum_t texture, gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void normal_p3ui(gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void normal_p3uiv(gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void secondary_color_p3ui(gl::enum_t type, gl::uint_t color);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void secondary_color_p3uiv(gl::enum_t type, const  gl::uint_t * color);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p1ui(gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p1uiv(gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p2ui(gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p2uiv(gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p3ui(gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p3uiv(gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p4ui(gl::enum_t type, gl::uint_t coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void tex_coord_p4uiv(gl::enum_t type, const  gl::uint_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p1ui(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, gl::uint_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p1uiv(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p2ui(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, gl::uint_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p2uiv(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p3ui(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, gl::uint_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p3uiv(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p4ui(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, gl::uint_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_attrib_p4uiv(gl::uint_t index, gl::enum_t type, gl::boolean_t normalized, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_p2ui(gl::enum_t type, gl::uint_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_p2uiv(gl::enum_t type, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_p3ui(gl::enum_t type, gl::uint_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_p3uiv(gl::enum_t type, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_p4ui(gl::enum_t type, gl::uint_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_type_2_10_10_10_rev (glcore,gl)
+    *  - GL_ARB_vertex_type_2_10_10_10_rev (gl,glcore)
     */
     void vertex_p4uiv(gl::enum_t type, const  gl::uint_t * value);
 
@@ -7126,283 +7126,283 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void active_program_ext(gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     gl::uint_t create_shader_program_ext(gl::enum_t type, const  gl::char_t * string);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_separate_shader_objects (gles2,gl)
+    *  - GL_EXT_separate_shader_objects (gl,gles2)
     */
     void use_shader_program_ext(gl::enum_t type, gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_tessellation_shader (glcore,gl)
+    *  - GL_ARB_tessellation_shader (gl,glcore)
     */
     void patch_parameterfv(gl::enum_t pname, const  gl::float_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_tessellation_shader (glcore,gl)
+    *  - GL_ARB_tessellation_shader (gl,glcore)
     */
     void patch_parameteri(gl::enum_t pname, gl::int_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void color_sub_table(gl::enum_t target, gl::sizei_t start, gl::sizei_t count, pixel_format_t format, pixel_type_t type, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void color_table(gl::enum_t target, gl::enum_t internalformat, gl::sizei_t width, pixel_format_t format, pixel_type_t type, const  void * table);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void color_table_parameterfv(gl::enum_t target, gl::enum_t pname, const  gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void color_table_parameteriv(gl::enum_t target, gl::enum_t pname, const  gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void convolution_filter_1d(gl::enum_t target, gl::enum_t internalformat, gl::sizei_t width, pixel_format_t format, pixel_type_t type, const  void * image);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void convolution_filter_2d(gl::enum_t target, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, pixel_format_t format, pixel_type_t type, const  void * image);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void convolution_parameterf(gl::enum_t target, gl::enum_t pname, gl::float_t params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void convolution_parameterfv(gl::enum_t target, gl::enum_t pname, const  gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void convolution_parameteri(gl::enum_t target, gl::enum_t pname, gl::int_t params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void convolution_parameteriv(gl::enum_t target, gl::enum_t pname, const  gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void copy_color_sub_table(gl::enum_t target, gl::sizei_t start, gl::int_t x, gl::int_t y, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void copy_color_table(gl::enum_t target, gl::enum_t internalformat, gl::int_t x, gl::int_t y, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void copy_convolution_filter_1d(gl::enum_t target, gl::enum_t internalformat, gl::int_t x, gl::int_t y, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void copy_convolution_filter_2d(gl::enum_t target, gl::enum_t internalformat, gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_color_table(gl::enum_t target, pixel_format_t format, pixel_type_t type, void * table);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_color_table_parameterfv(gl::enum_t target, gl::enum_t pname, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_color_table_parameteriv(gl::enum_t target, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_convolution_filter(gl::enum_t target, pixel_format_t format, pixel_type_t type, void * image);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_convolution_parameterfv(gl::enum_t target, gl::enum_t pname, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_convolution_parameteriv(gl::enum_t target, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_histogram(gl::enum_t target, gl::boolean_t reset, pixel_format_t format, pixel_type_t type, void * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_histogram_parameterfv(gl::enum_t target, gl::enum_t pname, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_histogram_parameteriv(gl::enum_t target, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_minmax(gl::enum_t target, gl::boolean_t reset, pixel_format_t format, pixel_type_t type, void * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_minmax_parameterfv(gl::enum_t target, gl::enum_t pname, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_minmax_parameteriv(gl::enum_t target, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void get_separable_filter(gl::enum_t target, pixel_format_t format, pixel_type_t type, void * row, void * column, void * span);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void histogram(gl::enum_t target, gl::sizei_t width, gl::enum_t internalformat, gl::boolean_t sink);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void minmax(gl::enum_t target, gl::enum_t internalformat, gl::boolean_t sink);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void reset_histogram(gl::enum_t target);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void reset_minmax(gl::enum_t target);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_imaging (glcore,gl)
+    *  - GL_ARB_imaging (gl,glcore)
     */
     void separable_filter_2d(gl::enum_t target, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, pixel_format_t format, pixel_type_t type, const  void * row, const  void * column);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void get_vertex_attrib_ldv(gl::uint_t index, gl::enum_t pname, gl::double_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l1d(gl::uint_t index, gl::double_t x);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l1dv(gl::uint_t index, const  gl::double_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l2d(gl::uint_t index, gl::double_t x, gl::double_t y);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l2dv(gl::uint_t index, const  gl::double_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l3d(gl::uint_t index, gl::double_t x, gl::double_t y, gl::double_t z);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l3dv(gl::uint_t index, const  gl::double_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l4d(gl::uint_t index, gl::double_t x, gl::double_t y, gl::double_t z, gl::double_t w);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l4dv(gl::uint_t index, const  gl::double_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_vertex_attrib_64bit (glcore,gl)
+    *  - GL_ARB_vertex_attrib_64bit (gl,glcore)
     */
     void vertex_attrib_l_pointer(gl::uint_t index, gl::int_t size, gl::enum_t type, gl::sizei_t stride, const  void * pointer);
 
@@ -7414,43 +7414,43 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sync (glcore,gl)
+    *  - GL_ARB_sync (gl,glcore)
     */
     gl::enum_t client_wait_sync(gl::sync_t sync, gl::bitfield_t flags, gl::uint64_t timeout);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sync (glcore,gl)
+    *  - GL_ARB_sync (gl,glcore)
     */
     void delete_sync(gl::sync_t sync);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sync (glcore,gl)
+    *  - GL_ARB_sync (gl,glcore)
     */
     gl::sync_t fence_sync(gl::enum_t condition, gl::bitfield_t flags);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sync (glcore,gl)
+    *  - GL_ARB_sync (gl,glcore)
     */
     void get_integer_64v(gl::enum_t pname, gl::int64_t * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sync (glcore,gl)
+    *  - GL_ARB_sync (gl,glcore)
     */
     void get_synciv(gl::sync_t sync, gl::enum_t pname, gl::sizei_t bufSize, gl::sizei_t * length, gl::int_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sync (glcore,gl)
+    *  - GL_ARB_sync (gl,glcore)
     */
     gl::boolean_t is_sync(gl::sync_t sync);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sync (glcore,gl)
+    *  - GL_ARB_sync (gl,glcore)
     */
     void wait_sync(gl::sync_t sync, gl::bitfield_t flags, gl::uint64_t timeout);
 
@@ -7696,145 +7696,145 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void bind_framebuffer(framebuffer_target_t target, gl::uint_t framebuffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void bind_renderbuffer(renderbuffer_target_t target, gl::uint_t renderbuffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void blit_framebuffer(gl::int_t srcX0, gl::int_t srcY0, gl::int_t srcX1, gl::int_t srcY1, gl::int_t dstX0, gl::int_t dstY0, gl::int_t dstX1, gl::int_t dstY1, gl::bitmask<clear_buffer_flags_t> mask, gl::enum_t filter);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     framebuffer_status_t check_framebuffer_status(framebuffer_target_t target);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void delete_framebuffers(gl::sizei_t n, const  gl::uint_t * framebuffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void delete_renderbuffers(gl::sizei_t n, const  gl::uint_t * renderbuffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void framebuffer_renderbuffer(framebuffer_target_t target, framebuffer_attachment_t attachment, renderbuffer_target_t renderbuffertarget, gl::uint_t renderbuffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void framebuffer_texture_1d(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::enum_t textarget, gl::uint_t texture, gl::int_t level);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void framebuffer_texture_2d(framebuffer_target_t target, framebuffer_attachment_t attachment, framebuffer_texture_target_t textarget, gl::uint_t texture, gl::int_t level);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void framebuffer_texture_3d(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::enum_t textarget, gl::uint_t texture, gl::int_t level, gl::int_t zoffset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void framebuffer_texture_layer(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::uint_t texture, gl::int_t level, gl::int_t layer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void gen_framebuffers(gl::sizei_t n, gl::uint_t * framebuffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void gen_renderbuffers(gl::sizei_t n, gl::uint_t * renderbuffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void generate_mipmap(mipmap_target_t target);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void get_framebuffer_attachment_parameteriv(framebuffer_target_t target, framebuffer_attachment_t attachment, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void get_renderbuffer_parameteriv(renderbuffer_target_t target, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     gl::boolean_t is_framebuffer(gl::uint_t framebuffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     gl::boolean_t is_renderbuffer(gl::uint_t renderbuffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void renderbuffer_storage(renderbuffer_target_t target, internal_format_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_framebuffer_object (glcore,gl)
+    *  - GL_ARB_framebuffer_object (gl,glcore)
     */
     void renderbuffer_storage_multisample(renderbuffer_target_t target, gl::sizei_t samples, internal_format_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_buffers_blend (glcore,gl)
+    *  - GL_ARB_draw_buffers_blend (gl,glcore)
     */
     void blend_equation_separatei_arb(gl::uint_t buf, gl::enum_t modeRGB, gl::enum_t modeAlpha);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_buffers_blend (glcore,gl)
+    *  - GL_ARB_draw_buffers_blend (gl,glcore)
     */
     void blend_equationi_arb(gl::uint_t buf, gl::enum_t mode);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_buffers_blend (glcore,gl)
+    *  - GL_ARB_draw_buffers_blend (gl,glcore)
     */
     void blend_func_separatei_arb(gl::uint_t buf, gl::enum_t srcRGB, gl::enum_t dstRGB, gl::enum_t srcAlpha, gl::enum_t dstAlpha);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_buffers_blend (glcore,gl)
+    *  - GL_ARB_draw_buffers_blend (gl,glcore)
     */
     void blend_funci_arb(gl::uint_t buf, gl::enum_t src, gl::enum_t dst);
 
@@ -8309,603 +8309,603 @@ namespace gl2 {
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_texture_storage (gles2,gles1)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void texture_storage_1dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_texture_storage (gles2,gles1)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void texture_storage_2dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
     *  - GL_EXT_direct_state_access (gl)
-    *  - GL_EXT_texture_storage (gles2,gles1)
+    *  - GL_EXT_texture_storage (gles1,gles2)
     */
     void texture_storage_3dext(gl::uint_t texture, gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void bind_texture_unit(gl::uint_t unit, gl::uint_t texture);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void blit_named_framebuffer(gl::uint_t readFramebuffer, gl::uint_t drawFramebuffer, gl::int_t srcX0, gl::int_t srcY0, gl::int_t srcX1, gl::int_t srcY1, gl::int_t dstX0, gl::int_t dstY0, gl::int_t dstX1, gl::int_t dstY1, gl::bitfield_t mask, gl::enum_t filter);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     gl::enum_t check_named_framebuffer_status(gl::uint_t framebuffer, gl::enum_t target);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void clear_named_buffer_data(gl::uint_t buffer, gl::enum_t internalformat, gl::enum_t format, gl::enum_t type, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void clear_named_buffer_sub_data(gl::uint_t buffer, gl::enum_t internalformat, gl::intptr_t offset, gl::sizeiptr_t size, gl::enum_t format, gl::enum_t type, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void clear_named_framebufferfi(gl::uint_t framebuffer, gl::enum_t buffer, const  gl::float_t depth, gl::int_t stencil);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void clear_named_framebufferfv(gl::uint_t framebuffer, gl::enum_t buffer, gl::int_t drawbuffer, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void clear_named_framebufferiv(gl::uint_t framebuffer, gl::enum_t buffer, gl::int_t drawbuffer, const  gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void clear_named_framebufferuiv(gl::uint_t framebuffer, gl::enum_t buffer, gl::int_t drawbuffer, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void compressed_texture_sub_image_1d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::sizei_t width, gl::enum_t format, gl::sizei_t imageSize, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void compressed_texture_sub_image_2d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::sizei_t width, gl::sizei_t height, gl::enum_t format, gl::sizei_t imageSize, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void compressed_texture_sub_image_3d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::enum_t format, gl::sizei_t imageSize, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void copy_named_buffer_sub_data(gl::uint_t readBuffer, gl::uint_t writeBuffer, gl::intptr_t readOffset, gl::intptr_t writeOffset, gl::sizeiptr_t size);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void copy_texture_sub_image_1d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t x, gl::int_t y, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void copy_texture_sub_image_2d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void copy_texture_sub_image_3d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_buffers(gl::sizei_t n, gl::uint_t * buffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_framebuffers(gl::sizei_t n, gl::uint_t * framebuffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_program_pipelines(gl::sizei_t n, gl::uint_t * pipelines);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_queries(gl::enum_t target, gl::sizei_t n, gl::uint_t * ids);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_renderbuffers(gl::sizei_t n, gl::uint_t * renderbuffers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_samplers(gl::sizei_t n, gl::uint_t * samplers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_textures(gl::enum_t target, gl::sizei_t n, gl::uint_t * textures);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_transform_feedbacks(gl::sizei_t n, gl::uint_t * ids);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void create_vertex_arrays(gl::sizei_t n, gl::uint_t * arrays);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void disable_vertex_array_attrib(gl::uint_t vaobj, gl::uint_t index);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void enable_vertex_array_attrib(gl::uint_t vaobj, gl::uint_t index);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void flush_mapped_named_buffer_range(gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t length);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void generate_texture_mipmap(gl::uint_t texture);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_compressed_texture_image(gl::uint_t texture, gl::int_t level, gl::sizei_t bufSize, void * pixels);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_named_buffer_parameteri_64v(gl::uint_t buffer, gl::enum_t pname, gl::int64_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_named_buffer_parameteriv(gl::uint_t buffer, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_named_buffer_pointerv(gl::uint_t buffer, gl::enum_t pname, void ** params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_named_buffer_sub_data(gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t size, void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_named_framebuffer_attachment_parameteriv(gl::uint_t framebuffer, gl::enum_t attachment, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_named_framebuffer_parameteriv(gl::uint_t framebuffer, gl::enum_t pname, gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_named_renderbuffer_parameteriv(gl::uint_t renderbuffer, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_query_buffer_objecti_64v(gl::uint_t id, gl::uint_t buffer, gl::enum_t pname, gl::intptr_t offset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_query_buffer_objectiv(gl::uint_t id, gl::uint_t buffer, gl::enum_t pname, gl::intptr_t offset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_query_buffer_objectui_64v(gl::uint_t id, gl::uint_t buffer, gl::enum_t pname, gl::intptr_t offset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_query_buffer_objectuiv(gl::uint_t id, gl::uint_t buffer, gl::enum_t pname, gl::intptr_t offset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_texture_image(gl::uint_t texture, gl::int_t level, gl::enum_t format, gl::enum_t type, gl::sizei_t bufSize, void * pixels);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_texture_level_parameterfv(gl::uint_t texture, gl::int_t level, gl::enum_t pname, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_texture_level_parameteriv(gl::uint_t texture, gl::int_t level, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_texture_parameter_iiv(gl::uint_t texture, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_texture_parameter_iuiv(gl::uint_t texture, gl::enum_t pname, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_texture_parameterfv(gl::uint_t texture, gl::enum_t pname, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_texture_parameteriv(gl::uint_t texture, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_transform_feedbacki_64_v(gl::uint_t xfb, gl::enum_t pname, gl::uint_t index, gl::int64_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_transform_feedbacki_v(gl::uint_t xfb, gl::enum_t pname, gl::uint_t index, gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_transform_feedbackiv(gl::uint_t xfb, gl::enum_t pname, gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_vertex_array_indexed_64iv(gl::uint_t vaobj, gl::uint_t index, gl::enum_t pname, gl::int64_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_vertex_array_indexediv(gl::uint_t vaobj, gl::uint_t index, gl::enum_t pname, gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void get_vertex_arrayiv(gl::uint_t vaobj, gl::enum_t pname, gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void invalidate_named_framebuffer_data(gl::uint_t framebuffer, gl::sizei_t numAttachments, const  gl::enum_t * attachments);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void invalidate_named_framebuffer_sub_data(gl::uint_t framebuffer, gl::sizei_t numAttachments, const  gl::enum_t * attachments, gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void * map_named_buffer(gl::uint_t buffer, gl::enum_t access);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void * map_named_buffer_range(gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t length, gl::bitfield_t access);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_buffer_data(gl::uint_t buffer, gl::sizeiptr_t size, const  void * data, gl::enum_t usage);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_buffer_storage(gl::uint_t buffer, gl::sizeiptr_t size, const  void * data, gl::bitfield_t flags);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_buffer_sub_data(gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t size, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_framebuffer_draw_buffer(gl::uint_t framebuffer, gl::enum_t buf);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_framebuffer_draw_buffers(gl::uint_t framebuffer, gl::sizei_t n, const  gl::enum_t * bufs);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_framebuffer_parameteri(gl::uint_t framebuffer, gl::enum_t pname, gl::int_t param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_framebuffer_read_buffer(gl::uint_t framebuffer, gl::enum_t src);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_framebuffer_renderbuffer(gl::uint_t framebuffer, gl::enum_t attachment, gl::enum_t renderbuffertarget, gl::uint_t renderbuffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_framebuffer_texture(gl::uint_t framebuffer, gl::enum_t attachment, gl::uint_t texture, gl::int_t level);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_framebuffer_texture_layer(gl::uint_t framebuffer, gl::enum_t attachment, gl::uint_t texture, gl::int_t level, gl::int_t layer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_renderbuffer_storage(gl::uint_t renderbuffer, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void named_renderbuffer_storage_multisample(gl::uint_t renderbuffer, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_buffer(gl::uint_t texture, gl::enum_t internalformat, gl::uint_t buffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_buffer_range(gl::uint_t texture, gl::enum_t internalformat, gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t size);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_parameter_iiv(gl::uint_t texture, gl::enum_t pname, const  gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_parameter_iuiv(gl::uint_t texture, gl::enum_t pname, const  gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_parameterf(gl::uint_t texture, gl::enum_t pname, gl::float_t param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_parameterfv(gl::uint_t texture, gl::enum_t pname, const  gl::float_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_parameteri(gl::uint_t texture, gl::enum_t pname, gl::int_t param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_parameteriv(gl::uint_t texture, gl::enum_t pname, const  gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_storage_1d(gl::uint_t texture, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_storage_2d(gl::uint_t texture, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_storage_2d_multisample(gl::uint_t texture, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::boolean_t fixedsamplelocations);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_storage_3d(gl::uint_t texture, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_storage_3d_multisample(gl::uint_t texture, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::boolean_t fixedsamplelocations);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_sub_image_1d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::sizei_t width, gl::enum_t format, gl::enum_t type, const  void * pixels);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_sub_image_2d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::sizei_t width, gl::sizei_t height, gl::enum_t format, gl::enum_t type, const  void * pixels);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void texture_sub_image_3d(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::enum_t format, gl::enum_t type, const  void * pixels);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void transform_feedback_buffer_base(gl::uint_t xfb, gl::uint_t index, gl::uint_t buffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void transform_feedback_buffer_range(gl::uint_t xfb, gl::uint_t index, gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t size);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     gl::boolean_t unmap_named_buffer(gl::uint_t buffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_attrib_binding(gl::uint_t vaobj, gl::uint_t attribindex, gl::uint_t bindingindex);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_attrib_format(gl::uint_t vaobj, gl::uint_t attribindex, gl::int_t size, gl::enum_t type, gl::boolean_t normalized, gl::uint_t relativeoffset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_attrib_i_format(gl::uint_t vaobj, gl::uint_t attribindex, gl::int_t size, gl::enum_t type, gl::uint_t relativeoffset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_attrib_l_format(gl::uint_t vaobj, gl::uint_t attribindex, gl::int_t size, gl::enum_t type, gl::uint_t relativeoffset);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_binding_divisor(gl::uint_t vaobj, gl::uint_t bindingindex, gl::uint_t divisor);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_element_buffer(gl::uint_t vaobj, gl::uint_t buffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_vertex_buffer(gl::uint_t vaobj, gl::uint_t bindingindex, gl::uint_t buffer, gl::intptr_t offset, gl::sizei_t stride);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_direct_state_access (glcore,gl)
+    *  - GL_ARB_direct_state_access (gl,glcore)
     */
     void vertex_array_vertex_buffers(gl::uint_t vaobj, gl::uint_t first, gl::sizei_t count, const  gl::uint_t * buffers, const  gl::intptr_t * offsets, const  gl::sizei_t * strides);
 
@@ -8917,37 +8917,37 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shading_language_include (glcore,gl)
+    *  - GL_ARB_shading_language_include (gl,glcore)
     */
     void compile_shader_include_arb(gl::uint_t shader, gl::sizei_t count, const  gl::char_t ** path, const  gl::int_t * length);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shading_language_include (glcore,gl)
+    *  - GL_ARB_shading_language_include (gl,glcore)
     */
     void delete_named_string_arb(gl::int_t namelen, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shading_language_include (glcore,gl)
+    *  - GL_ARB_shading_language_include (gl,glcore)
     */
     void get_named_string_arb(gl::int_t namelen, const  gl::char_t * name, gl::sizei_t bufSize, gl::int_t * stringlen, gl::char_t * string);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shading_language_include (glcore,gl)
+    *  - GL_ARB_shading_language_include (gl,glcore)
     */
     void get_named_stringiv_arb(gl::int_t namelen, const  gl::char_t * name, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shading_language_include (glcore,gl)
+    *  - GL_ARB_shading_language_include (gl,glcore)
     */
     gl::boolean_t is_named_string_arb(gl::int_t namelen, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_shading_language_include (glcore,gl)
+    *  - GL_ARB_shading_language_include (gl,glcore)
     */
     void named_string_arb(gl::enum_t type, gl::int_t namelen, const  gl::char_t * name, gl::int_t stringlen, const  gl::char_t * string);
 
@@ -8959,19 +8959,19 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_storage (glcore,gl)
+    *  - GL_ARB_texture_storage (gl,glcore)
     */
     void tex_storage_1d(gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_storage (glcore,gl)
+    *  - GL_ARB_texture_storage (gl,glcore)
     */
     void tex_storage_2d(gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_storage (glcore,gl)
+    *  - GL_ARB_texture_storage (gl,glcore)
     */
     void tex_storage_3d(gl::enum_t target, gl::sizei_t levels, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth);
 
@@ -9024,43 +9024,43 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_copy_image (glcore,gl)
+    *  - GL_ARB_copy_image (gl,glcore)
     */
     void copy_image_sub_data(gl::uint_t srcName, gl::enum_t srcTarget, gl::int_t srcLevel, gl::int_t srcX, gl::int_t srcY, gl::int_t srcZ, gl::uint_t dstName, gl::enum_t dstTarget, gl::int_t dstLevel, gl::int_t dstX, gl::int_t dstY, gl::int_t dstZ, gl::sizei_t srcWidth, gl::sizei_t srcHeight, gl::sizei_t srcDepth);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_ES3_1_compatibility (glcore,gl)
+    *  - GL_ARB_ES3_1_compatibility (gl,glcore)
     */
     void memory_barrier_by_region(gl::bitfield_t barriers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sample_shading (glcore,gl)
+    *  - GL_ARB_sample_shading (gl,glcore)
     */
     void min_sample_shading_arb(gl::float_t value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_clear_buffer_object (glcore,gl)
+    *  - GL_ARB_clear_buffer_object (gl,glcore)
     */
     void clear_buffer_data(gl::enum_t target, gl::enum_t internalformat, gl::enum_t format, gl::enum_t type, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_clear_buffer_object (glcore,gl)
+    *  - GL_ARB_clear_buffer_object (gl,glcore)
     */
     void clear_buffer_sub_data(gl::enum_t target, gl::enum_t internalformat, gl::intptr_t offset, gl::sizeiptr_t size, gl::enum_t format, gl::enum_t type, const  void * data);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_multi_draw_arrays (gles1,gles2,gl)
+    *  - GL_EXT_multi_draw_arrays (gl,gles1,gles2)
     */
     void multi_draw_arrays_ext(primitive_type_t mode, const  gl::int_t * first, const  gl::sizei_t * count, gl::sizei_t primcount);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_multi_draw_arrays (gles1,gles2,gl)
+    *  - GL_EXT_multi_draw_arrays (gl,gles1,gles2)
     */
     void multi_draw_elements_ext(primitive_type_t mode, const  gl::sizei_t * count, draw_elements_type_t type, const  void * * indices, gl::sizei_t primcount);
 
@@ -9102,19 +9102,19 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_internalformat_query2 (glcore,gl)
+    *  - GL_ARB_internalformat_query2 (gl,glcore)
     */
     void get_internalformati_64v(gl::enum_t target, gl::enum_t internalformat, gl::enum_t pname, gl::sizei_t bufSize, gl::int64_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_label (gles2,gl)
+    *  - GL_EXT_debug_label (gl,gles2)
     */
     void get_object_label_ext(gl::enum_t type, gl::uint_t object, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * label);
 
    /**
     * Required by extensions:
-    *  - GL_EXT_debug_label (gles2,gl)
+    *  - GL_EXT_debug_label (gl,gles2)
     */
     void label_object_ext(gl::enum_t type, gl::uint_t object, gl::sizei_t length, const  gl::char_t * label);
 
@@ -9156,13 +9156,13 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_conditional_render (gles2,gl)
+    *  - GL_NV_conditional_render (gl,gles2)
     */
     void begin_conditional_render_nv(gl::uint_t id, gl::enum_t mode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_conditional_render (gles2,gl)
+    *  - GL_NV_conditional_render (gl,gles2)
     */
     void end_conditional_render_nv();
 
@@ -9427,7 +9427,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_EXT_blend_minmax (gles1,gles2,gl)
+    *  - GL_EXT_blend_minmax (gl,gles1,gles2)
     */
     void blend_equation_ext(blend_equation_mode_ext_t mode);
 
@@ -9457,385 +9457,385 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void copy_path_nv(gl::uint_t resultPath, gl::uint_t srcPath);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_fill_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_fill_path_nv(gl::uint_t path, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_stroke_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void cover_stroke_path_nv(gl::uint_t path, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void delete_paths_nv(gl::uint_t path, gl::sizei_t range);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::uint_t gen_paths_nv(gl::sizei_t range);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_color_genfv_nv(gl::enum_t color, gl::enum_t pname, gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_color_geniv_nv(gl::enum_t color, gl::enum_t pname, gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_commands_nv(gl::uint_t path, gl::ubyte_t * commands);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_coords_nv(gl::uint_t path, gl::float_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_dash_array_nv(gl::uint_t path, gl::float_t * dashArray);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::float_t get_path_length_nv(gl::uint_t path, gl::sizei_t startSegment, gl::sizei_t numSegments);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_metric_range_nv(gl::bitfield_t metricQueryMask, gl::uint_t firstPathName, gl::sizei_t numPaths, gl::sizei_t stride, gl::float_t * metrics);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_metrics_nv(gl::bitfield_t metricQueryMask, gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::sizei_t stride, gl::float_t * metrics);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_parameterfv_nv(gl::uint_t path, gl::enum_t pname, gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_parameteriv_nv(gl::uint_t path, gl::enum_t pname, gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_spacing_nv(gl::enum_t pathListMode, gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::float_t advanceScale, gl::float_t kerningScale, gl::enum_t transformType, gl::float_t * returnedSpacing);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_tex_genfv_nv(texture_unit_t texCoordSet, gl::enum_t pname, gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_path_tex_geniv_nv(texture_unit_t texCoordSet, gl::enum_t pname, gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void get_program_resourcefv_nv(gl::uint_t program, gl::enum_t programInterface, gl::uint_t index, gl::sizei_t propCount, const  gl::enum_t * props, gl::sizei_t bufSize, gl::sizei_t * length, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void interpolate_paths_nv(gl::uint_t resultPath, gl::uint_t pathA, gl::uint_t pathB, gl::float_t weight);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t is_path_nv(gl::uint_t path);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t is_point_in_fill_path_nv(gl::uint_t path, gl::uint_t mask, gl::float_t x, gl::float_t y);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t is_point_in_stroke_path_nv(gl::uint_t path, gl::float_t x, gl::float_t y);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_load_3x_2f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_load_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_load_transpose_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_mult_3x_2f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_mult_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void matrix_mult_transpose_3x_3f_nv(gl::enum_t matrixMode, const  gl::float_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_color_gen_nv(gl::enum_t color, gl::enum_t genMode, gl::enum_t colorFormat, const  gl::float_t * coeffs);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_commands_nv(gl::uint_t path, gl::sizei_t numCommands, const  gl::ubyte_t * commands, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_coords_nv(gl::uint_t path, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_cover_depth_func_nv(depth_function_t func);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_dash_array_nv(gl::uint_t path, gl::sizei_t dashCount, const  gl::float_t * dashArray);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_fog_gen_nv(gl::enum_t genMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::enum_t path_glyph_index_array_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::uint_t firstGlyphIndex, gl::sizei_t numGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::enum_t path_glyph_index_range_nv(gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::uint_t pathParameterTemplate, gl::float_t emScale, gl::uint_t * baseAndCount);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_glyph_range_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::uint_t firstGlyph, gl::sizei_t numGlyphs, gl::enum_t handleMissingGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_glyphs_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, const  void * fontName, gl::bitfield_t fontStyle, gl::sizei_t numGlyphs, gl::enum_t type, const  void * charcodes, gl::enum_t handleMissingGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::enum_t path_memory_glyph_index_array_nv(gl::uint_t firstPathName, gl::enum_t fontTarget, gl::sizeiptr_t fontSize, const  void * fontData, gl::sizei_t faceIndex, gl::uint_t firstGlyphIndex, gl::sizei_t numGlyphs, gl::uint_t pathParameterTemplate, gl::float_t emScale);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameterf_nv(gl::uint_t path, gl::enum_t pname, gl::float_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameterfv_nv(gl::uint_t path, gl::enum_t pname, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameteri_nv(gl::uint_t path, gl::enum_t pname, gl::int_t value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_parameteriv_nv(gl::uint_t path, gl::enum_t pname, const  gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_stencil_depth_offset_nv(gl::float_t factor, gl::float_t units);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_stencil_func_nv(stencil_function_t func, gl::int_t ref, gl::uint_t mask);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_string_nv(gl::uint_t path, gl::enum_t format, gl::sizei_t length, const  void * pathString);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_sub_commands_nv(gl::uint_t path, gl::sizei_t commandStart, gl::sizei_t commandsToDelete, gl::sizei_t numCommands, const  gl::ubyte_t * commands, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_sub_coords_nv(gl::uint_t path, gl::sizei_t coordStart, gl::sizei_t numCoords, gl::enum_t coordType, const  void * coords);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void path_tex_gen_nv(gl::enum_t texCoordSet, gl::enum_t genMode, gl::int_t components, const  gl::float_t * coeffs);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     gl::boolean_t point_along_path_nv(gl::uint_t path, gl::sizei_t startSegment, gl::sizei_t numSegments, gl::float_t distance, gl::float_t * x, gl::float_t * y, gl::float_t * tangentX, gl::float_t * tangentY);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void program_path_fragment_input_gen_nv(gl::uint_t program, gl::int_t location, gl::enum_t genMode, gl::int_t components, const  gl::float_t * coeffs);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_fill_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t fillMode, gl::uint_t mask, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_fill_path_nv(gl::uint_t path, gl::enum_t fillMode, gl::uint_t mask);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_stroke_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::int_t reference, gl::uint_t mask, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_stroke_path_nv(gl::uint_t path, gl::int_t reference, gl::uint_t mask);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_fill_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::enum_t fillMode, gl::uint_t mask, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_fill_path_nv(gl::uint_t path, gl::enum_t fillMode, gl::uint_t mask, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_stroke_path_instanced_nv(gl::sizei_t numPaths, gl::enum_t pathNameType, const  void * paths, gl::uint_t pathBase, gl::int_t reference, gl::uint_t mask, gl::enum_t coverMode, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void stencil_then_cover_stroke_path_nv(gl::uint_t path, gl::int_t reference, gl::uint_t mask, gl::enum_t coverMode);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void transform_path_nv(gl::uint_t resultPath, gl::uint_t srcPath, gl::enum_t transformType, const  gl::float_t * transformValues);
 
    /**
     * Required by extensions:
-    *  - GL_NV_path_rendering (gles2,gl)
+    *  - GL_NV_path_rendering (gl,gles2)
     */
     void weight_paths_nv(gl::uint_t resultPath, gl::sizei_t numPaths, const  gl::uint_t * paths, const  gl::float_t * weights);
 
@@ -9979,19 +9979,19 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_base_instance (glcore,gl)
+    *  - GL_ARB_base_instance (gl,glcore)
     */
     void draw_arrays_instanced_base_instance(primitive_type_t mode, gl::int_t first, gl::sizei_t count, gl::sizei_t instancecount, gl::uint_t baseinstance);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_base_instance (glcore,gl)
+    *  - GL_ARB_base_instance (gl,glcore)
     */
     void draw_elements_instanced_base_instance(primitive_type_t mode, gl::sizei_t count, gl::enum_t type, const  void * indices, gl::sizei_t instancecount, gl::uint_t baseinstance);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_base_instance (glcore,gl)
+    *  - GL_ARB_base_instance (gl,glcore)
     */
     void draw_elements_instanced_base_vertex_base_instance(primitive_type_t mode, gl::sizei_t count, gl::enum_t type, const  void * indices, gl::sizei_t instancecount, gl::int_t basevertex, gl::uint_t baseinstance);
 
@@ -10011,13 +10011,13 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_compute_shader (glcore,gl)
+    *  - GL_ARB_compute_shader (gl,glcore)
     */
     void dispatch_compute(gl::uint_t num_groups_x, gl::uint_t num_groups_y, gl::uint_t num_groups_z);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_compute_shader (glcore,gl)
+    *  - GL_ARB_compute_shader (gl,glcore)
     */
     void dispatch_compute_indirect(gl::intptr_t indirect);
 
@@ -10089,13 +10089,13 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_blend_func_extended (glcore,gl)
+    *  - GL_ARB_blend_func_extended (gl,glcore)
     */
     void bind_frag_data_location_indexed(gl::uint_t program, gl::uint_t colorNumber, gl::uint_t index, const  gl::char_t * name);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_blend_func_extended (glcore,gl)
+    *  - GL_ARB_blend_func_extended (gl,glcore)
     */
     gl::int_t get_frag_data_index(gl::uint_t program, const  gl::char_t * name);
 
@@ -10149,13 +10149,13 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_draw_indirect (glcore,gl)
+    *  - GL_ARB_multi_draw_indirect (gl,glcore)
     */
     void multi_draw_arrays_indirect(gl::enum_t mode, const  void * indirect, gl::sizei_t drawcount, gl::sizei_t stride);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_multi_draw_indirect (glcore,gl)
+    *  - GL_ARB_multi_draw_indirect (gl,glcore)
     */
     void multi_draw_elements_indirect(gl::enum_t mode, gl::enum_t type, const  void * indirect, gl::sizei_t drawcount, gl::sizei_t stride);
 
@@ -10311,7 +10311,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_internalformat_query (glcore,gl)
+    *  - GL_ARB_internalformat_query (gl,glcore)
     */
     void get_internalformativ(gl::enum_t target, gl::enum_t internalformat, gl::enum_t pname, gl::sizei_t bufSize, gl::int_t * params);
 
@@ -10457,32 +10457,32 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_multisample (glcore,gl)
+    *  - GL_ARB_texture_multisample (gl,glcore)
     */
     void get_multisamplefv(gl::enum_t pname, gl::uint_t index, gl::float_t * val);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_multisample (glcore,gl)
+    *  - GL_ARB_texture_multisample (gl,glcore)
     */
     void sample_maski(gl::uint_t maskNumber, gl::bitfield_t mask);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_multisample (glcore,gl)
+    *  - GL_ARB_texture_multisample (gl,glcore)
     */
     void tex_image_2d_multisample(gl::enum_t target, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::boolean_t fixedsamplelocations);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_texture_multisample (glcore,gl)
+    *  - GL_ARB_texture_multisample (gl,glcore)
     */
     void tex_image_3d_multisample(gl::enum_t target, gl::sizei_t samples, gl::enum_t internalformat, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth, gl::boolean_t fixedsamplelocations);
 
    /**
     * Required by extensions:
     *  - GL_EXT_framebuffer_multisample (gl)
-    *  - GL_EXT_multisampled_render_to_texture (gles2,gles1)
+    *  - GL_EXT_multisampled_render_to_texture (gles1,gles2)
     */
     void renderbuffer_storage_multisample_ext(renderbuffer_target_t target, gl::sizei_t samples, internal_format_t internalformat, gl::sizei_t width, gl::sizei_t height);
 
@@ -10500,673 +10500,673 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void begin_perf_monitor_amd(gl::uint_t monitor);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void delete_perf_monitors_amd(gl::sizei_t n, gl::uint_t * monitors);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void end_perf_monitor_amd(gl::uint_t monitor);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void gen_perf_monitors_amd(gl::sizei_t n, gl::uint_t * monitors);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counter_data_amd(gl::uint_t monitor, gl::enum_t pname, gl::sizei_t dataSize, gl::uint_t * data, gl::int_t * bytesWritten);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counter_info_amd(gl::uint_t group, gl::uint_t counter, gl::enum_t pname, void * data);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counter_string_amd(gl::uint_t group, gl::uint_t counter, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * counterString);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_counters_amd(gl::uint_t group, gl::int_t * numCounters, gl::int_t * maxActiveCounters, gl::sizei_t counterSize, gl::uint_t * counters);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_group_string_amd(gl::uint_t group, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * groupString);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void get_perf_monitor_groups_amd(gl::int_t * numGroups, gl::sizei_t groupsSize, gl::uint_t * groups);
 
    /**
     * Required by extensions:
-    *  - GL_AMD_performance_monitor (gles2,gl)
+    *  - GL_AMD_performance_monitor (gl,gles2)
     */
     void select_perf_monitor_counters_amd(gl::uint_t monitor, gl::boolean_t enable, gl::uint_t group, gl::int_t numCounters, gl::uint_t * counterList);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void accumx_oes(gl::enum_t op, gl::fixed_t value);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void alpha_funcx_oes(gl::enum_t func, gl::fixed_t ref);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void bitmapx_oes(gl::sizei_t width, gl::sizei_t height, gl::fixed_t xorig, gl::fixed_t yorig, gl::fixed_t xmove, gl::fixed_t ymove, const  gl::ubyte_t * bitmap);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void blend_colorx_oes(gl::fixed_t red, gl::fixed_t green, gl::fixed_t blue, gl::fixed_t alpha);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void clear_accumx_oes(gl::fixed_t red, gl::fixed_t green, gl::fixed_t blue, gl::fixed_t alpha);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void clear_colorx_oes(gl::fixed_t red, gl::fixed_t green, gl::fixed_t blue, gl::fixed_t alpha);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void clear_depthx_oes(gl::fixed_t depth);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void clip_planex_oes(gl::enum_t plane, const  gl::fixed_t * equation);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void color_3x_oes(gl::fixed_t red, gl::fixed_t green, gl::fixed_t blue);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void color_3xv_oes(const  gl::fixed_t * components);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void color_4x_oes(gl::fixed_t red, gl::fixed_t green, gl::fixed_t blue, gl::fixed_t alpha);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void color_4xv_oes(const  gl::fixed_t * components);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void convolution_parameterx_oes(gl::enum_t target, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void convolution_parameterxv_oes(gl::enum_t target, gl::enum_t pname, const  gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void depth_rangex_oes(gl::fixed_t n, gl::fixed_t f);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void eval_coord_1x_oes(gl::fixed_t u);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void eval_coord_1xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void eval_coord_2x_oes(gl::fixed_t u, gl::fixed_t v);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void eval_coord_2xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void feedback_bufferx_oes(gl::sizei_t n, gl::enum_t type, const  gl::fixed_t * buffer);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void fogx_oes(gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void fogxv_oes(gl::enum_t pname, const  gl::fixed_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void frustumx_oes(gl::fixed_t l, gl::fixed_t r, gl::fixed_t b, gl::fixed_t t, gl::fixed_t n, gl::fixed_t f);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_clip_planex_oes(gl::enum_t plane, gl::fixed_t * equation);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_convolution_parameterxv_oes(gl::enum_t target, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_fixedv_oes(gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_histogram_parameterxv_oes(gl::enum_t target, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_lightx_oes(gl::enum_t light, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_mapxv_oes(gl::enum_t target, gl::enum_t query, gl::fixed_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_materialx_oes(gl::enum_t face, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_pixel_mapxv(gl::enum_t map, gl::int_t size, gl::fixed_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_tex_envxv_oes(gl::enum_t target, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_tex_level_parameterxv_oes(gl::enum_t target, gl::int_t level, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void get_tex_parameterxv_oes(gl::enum_t target, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void indexx_oes(gl::fixed_t component);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void indexxv_oes(const  gl::fixed_t * component);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void light_modelx_oes(gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void light_modelxv_oes(gl::enum_t pname, const  gl::fixed_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void lightx_oes(gl::enum_t light, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void lightxv_oes(gl::enum_t light, gl::enum_t pname, const  gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void line_widthx_oes(gl::fixed_t width);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void load_matrixx_oes(const  gl::fixed_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void load_transpose_matrixx_oes(const  gl::fixed_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void map_1x_oes(gl::enum_t target, gl::fixed_t u1, gl::fixed_t u2, gl::int_t stride, gl::int_t order, gl::fixed_t points);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void map_2x_oes(gl::enum_t target, gl::fixed_t u1, gl::fixed_t u2, gl::int_t ustride, gl::int_t uorder, gl::fixed_t v1, gl::fixed_t v2, gl::int_t vstride, gl::int_t vorder, gl::fixed_t points);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void map_grid_1x_oes(gl::int_t n, gl::fixed_t u1, gl::fixed_t u2);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void map_grid_2x_oes(gl::int_t n, gl::fixed_t u1, gl::fixed_t u2, gl::fixed_t v1, gl::fixed_t v2);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void materialx_oes(gl::enum_t face, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void materialxv_oes(gl::enum_t face, gl::enum_t pname, const  gl::fixed_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void mult_matrixx_oes(const  gl::fixed_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void mult_transpose_matrixx_oes(const  gl::fixed_t * m);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_1x_oes(gl::enum_t texture, gl::fixed_t s);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_1xv_oes(gl::enum_t texture, const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_2x_oes(gl::enum_t texture, gl::fixed_t s, gl::fixed_t t);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_2xv_oes(gl::enum_t texture, const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_3x_oes(gl::enum_t texture, gl::fixed_t s, gl::fixed_t t, gl::fixed_t r);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_3xv_oes(gl::enum_t texture, const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_4x_oes(gl::enum_t texture, gl::fixed_t s, gl::fixed_t t, gl::fixed_t r, gl::fixed_t q);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void multi_tex_coord_4xv_oes(gl::enum_t texture, const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void normal_3x_oes(gl::fixed_t nx, gl::fixed_t ny, gl::fixed_t nz);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void normal_3xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void orthox_oes(gl::fixed_t l, gl::fixed_t r, gl::fixed_t b, gl::fixed_t t, gl::fixed_t n, gl::fixed_t f);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void pass_throughx_oes(gl::fixed_t token);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void pixel_mapx(gl::enum_t map, gl::int_t size, const  gl::fixed_t * values);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void pixel_storex(gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void pixel_transferx_oes(gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void pixel_zoomx_oes(gl::fixed_t xfactor, gl::fixed_t yfactor);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void point_parameterxv_oes(gl::enum_t pname, const  gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void point_sizex_oes(gl::fixed_t size);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void polygon_offsetx_oes(gl::fixed_t factor, gl::fixed_t units);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void prioritize_texturesx_oes(gl::sizei_t n, const  gl::uint_t * textures, const  gl::fixed_t * priorities);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void raster_pos_2x_oes(gl::fixed_t x, gl::fixed_t y);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void raster_pos_2xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void raster_pos_3x_oes(gl::fixed_t x, gl::fixed_t y, gl::fixed_t z);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void raster_pos_3xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void raster_pos_4x_oes(gl::fixed_t x, gl::fixed_t y, gl::fixed_t z, gl::fixed_t w);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void raster_pos_4xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void rectx_oes(gl::fixed_t x1, gl::fixed_t y1, gl::fixed_t x2, gl::fixed_t y2);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void rectxv_oes(const  gl::fixed_t * v1, const  gl::fixed_t * v2);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void rotatex_oes(gl::fixed_t angle, gl::fixed_t x, gl::fixed_t y, gl::fixed_t z);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void sample_coverage_oes(gl::fixed_t value, gl::boolean_t invert);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void scalex_oes(gl::fixed_t x, gl::fixed_t y, gl::fixed_t z);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_1x_oes(gl::fixed_t s);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_1xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_2x_oes(gl::fixed_t s, gl::fixed_t t);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_2xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_3x_oes(gl::fixed_t s, gl::fixed_t t, gl::fixed_t r);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_3xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_4x_oes(gl::fixed_t s, gl::fixed_t t, gl::fixed_t r, gl::fixed_t q);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_coord_4xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_envx_oes(gl::enum_t target, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_envxv_oes(gl::enum_t target, gl::enum_t pname, const  gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_parameterx_oes(gl::enum_t target, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void tex_parameterxv_oes(gl::enum_t target, gl::enum_t pname, const  gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void translatex_oes(gl::fixed_t x, gl::fixed_t y, gl::fixed_t z);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void vertex_2x_oes(gl::fixed_t x);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void vertex_2xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void vertex_3x_oes(gl::fixed_t x, gl::fixed_t y);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void vertex_3xv_oes(const  gl::fixed_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void vertex_4x_oes(gl::fixed_t x, gl::fixed_t y, gl::fixed_t z);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     */
     void vertex_4xv_oes(const  gl::fixed_t * coords);
 
@@ -11262,37 +11262,37 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_invalidate_subdata (glcore,gl)
+    *  - GL_ARB_invalidate_subdata (gl,glcore)
     */
     void invalidate_buffer_data(gl::uint_t buffer);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_invalidate_subdata (glcore,gl)
+    *  - GL_ARB_invalidate_subdata (gl,glcore)
     */
     void invalidate_buffer_sub_data(gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t length);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_invalidate_subdata (glcore,gl)
+    *  - GL_ARB_invalidate_subdata (gl,glcore)
     */
     void invalidate_framebuffer(gl::enum_t target, gl::sizei_t numAttachments, const  gl::enum_t * attachments);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_invalidate_subdata (glcore,gl)
+    *  - GL_ARB_invalidate_subdata (gl,glcore)
     */
     void invalidate_sub_framebuffer(gl::enum_t target, gl::sizei_t numAttachments, const  gl::enum_t * attachments, gl::int_t x, gl::int_t y, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_invalidate_subdata (glcore,gl)
+    *  - GL_ARB_invalidate_subdata (gl,glcore)
     */
     void invalidate_tex_image(gl::uint_t texture, gl::int_t level);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_invalidate_subdata (glcore,gl)
+    *  - GL_ARB_invalidate_subdata (gl,glcore)
     */
     void invalidate_tex_sub_image(gl::uint_t texture, gl::int_t level, gl::int_t xoffset, gl::int_t yoffset, gl::int_t zoffset, gl::sizei_t width, gl::sizei_t height, gl::sizei_t depth);
 
@@ -11334,21 +11334,21 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     *  - GL_OES_texture_cube_map (gles1)
     */
     void get_tex_genxv_oes(gl::enum_t coord, gl::enum_t pname, gl::fixed_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     *  - GL_OES_texture_cube_map (gles1)
     */
     void tex_genx_oes(gl::enum_t coord, gl::enum_t pname, gl::fixed_t param);
 
    /**
     * Required by extensions:
-    *  - GL_OES_fixed_point (gles1,gl)
+    *  - GL_OES_fixed_point (gl,gles1)
     *  - GL_OES_texture_cube_map (gles1)
     */
     void tex_genxv_oes(gl::enum_t coord, gl::enum_t pname, const  gl::fixed_t * params);
@@ -11409,7 +11409,7 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_compute_variable_group_size (glcore,gl)
+    *  - GL_ARB_compute_variable_group_size (gl,glcore)
     */
     void dispatch_compute_group_size_arb(gl::uint_t num_groups_x, gl::uint_t num_groups_y, gl::uint_t num_groups_z, gl::uint_t group_size_x, gl::uint_t group_size_y, gl::uint_t group_size_z);
 
@@ -11757,445 +11757,445 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_elements_base_vertex (glcore,gl)
+    *  - GL_ARB_draw_elements_base_vertex (gl,glcore)
     */
     void draw_elements_base_vertex(primitive_type_t mode, gl::sizei_t count, draw_elements_type_t type, const  void * indices, gl::int_t basevertex);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_elements_base_vertex (glcore,gl)
+    *  - GL_ARB_draw_elements_base_vertex (gl,glcore)
     */
     void draw_elements_instanced_base_vertex(primitive_type_t mode, gl::sizei_t count, draw_elements_type_t type, const  void * indices, gl::sizei_t instancecount, gl::int_t basevertex);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_elements_base_vertex (glcore,gl)
+    *  - GL_ARB_draw_elements_base_vertex (gl,glcore)
     */
     void draw_range_elements_base_vertex(primitive_type_t mode, gl::uint_t start, gl::uint_t end, gl::sizei_t count, draw_elements_type_t type, const  void * indices, gl::int_t basevertex);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_draw_elements_base_vertex (glcore,gl)
+    *  - GL_ARB_draw_elements_base_vertex (gl,glcore)
     */
     void multi_draw_elements_base_vertex(gl::enum_t mode, const  gl::sizei_t * count, draw_elements_type_t type, const  void ** indices, gl::sizei_t drawcount, const  gl::int_t * basevertex);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void depth_range_arrayv(gl::uint_t first, gl::sizei_t count, const  gl::double_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void depth_range_indexed(gl::uint_t index, gl::double_t n, gl::double_t f);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void get_doublei_v(gl::enum_t target, gl::uint_t index, gl::double_t * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void get_floati_v(gl::enum_t target, gl::uint_t index, gl::float_t * data);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void scissor_arrayv(gl::uint_t first, gl::sizei_t count, const  gl::int_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void scissor_indexed(gl::uint_t index, gl::int_t left, gl::int_t bottom, gl::sizei_t width, gl::sizei_t height);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void scissor_indexedv(gl::uint_t index, const  gl::int_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void viewport_arrayv(gl::uint_t first, gl::sizei_t count, const  gl::float_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void viewport_indexedf(gl::uint_t index, gl::float_t x, gl::float_t y, gl::float_t w, gl::float_t h);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_viewport_array (glcore,gl)
+    *  - GL_ARB_viewport_array (gl,glcore)
     */
     void viewport_indexedfv(gl::uint_t index, const  gl::float_t * v);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void active_shader_program(gl::uint_t pipeline, gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void bind_program_pipeline(gl::uint_t pipeline);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     gl::uint_t create_shader_programv(gl::enum_t type, gl::sizei_t count, const  gl::char_t ** strings);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void delete_program_pipelines(gl::sizei_t n, const  gl::uint_t * pipelines);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void gen_program_pipelines(gl::sizei_t n, gl::uint_t * pipelines);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void get_program_pipeline_info_log(gl::uint_t pipeline, gl::sizei_t bufSize, gl::sizei_t * length, gl::char_t * infoLog);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void get_program_pipelineiv(gl::uint_t pipeline, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     gl::boolean_t is_program_pipeline(gl::uint_t pipeline);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1d(gl::uint_t program, gl::int_t location, gl::double_t v0);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1f(gl::uint_t program, gl::int_t location, gl::float_t v0);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1i(gl::uint_t program, gl::int_t location, gl::int_t v0);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1iv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1ui(gl::uint_t program, gl::int_t location, gl::uint_t v0);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_1uiv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2d(gl::uint_t program, gl::int_t location, gl::double_t v0, gl::double_t v1);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2f(gl::uint_t program, gl::int_t location, gl::float_t v0, gl::float_t v1);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2i(gl::uint_t program, gl::int_t location, gl::int_t v0, gl::int_t v1);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2iv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2ui(gl::uint_t program, gl::int_t location, gl::uint_t v0, gl::uint_t v1);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_2uiv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3d(gl::uint_t program, gl::int_t location, gl::double_t v0, gl::double_t v1, gl::double_t v2);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3f(gl::uint_t program, gl::int_t location, gl::float_t v0, gl::float_t v1, gl::float_t v2);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3i(gl::uint_t program, gl::int_t location, gl::int_t v0, gl::int_t v1, gl::int_t v2);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3iv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3ui(gl::uint_t program, gl::int_t location, gl::uint_t v0, gl::uint_t v1, gl::uint_t v2);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_3uiv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4d(gl::uint_t program, gl::int_t location, gl::double_t v0, gl::double_t v1, gl::double_t v2, gl::double_t v3);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4f(gl::uint_t program, gl::int_t location, gl::float_t v0, gl::float_t v1, gl::float_t v2, gl::float_t v3);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4i(gl::uint_t program, gl::int_t location, gl::int_t v0, gl::int_t v1, gl::int_t v2, gl::int_t v3);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4iv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::int_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4ui(gl::uint_t program, gl::int_t location, gl::uint_t v0, gl::uint_t v1, gl::uint_t v2, gl::uint_t v3);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_4uiv(gl::uint_t program, gl::int_t location, gl::sizei_t count, const  gl::uint_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_2dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_2fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_2x_3dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_2x_3fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_2x_4dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_2x_4fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_3dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_3fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_3x_2dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_3x_2fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_3x_4dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_3x_4fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_4dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_4fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_4x_2dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_4x_2fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_4x_3dv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void program_uniform_matrix_4x_3fv(gl::uint_t program, gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::float_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void use_program_stages(gl::uint_t pipeline, gl::bitmask<use_program_stage_flags_t> stages, gl::uint_t program);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_separate_shader_objects (glcore,gl)
+    *  - GL_ARB_separate_shader_objects (gl,glcore)
     */
     void validate_program_pipeline(gl::uint_t pipeline);
 
@@ -12423,13 +12423,13 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_indirect_parameters (glcore,gl)
+    *  - GL_ARB_indirect_parameters (gl,glcore)
     */
     void multi_draw_arrays_indirect_count_arb(gl::enum_t mode, gl::intptr_t indirect, gl::intptr_t drawcount, gl::sizei_t maxdrawcount, gl::sizei_t stride);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_indirect_parameters (glcore,gl)
+    *  - GL_ARB_indirect_parameters (gl,glcore)
     */
     void multi_draw_elements_indirect_count_arb(gl::enum_t mode, gl::enum_t type, gl::intptr_t indirect, gl::intptr_t drawcount, gl::sizei_t maxdrawcount, gl::sizei_t stride);
 
@@ -12549,193 +12549,193 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void bind_sampler(gl::uint_t unit, gl::uint_t sampler);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void delete_samplers(gl::sizei_t count, const  gl::uint_t * samplers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void gen_samplers(gl::sizei_t count, gl::uint_t * samplers);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void get_sampler_parameter_iiv(gl::uint_t sampler, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void get_sampler_parameter_iuiv(gl::uint_t sampler, gl::enum_t pname, gl::uint_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void get_sampler_parameterfv(gl::uint_t sampler, gl::enum_t pname, gl::float_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void get_sampler_parameteriv(gl::uint_t sampler, gl::enum_t pname, gl::int_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     gl::boolean_t is_sampler(gl::uint_t sampler);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void sampler_parameter_iiv(gl::uint_t sampler, gl::enum_t pname, const  gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void sampler_parameter_iuiv(gl::uint_t sampler, gl::enum_t pname, const  gl::uint_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void sampler_parameterf(gl::uint_t sampler, gl::enum_t pname, gl::float_t param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void sampler_parameterfv(gl::uint_t sampler, gl::enum_t pname, const  gl::float_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void sampler_parameteri(gl::uint_t sampler, gl::enum_t pname, gl::int_t param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sampler_objects (glcore,gl)
+    *  - GL_ARB_sampler_objects (gl,glcore)
     */
     void sampler_parameteriv(gl::uint_t sampler, gl::enum_t pname, const  gl::int_t * param);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void get_uniformdv(gl::uint_t program, gl::int_t location, gl::double_t * params);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_1d(gl::int_t location, gl::double_t x);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_1dv(gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_2d(gl::int_t location, gl::double_t x, gl::double_t y);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_2dv(gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_3d(gl::int_t location, gl::double_t x, gl::double_t y, gl::double_t z);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_3dv(gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_4d(gl::int_t location, gl::double_t x, gl::double_t y, gl::double_t z, gl::double_t w);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_4dv(gl::int_t location, gl::sizei_t count, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_2dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_2x_3dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_2x_4dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_3dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_3x_2dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_3x_4dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_4dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_4x_2dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_gpu_shader_fp64 (glcore,gl)
+    *  - GL_ARB_gpu_shader_fp64 (gl,glcore)
     */
     void uniform_matrix_4x_3dv(gl::int_t location, gl::sizei_t count, gl::boolean_t transpose, const  gl::double_t * value);
 
@@ -12801,133 +12801,133 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_1b_oes(gl::enum_t texture, gl::byte_t s);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_1bv_oes(gl::enum_t texture, const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_2b_oes(gl::enum_t texture, gl::byte_t s, gl::byte_t t);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_2bv_oes(gl::enum_t texture, const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_3b_oes(gl::enum_t texture, gl::byte_t s, gl::byte_t t, gl::byte_t r);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_3bv_oes(gl::enum_t texture, const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_4b_oes(gl::enum_t texture, gl::byte_t s, gl::byte_t t, gl::byte_t r, gl::byte_t q);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void multi_tex_coord_4bv_oes(gl::enum_t texture, const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_1b_oes(gl::byte_t s);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_1bv_oes(const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_2b_oes(gl::byte_t s, gl::byte_t t);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_2bv_oes(const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_3b_oes(gl::byte_t s, gl::byte_t t, gl::byte_t r);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_3bv_oes(const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_4b_oes(gl::byte_t s, gl::byte_t t, gl::byte_t r, gl::byte_t q);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void tex_coord_4bv_oes(const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void vertex_2b_oes(gl::byte_t x, gl::byte_t y);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void vertex_2bv_oes(const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void vertex_3b_oes(gl::byte_t x, gl::byte_t y, gl::byte_t z);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void vertex_3bv_oes(const  gl::byte_t * coords);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void vertex_4b_oes(gl::byte_t x, gl::byte_t y, gl::byte_t z, gl::byte_t w);
 
    /**
     * Required by extensions:
-    *  - GL_OES_byte_coordinates (gles1,gl)
+    *  - GL_OES_byte_coordinates (gl,gles1)
     */
     void vertex_4bv_oes(const  gl::byte_t * coords);
 
@@ -13017,19 +13017,19 @@ namespace gl2 {
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sparse_buffer (glcore,gl)
+    *  - GL_ARB_sparse_buffer (gl,glcore)
     */
     void buffer_page_commitment_arb(gl::enum_t target, gl::intptr_t offset, gl::sizeiptr_t size, gl::boolean_t commit);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sparse_buffer (glcore,gl)
+    *  - GL_ARB_sparse_buffer (gl,glcore)
     */
     void named_buffer_page_commitment_arb(gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t size, gl::boolean_t commit);
 
    /**
     * Required by extensions:
-    *  - GL_ARB_sparse_buffer (glcore,gl)
+    *  - GL_ARB_sparse_buffer (gl,glcore)
     */
     void named_buffer_page_commitment_ext(gl::uint_t buffer, gl::intptr_t offset, gl::sizeiptr_t size, gl::boolean_t commit);
 
