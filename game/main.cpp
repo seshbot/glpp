@@ -1,4 +1,4 @@
-#ifdef WIN32
+#ifdef _MSC_VER
 #  include <windows.h>
 #endif
 
@@ -18,7 +18,11 @@
 #include <algorithm>
 
 namespace gl {
+#ifdef _MSC_VER
+   using namespace gles2;
+#else
    using namespace gl2;
+#endif
 }
 
 namespace {
