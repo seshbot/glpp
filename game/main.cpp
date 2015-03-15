@@ -390,9 +390,11 @@ int main()
       game::world_t world(creature_db, particle_db, controller);
       game::world_view_t world_view(creature_db, particle_db, sprite_repository);
 
-      for (auto i = 0; i < 20; i++) {
-         world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
-      }
+      //for (auto i = 0; i < 20; i++) {
+      //   world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
+      //}
+
+      world.create_creature(game::creature_t::types::person, { {0., 0.}, {} });
 
       struct sprite_render_callback_t : public glpp::pass_t::render_callback {
          sprite_render_callback_t(game::world_view_t::iterator itBegin, game::world_view_t::iterator itEnd)
@@ -641,7 +643,9 @@ int main()
             auto & current_render_info = *it_;
             auto & moment = *current_render_info.moment;
 
-            p.uniform("model").set(moment.mesh_transform());
+            auto model_transform = moment.mesh_transform();
+            p.uniform("model").set(model_transform);
+            p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
 
             it_++;
             return true;
