@@ -307,12 +307,20 @@ namespace glpp {
    class buffer_t {
    public:
       enum Target { ArrayBuffer, IndexBuffer };
+      buffer_t();
       buffer_t(Target target, static_array_t data);
 
       // convenience: assume array buffer
       buffer_t(static_array_t vertex_data);
       // convenience: assume array and index buffers
       buffer_t(static_array_t vertex_data, static_array_t indices);
+
+      void assign(Target target, static_array_t data);
+
+      // convenience: assume array buffer
+      void assign(static_array_t vertex_data);
+      // convenience: assume array and index buffers
+      void assign(static_array_t vertex_data, static_array_t indices);
 
       std::size_t vertex_buffer_size() const { return state_->vertex_buffer_size_; }
 

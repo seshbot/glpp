@@ -22,6 +22,7 @@ const mediump vec3 c_sky_light_dir = vec3(-1., -1., -1.);
 const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .2;
 
 const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
+const PositionalLight c_light2 = PositionalLight(vec3(200., 30., -200.), vec3(0., 0., 0.), vec3(.2, .8, .9), .1);
 
 const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .01;
 
@@ -56,5 +57,5 @@ void main() {
    mediump vec3 diffuse = colour.rgb * diffuse_intensity * c_sky_light_intensity;
    mediump vec3 ambient = colour.rgb * c_ambient_intensity;
 
-   gl_FragColor = gamma(vec4(ambient + diffuse + light(c_light1, colour.rgb, n), 1.));
+   gl_FragColor = gamma(vec4(ambient + diffuse + light(c_light1, colour.rgb, n) + light(c_light2, colour.rgb, n), 1.));
 }

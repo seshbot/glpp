@@ -908,7 +908,22 @@ namespace glpp
    }
 
 
+   buffer_t::buffer_t() {
+   }
+
    buffer_t::buffer_t(Target target, static_array_t data) {
+      assign(target, data);
+   }
+
+   buffer_t::buffer_t(static_array_t vertex_data) {
+      assign(vertex_data);
+   }
+
+   buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data) {
+      assign(vertex_data, index_data);
+   }
+
+   void buffer_t::assign(Target target, static_array_t data) {
       switch (target) {
       case ArrayBuffer:
          state_ = std::make_shared<state>(data.data(), data.size());
@@ -922,16 +937,19 @@ namespace glpp
       }
    }
 
-   buffer_t::buffer_t(static_array_t vertex_data)
-      : state_(std::make_shared<state>(vertex_data.data(), vertex_data.size())) {
+   void buffer_t::assign(static_array_t vertex_data) {
+      state_ = std::make_shared<state>(vertex_data.data(), vertex_data.size());
    }
 
-   buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data)
-      : state_(std::make_shared<state>(vertex_data.data(), vertex_data.size(), index_data.data(), index_data.data_type(), index_data.elem_count(), index_data.size())) {
+   void buffer_t::assign(static_array_t vertex_data, static_array_t index_data) {
+      state_ = std::make_shared<state>(vertex_data.data(), vertex_data.size(), index_data.data(), index_data.data_type(), index_data.elem_count(), index_data.size());
+
       assert((index_data.data_type() == ValueType::UInt || index_data.data_type() == ValueType::UShort || index_data.data_type() == ValueType::UByte) && "second buffer parameter must be index buffer (must be integral type)");
    }
 
    void buffer_t::bind() const {
+      assert(state_ && "cannot bind uninitialised buffer");
+
       if (0 != state_->vertex_id_) {
          gl_::bind_buffer(gl_::buffer_target_arb_t::array_buffer, state_->vertex_id_);
       }
