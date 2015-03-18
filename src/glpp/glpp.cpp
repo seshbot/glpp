@@ -877,59 +877,96 @@ namespace glpp
    * buffer management
    *
    */
-
-   buffer_t::state::state(void* vertex_data, std::size_t vertex_data_byte_size)
-      : vertex_buffer_size_(vertex_data_byte_size) {
-      if (vertex_data == nullptr) return;
-
-      gl_::gen_buffers(1, &vertex_id_);
-      gl_::bind_buffer(gl_::buffer_target_arb_t::array_buffer, vertex_id_);
-      gl_::buffer_data(gl_::buffer_target_arb_t::array_buffer, vertex_data_byte_size, vertex_data, gl_::buffer_usage_arb_t::static_draw);
+   
+   buffer_t::state::state(Usage usage) : usage_(usage) {
    }
 
-   buffer_t::state::state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size)
-   : state(vertex_data, vertex_byte_size) {
+   buffer_t::state::state(void* vertex_data, std::size_t vertex_data_byte_size, Usage usage)
+   : state(usage) {
+      assign(vertex_data, vertex_data_byte_size);
+   }
+
+   buffer_t::state::state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size, Usage usage)
+   : state(usage) {
+      assign(vertex_data, vertex_byte_size, index_data, index_data_type, index_count, index_byte_size);
+   }
+
+   buffer_t::state::state(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size, Usage usage)
+   : state(usage) {
+      assign(index_data, index_data_type, index_count, index_byte_size);
+   }
+
+   buffer_t::state::~state() {
+      assign(nullptr, 0, nullptr, ValueType::Unknown, 0, 0);
+   }
+
+   void buffer_t::state::assign(void* vertex_data, std::size_t vertex_data_byte_size) {
+      vertex_buffer_size_ = vertex_data_byte_size;
+
+      if (vertex_data == nullptr) {
+         if (vertex_id_) gl_::delete_buffers(1, &vertex_id_);
+         vertex_id_ = 0;
+         return;
+      }
+
+      if (!vertex_id_) gl_::gen_buffers(1, &vertex_id_);
+      auto usage = usage_ == Usage::Static
+         ? gl_::buffer_usage_arb_t::static_draw
+         : gl_::buffer_usage_arb_t::stream_draw;
+      gl_::bind_buffer(gl_::buffer_target_arb_t::array_buffer, vertex_id_);
+      gl_::buffer_data(gl_::buffer_target_arb_t::array_buffer, vertex_data_byte_size, vertex_data, usage);
+   }
+
+   void buffer_t::state::assign(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size) {
+      assign(vertex_data, vertex_byte_size);
+
+      if (index_data == nullptr) {
+         if (index_id_) gl_::delete_buffers(1, &index_id_);
+         index_id_ = 0;
+         return;
+      }
+
       index_data_type_ = index_data_type;
       index_count_ = index_count;
+
       // TODO: infer byte size?
       assert(index_byte_size == index_count * attrib_atomic_val_bytes(index_data_type));
-      gl_::gen_buffers(1, &index_id_);
+      if (!index_id_) gl_::gen_buffers(1, &index_id_);
       gl_::bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, index_id_);
       gl_::buffer_data(gl_::buffer_target_arb_t::element_array_buffer, index_byte_size, index_data, gl_::buffer_usage_arb_t::static_draw);
    }
 
-   buffer_t::state::state(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size)
-   : state(nullptr, 0, index_data, index_data_type, index_count, index_byte_size) {
-   }
-
-   buffer_t::state::~state() {
-      if (0 != vertex_id_) gl_::delete_buffers(1, &vertex_id_);
-      if (0 != index_id_) gl_::delete_buffers(1, &index_id_);
+   void buffer_t::state::assign(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size) {
+      assign(nullptr, 0, index_data, index_data_type, index_count, index_byte_size);
    }
 
 
-   buffer_t::buffer_t() {
+   buffer_t::buffer_t(Usage usage)
+      : state_(std::make_shared<state>(usage)) {
    }
 
-   buffer_t::buffer_t(Target target, static_array_t data) {
-      assign(target, data);
+   buffer_t::buffer_t(Target target, static_array_t data, Usage usage)
+      : buffer_t(usage) {
+      update(target, data);
    }
 
-   buffer_t::buffer_t(static_array_t vertex_data) {
-      assign(vertex_data);
+   buffer_t::buffer_t(static_array_t vertex_data, Usage usage)
+      : buffer_t(usage) {
+      update(vertex_data);
    }
 
-   buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data) {
-      assign(vertex_data, index_data);
+   buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data, Usage usage)
+      : buffer_t(usage) {
+      update(vertex_data, index_data);
    }
 
-   void buffer_t::assign(Target target, static_array_t data) {
+   void buffer_t::update(Target target, static_array_t data) {
       switch (target) {
-      case ArrayBuffer:
-         state_ = std::make_shared<state>(data.data(), data.size());
+      case Target::ArrayBuffer:
+         state_->assign(data.data(), data.size());
          break;
-      case IndexBuffer:
-         state_ = std::make_shared<state>(data.data(), data.data_type(), data.elem_count(), data.size());
+      case Target::IndexBuffer:
+         state_->assign(data.data(), data.data_type(), data.elem_count(), data.size());
          break;
       default:
          assert(false && "unrecognised buffer target");
@@ -937,19 +974,17 @@ namespace glpp
       }
    }
 
-   void buffer_t::assign(static_array_t vertex_data) {
-      state_ = std::make_shared<state>(vertex_data.data(), vertex_data.size());
+   void buffer_t::update(static_array_t vertex_data) {
+      state_->assign(vertex_data.data(), vertex_data.size());
    }
 
-   void buffer_t::assign(static_array_t vertex_data, static_array_t index_data) {
-      state_ = std::make_shared<state>(vertex_data.data(), vertex_data.size(), index_data.data(), index_data.data_type(), index_data.elem_count(), index_data.size());
+   void buffer_t::update(static_array_t vertex_data, static_array_t index_data) {
+      state_->assign(vertex_data.data(), vertex_data.size(), index_data.data(), index_data.data_type(), index_data.elem_count(), index_data.size());
 
       assert((index_data.data_type() == ValueType::UInt || index_data.data_type() == ValueType::UShort || index_data.data_type() == ValueType::UByte) && "second buffer parameter must be index buffer (must be integral type)");
    }
 
    void buffer_t::bind() const {
-      assert(state_ && "cannot bind uninitialised buffer");
-
       if (0 != state_->vertex_id_) {
          gl_::bind_buffer(gl_::buffer_target_arb_t::array_buffer, state_->vertex_id_);
       }
@@ -1722,7 +1757,7 @@ namespace glpp
       glfwWindowHint(GLFW_SAMPLES, 8);
       glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-      GLFWwindow* window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+      GLFWwindow* window = glfwCreateWindow(640, 480, "Game", NULL, NULL);
       if (!window) {
          throw error("could not create GLFW window or context");
       }

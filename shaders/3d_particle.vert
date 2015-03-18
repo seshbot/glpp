@@ -10,7 +10,7 @@ uniform mediump mat4 view;
 
 attribute mediump vec3 position;
 
-const float SpriteSize = .07;
+const float SpriteSize = .16;
 
 
 void main() {
@@ -19,6 +19,6 @@ void main() {
   vec4 projVoxel = proj * vec4(.5 * SpriteSize, .5 * SpriteSize, viewPos.z, viewPos.w);
   vec2 projSize = screenSize * projVoxel.xy / projVoxel.w;
 
-  gl_PointSize = 0.25 * (projSize.x + projSize.y);
+  gl_PointSize = (projSize.x + projSize.y);
   gl_Position = proj * viewPos;
 }

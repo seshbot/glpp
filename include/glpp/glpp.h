@@ -306,21 +306,23 @@ namespace glpp {
 
    class buffer_t {
    public:
-      enum Target { ArrayBuffer, IndexBuffer };
-      buffer_t();
-      buffer_t(Target target, static_array_t data);
+      enum class Target { ArrayBuffer, IndexBuffer };
+      enum class Usage { Static, Stream };
+
+      buffer_t(Usage usage = Usage::Static);
+      buffer_t(Target target, static_array_t data, Usage usage = Usage::Static);
 
       // convenience: assume array buffer
-      buffer_t(static_array_t vertex_data);
+      buffer_t(static_array_t vertex_data, Usage usage = Usage::Static);
       // convenience: assume array and index buffers
-      buffer_t(static_array_t vertex_data, static_array_t indices);
+      buffer_t(static_array_t vertex_data, static_array_t indices, Usage usage = Usage::Static);
 
-      void assign(Target target, static_array_t data);
+      void update(Target target, static_array_t data);
 
       // convenience: assume array buffer
-      void assign(static_array_t vertex_data);
+      void update(static_array_t vertex_data);
       // convenience: assume array and index buffers
-      void assign(static_array_t vertex_data, static_array_t indices);
+      void update(static_array_t vertex_data, static_array_t indices);
 
       std::size_t vertex_buffer_size() const { return state_->vertex_buffer_size_; }
 
@@ -339,11 +341,17 @@ namespace glpp {
 
    private:
       struct state {
-         state(void* vertex_data, std::size_t vertex_byte_size);
-         state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
-         state(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
+         state(Usage usage);
+         state(void* vertex_data, std::size_t vertex_byte_size, Usage usage);
+         state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size, Usage usage);
+         state(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size, Usage usage);
          ~state();
 
+         void assign(void* vertex_data, std::size_t vertex_byte_size);
+         void assign(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
+         void assign(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
+
+         Usage usage_;
          id_t vertex_id_ = 0;
          id_t index_id_ = 0;
          std::size_t vertex_buffer_size_ = 0;
@@ -351,7 +359,7 @@ namespace glpp {
          unsigned index_count_ = 0;
       };
 
-      std::shared_ptr<state const> state_;
+      std::shared_ptr<state> state_;
    };
 
 

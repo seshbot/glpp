@@ -15,6 +15,7 @@
 // TODO: remove this
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <algorithm>
 
 namespace gl {
@@ -111,6 +112,114 @@ namespace {
       using action_key = std::pair < glpp::Key, glpp::KeyAction > ;
       std::map<action_key, action_func> actions_;
    };
+
+
+   template <typename CreatePolicy, typename UpdatePolicy, typename DeletePolicy>
+   class particle_emitter_buffer_t
+      : public CreatePolicy  // CreatePolicy provides create_particles(emitter, t) {}
+      , public UpdatePolicy  // UpdatePolicy provides update_particle(emitter, idx, t)
+      , public DeletePolicy{ // DeletePolicy provides should_delete(emitter, idx)
+   public:
+      using cont_t = std::vector < glm::vec3 >;
+      using idx_t = std::size_t;
+
+      glm::vec3 vel_{0., -100., 0.};
+
+      void create_particle() {
+         auto pos = glm::vec3{
+            (float)(std::rand() % 200) - 100,
+            100.,
+            (float)(std::rand() % 200) - 100. };
+
+         add(pos, vel_);
+      }
+
+      void update(double time_since_last) {
+         current_time_ += time_since_last;
+         create_particles(*this, time_since_last);
+         // glm likes floats
+         auto t = static_cast<float>(time_since_last);
+
+         auto idx = idx_t(0);
+         while (idx < count()) {
+            update_particle(*this, idx, t);
+
+            if (should_delete(*this, idx)) {
+               del_at(idx);
+            }
+            else {
+               // only increment if we didnt delete an element
+               idx++;
+            }
+         }
+
+         buffer_.update({ glm::value_ptr(particle_positions_[0]), particle_positions_.size() * 3 });
+      }
+
+      glpp::buffer_t buffer() { return buffer_; }
+
+      double time() const { return current_time_; }
+      idx_t count() const { return particle_velocities_.size(); }
+      idx_t add(glm::vec3 pos, glm::vec3 vel) { particle_create_times_.push_back(current_time_);  particle_positions_.push_back(pos); particle_velocities_.push_back(vel); return count() - 1; }
+      void del_at(idx_t idx) { del_at_(particle_create_times_, idx);  del_at_(particle_positions_, idx); del_at_(particle_velocities_, idx); }
+      double create_time_at(idx_t idx) { return particle_create_times_[idx]; }
+      glm::vec3 & pos_at(idx_t idx) { return particle_positions_[idx]; }
+      glm::vec3 & vel_at(idx_t idx) { return particle_velocities_[idx]; }
+
+   private:
+      glpp::buffer_t buffer_ = {glpp::buffer_t::Usage::Stream};
+      double current_time_ = 0.;
+      std::vector<double> particle_create_times_;
+      std::vector<glm::vec3> particle_positions_;
+      std::vector<glm::vec3> particle_velocities_;
+
+      template <typename T>
+      static void del_at_(std::vector<T> & vec, idx_t idx) { auto last = vec.size() - 1; if (idx != last) std::swap(vec[idx], vec[last]); vec.erase(vec.begin() + last); }
+   };
+
+   template <unsigned CREATE_PER_SEC>
+   class constant_create_policy_t {
+   public:
+      const double TIME_BETWEEN_CREATE = (double)1. / CREATE_PER_SEC;
+      double next_create_time_ = 0.;
+
+      template <typename T>
+      void create_particles(T & emitter, double time_since_last) {
+         auto now = emitter.time();
+         while (next_create_time_ < now) {
+            emitter.create_particle();
+            next_create_time_ += TIME_BETWEEN_CREATE;
+         }
+      }
+   };
+
+   class constant_update_policy_t {
+   public:
+      using idx_t = std::size_t;
+
+      template <typename T>
+      void update_particle(T & emitter, idx_t idx, float time_since_last) {
+         auto & pos = emitter.pos_at(idx);
+         pos += emitter.vel_at(idx) * time_since_last;
+      }
+   };
+
+   template <unsigned TTL_MS>
+   class constant_delete_policy_t {
+   public:
+      const double TTL_SECS = TTL_MS / 1000.;
+      using idx_t = std::size_t;
+
+      template <typename T>
+      bool should_delete(T & emitter, idx_t idx) {
+         return emitter.time() - emitter.create_time_at(idx) > TTL_SECS;
+      }
+   };
+
+   using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
+      constant_create_policy_t<1000>,
+      constant_update_policy_t,
+      constant_delete_policy_t<1000> > ;
 }
 
 #include <assimp/Importer.hpp>
@@ -461,6 +570,7 @@ int main()
 
       auto prg_2d = create_program("2d");
       auto prg_3d = create_program("3d");
+      auto prg_3d_particle = create_program("3d_particle");
       auto prg_sprite = create_program("sprite");
       auto prg_post = create_program("post");
 
@@ -484,7 +594,6 @@ int main()
       auto screen_vertices_spec = glpp::describe_buffer({ unit_square_verts, unit_square_indices })
          .attrib("p", 2)
          .attrib("tex_coords", 2);
-
 
       // get a GL name for our texture
       // load data into texture
@@ -588,7 +697,7 @@ int main()
 
       auto set_view_cb = [](glpp::uniform & u) {
          auto xpos = 0;
-         auto ypos = 100.f;
+         auto ypos = 600.f;
          auto zpos = 100.f;
          u.set(glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. }));
       };
@@ -615,7 +724,8 @@ int main()
             .set_uniform("colour", mesh_colour)
             .set_uniform("local", pos)
             .set_uniform_action("view", set_view_cb)
-            .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
+            //.set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
+            .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
             .set_uniform_action("t", set_time_cb);
       };
 
@@ -627,7 +737,45 @@ int main()
       });
 
 
+      static const float ground_verts[] = {
+         -10., 0., -0.,   0., 1., 0.,
+          1., 0., -0.,   0., 1., 0.,
+         -10., 0.,  20.,   0., 1., 0.,
+          1., 0.,  20.,   0., 1., 0.,
+      };
+      static const unsigned short ground_indices[] = {
+         0, 2, 1,
+      };
 
+      auto ground_buffer_desc = glpp::describe_buffer({ground_verts, ground_indices})
+         .attrib("p", 3)
+         .attrib("normal", 3);
+
+
+      auto ground_pass = prg_3d.pass()
+         .with(ground_buffer_desc)
+         .set_uniform("colour", glm::vec4(.8f, .8f, .16f, 1.f))
+         .set_uniform("local", glm::mat4{})
+         .set_uniform_action("view", set_view_cb)
+         .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
+         .set_uniform_action("t", set_time_cb);
+
+
+      constant_particle_emitter_buffer_t emitter;
+      auto set_screensize_cb = [&](glpp::uniform & u) {
+         auto dims = context.win().frame_buffer_dims();
+         u.set(glm::vec2{dims.x, dims.y});
+      };
+
+      auto emitter_buffer_desc = glpp::describe_buffer(emitter.buffer())
+         .attrib("position", 3);
+      auto particle_pass = prg_3d_particle.pass()
+         .with(emitter_buffer_desc)
+         .set_uniform("texture", glpp::texture_t{ "../../res/drop.png" })
+         .set_uniform_action("screenSize", set_screensize_cb)
+         .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
+         //.set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
+         .set_uniform_action("view", set_view_cb);
 
 
       struct mesh_render_callback_t : public glpp::pass_t::render_callback {
@@ -673,9 +821,10 @@ int main()
       {
          if (should_reload_program) {
             try {
-               ::reload_program(prg_post, "post");
                ::reload_program(prg_2d, "2d");
                ::reload_program(prg_3d, "3d");
+               ::reload_program(prg_3d_particle, "3d_particle");
+               ::reload_program(prg_post, "post");
                ::reload_program(prg_sprite, "sprite");
             }
             catch (glpp::shader_compile_error const & ex) {
@@ -703,12 +852,16 @@ int main()
          double this_tick = glpp::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
+         const double MAX_TICK = 1000. / 15.;
+         if (time_since_last_tick > MAX_TICK) time_since_last_tick = MAX_TICK;
+
          //
          // update world
          //
 
          world.update(time_since_last_tick);
          world_view.update(time_since_last_tick);
+         emitter.update(time_since_last_tick);
 
 
          //
@@ -726,9 +879,12 @@ int main()
             gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);
-            bg_pass.draw(glpp::DrawMode::Triangles);
+            // bg_pass.draw(glpp::DrawMode::Triangles);
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+
+            ground_pass.draw(glpp::DrawMode::Triangles);
+
             //sprite_pass.draw_batch(
             //   sprite_render_callback_t{
             //      world_view.creatures_begin(),
@@ -749,6 +905,8 @@ int main()
                      world_view.creatures_end() },
                      glpp::DrawMode::Triangles);
             }
+
+            particle_pass.draw(glpp::DrawMode::Points);
          }
          // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
          tex_fbo->bind(glpp::frame_buffer_t::Draw);

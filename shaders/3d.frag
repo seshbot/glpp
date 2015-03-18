@@ -57,5 +57,5 @@ void main() {
    mediump vec3 diffuse = colour.rgb * diffuse_intensity * c_sky_light_intensity;
    mediump vec3 ambient = colour.rgb * c_ambient_intensity;
 
-   gl_FragColor = gamma(vec4(ambient + diffuse + light(c_light1, colour.rgb, n) + light(c_light2, colour.rgb, n), 1.));
+   gl_FragColor = gamma(vec4(ambient + diffuse + light(c_light1, colour.rgb, n), 1.));
 }
