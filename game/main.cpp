@@ -123,13 +123,13 @@ namespace {
       using cont_t = std::vector < glm::vec3 >;
       using idx_t = std::size_t;
 
-      glm::vec3 vel_{0., -100., 0.};
+      glm::vec3 vel_{0., -200., 0.};
 
       void create_particle() {
          auto pos = glm::vec3{
-            (float)(std::rand() % 200) - 100,
+            (float)(std::rand() % 460) - 230.,
             100.,
-            (float)(std::rand() % 200) - 100. };
+            (float)(std::rand() % 350) - 250. };
 
          add(pos, vel_);
       }
@@ -153,7 +153,8 @@ namespace {
             }
          }
 
-         buffer_.update({ glm::value_ptr(particle_positions_[0]), particle_positions_.size() * 3 });
+         if (particle_positions_.size() > 0)
+            buffer_.update({ glm::value_ptr(particle_positions_[0]), particle_positions_.size() * 3 });
       }
 
       glpp::buffer_t buffer() { return buffer_; }
@@ -205,7 +206,7 @@ namespace {
    };
 
    template <unsigned TTL_MS>
-   class constant_delete_policy_t {
+   class constant_time_delete_policy_t {
    public:
       const double TTL_SECS = TTL_MS / 1000.;
       using idx_t = std::size_t;
@@ -216,10 +217,22 @@ namespace {
       }
    };
 
+   template <unsigned TTL_MS>
+   class constant_depth_delete_policy_t {
+   public:
+      const double TTL_SECS = TTL_MS / 1000.;
+      using idx_t = std::size_t;
+
+      template <typename T>
+      bool should_delete(T & emitter, idx_t idx) {
+         return emitter.pos_at(idx).y <= 0.;
+      }
+   };
+
    using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
-      constant_create_policy_t<1000>,
+      constant_create_policy_t<2000>,
       constant_update_policy_t,
-      constant_delete_policy_t<1000> > ;
+      constant_depth_delete_policy_t<0> >;
 }
 
 #include <assimp/Importer.hpp>
@@ -570,6 +583,7 @@ int main()
 
       auto prg_2d = create_program("2d");
       auto prg_3d = create_program("3d");
+      auto prg_3d_ground = create_program("3d");
       auto prg_3d_particle = create_program("3d_particle");
       auto prg_sprite = create_program("sprite");
       auto prg_post = create_program("post");
@@ -697,7 +711,7 @@ int main()
 
       auto set_view_cb = [](glpp::uniform & u) {
          auto xpos = 0;
-         auto ypos = 600.f;
+         auto ypos = 100.f;
          auto zpos = 100.f;
          u.set(glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. }));
       };
@@ -724,8 +738,8 @@ int main()
             .set_uniform("colour", mesh_colour)
             .set_uniform("local", pos)
             .set_uniform_action("view", set_view_cb)
-            //.set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
-            .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
+            .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
+            //.set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
             .set_uniform_action("t", set_time_cb);
       };
 
@@ -738,13 +752,14 @@ int main()
 
 
       static const float ground_verts[] = {
-         -10., 0., -0.,   0., 1., 0.,
-          1., 0., -0.,   0., 1., 0.,
-         -10., 0.,  20.,   0., 1., 0.,
-          1., 0.,  20.,   0., 1., 0.,
+         0.,   0., -900.,   0., 1., 0.,
+         800., 0., -900.,   0., 1., 0.,
+         0.,   0.,  0.,     0., 1., 0.,
+         800., 0.,  0.,     0., 1., 0.,
       };
       static const unsigned short ground_indices[] = {
          0, 2, 1,
+         1, 2, 3,
       };
 
       auto ground_buffer_desc = glpp::describe_buffer({ground_verts, ground_indices})
@@ -752,12 +767,15 @@ int main()
          .attrib("normal", 3);
 
 
-      auto ground_pass = prg_3d.pass()
+      auto ground_pass = prg_3d_ground.pass()
          .with(ground_buffer_desc)
          .set_uniform("colour", glm::vec4(.8f, .8f, .16f, 1.f))
          .set_uniform("local", glm::mat4{})
+         .set_uniform("model", glm::mat4{})
+         .set_uniform("normal_matrix", glm::mat4{})
          .set_uniform_action("view", set_view_cb)
          .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
+         //.set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
          .set_uniform_action("t", set_time_cb);
 
 
@@ -823,6 +841,7 @@ int main()
             try {
                ::reload_program(prg_2d, "2d");
                ::reload_program(prg_3d, "3d");
+               ::reload_program(prg_3d_ground, "3d");
                ::reload_program(prg_3d_particle, "3d_particle");
                ::reload_program(prg_post, "post");
                ::reload_program(prg_sprite, "sprite");
@@ -905,6 +924,8 @@ int main()
                      world_view.creatures_end() },
                      glpp::DrawMode::Triangles);
             }
+
+            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 
             particle_pass.draw(glpp::DrawMode::Points);
          }

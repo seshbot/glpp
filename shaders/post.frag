@@ -67,4 +67,3 @@ void main() {
    lowp vec3 post_colour = post_adjust(colour.rgb, v_tex_coords);
    gl_FragColor = vec4(post_colour.rgb, colour.a);
 }
- 
