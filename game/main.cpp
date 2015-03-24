@@ -180,7 +180,7 @@ namespace {
 
    template <unsigned CREATE_PER_SEC>
    class constant_create_policy_t {
-   public:
+   protected:
       const double TIME_BETWEEN_CREATE = (double)1. / CREATE_PER_SEC;
       double next_create_time_ = 0.;
 
@@ -195,7 +195,7 @@ namespace {
    };
 
    class constant_update_policy_t {
-   public:
+   protected:
       using idx_t = std::size_t;
 
       template <typename T>
@@ -416,6 +416,8 @@ int main()
       gl::enable(gl::enable_cap_t::blend);
 
       gl::blend_func(gl::blending_factor_src_t::src_alpha, gl::blending_factor_dest_t::one_minus_src_alpha);
+
+      gl::cull_face(gl::cull_face_mode_t::back);
       
       //
       // load game data
@@ -662,7 +664,7 @@ int main()
 
 
 
-      auto make_mesh_vert_buffer = [](aiMesh const & m) -> glpp::buffer_t {
+      auto make_mesh_vert_buffer = [](aiMesh const & m, glm::mat4 const & xform) -> glpp::buffer_t {
          auto get_mesh_indices = [](aiMesh const & m) {
             std::vector<uint32_t> indices;
             indices.reserve(m.mNumFaces * 3);
@@ -675,10 +677,31 @@ int main()
             return indices;
          };
 
+         auto xform_vert = [&xform](float * in, float * out) {
+            auto vert = xform * glm::vec4{ in[0], in[1], in[2], 1. };
+            out[0] = vert.x;
+            out[1] = vert.y;
+            out[2] = vert.z;
+         };
+
          auto * raw_vert_data = reinterpret_cast<float*>(m.mVertices);
          auto elem_count = m.mNumVertices * 3;
 
          auto indices = get_mesh_indices(m);
+
+         //
+         // apply local transform to model
+         //
+
+         std::vector<float> vert_data;
+         vert_data.reserve(elem_count);
+         auto * xformed_vert_data = vert_data.data();
+
+         for (auto i = 0U; i < m.mNumVertices; i++) {
+            auto data_in = raw_vert_data + (i * 3);
+            auto data_out = xformed_vert_data + (i * 3);
+            xform_vert(data_in, data_out);
+         }
 
 #if 0
          utils::log(utils::LOG_INFO, "\n == dumping %d verts == \n", m.mNumVertices);
@@ -692,39 +715,76 @@ int main()
 #endif
 
          return{
-            { raw_vert_data, elem_count },
+            { xformed_vert_data, elem_count },
             { indices.data(), indices.size() }
          };
       };
 
-      auto make_mesh_normal_buffer = [](aiMesh const & m) -> glpp::buffer_t {
+      auto make_mesh_normal_buffer = [](aiMesh const & m, glm::mat4 const & xform) -> glpp::buffer_t {
          assert(m.HasNormals());
          auto * raw_data = reinterpret_cast<float*>(m.mNormals);
          auto elem_count = m.mNumVertices * 3;
 
+         //
+         // apply local transform to model
+         //
+
+         std::vector<float> vert_data;
+         vert_data.reserve(elem_count);
+         auto * xformed_data = vert_data.data();
+
+         auto xform_vert = [&xform](float * in, float * out) {
+            auto vert = xform * glm::vec4{ in[0], in[1], in[2], 0. };
+            out[0] = vert.x;
+            out[1] = vert.y;
+            out[2] = vert.z;
+         };
+
+         for (auto i = 0U; i < m.mNumVertices; i++) {
+            auto data_in = raw_data + (i * 3);
+            auto data_out = xformed_data + (i * 3);
+            xform_vert(data_in, data_out);
+         }
+
          return{
-            { raw_data, elem_count }
+            { xformed_data, elem_count }
          };
       };
 
 
+      //
+      // state callbacks
+      //
 
-      auto set_view_cb = [](glpp::uniform & u) {
+      auto get_view_cb = [] {
          auto xpos = 0;
          auto ypos = 100.f;
          auto zpos = 100.f;
-         u.set(glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. }));
+         return glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. });
       };
 
-      auto set_model_cb = [](glpp::uniform & u) {
-         u.set(glm::scale(glm::mat4{}, glm::vec3{ 32. }));
+      auto get_model_cb = [] {
+         return glm::scale(glm::mat4{}, glm::vec3{ 32. });
       };
 
-      auto make_pass = [&](glpp::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
-         auto verts = glpp::describe_buffer(make_mesh_vert_buffer(mesh))
+      auto get_proj_cb = [] {
+         return glm::ortho<float>(0., 800., 0., 600., 0., 1000.);
+         // return glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f);
+      };
+
+      auto set_view_cb = [&get_view_cb](glpp::uniform & u) {
+         u.set(get_view_cb());
+      };
+
+      auto set_model_cb = [&get_model_cb](glpp::uniform & u) {
+         u.set(get_model_cb());
+      };
+
+      auto make_mesh_pass = [&](glpp::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
+         auto verts = glpp::describe_buffer(make_mesh_vert_buffer(mesh, pos))
             .attrib("p", 3);
 
-         auto normals = glpp::describe_buffer(make_mesh_normal_buffer(mesh))
+         auto normals = glpp::describe_buffer(make_mesh_normal_buffer(mesh, pos))
             .attrib("normal", 3);
 
          aiColor4D color(1.f, 0.f, 1.f, 1.f);
@@ -736,10 +796,6 @@ int main()
             .with(verts)
             .with(normals)
             .set_uniform("colour", mesh_colour)
-            .set_uniform("local", pos)
-            .set_uniform_action("view", set_view_cb)
-            .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
-            //.set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
             .set_uniform_action("t", set_time_cb);
       };
 
@@ -747,7 +803,7 @@ int main()
 
       aiNode * node = scene->mRootNode;
       if (node) for_each_mesh(*scene, *node, glm::mat4{}, [&](aiMesh const & mesh, glm::mat4 const & pos) {
-         body_passes.push_back(make_pass(prg_3d, *scene, mesh, pos));
+         body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh, pos));
       });
 
 
@@ -770,12 +826,9 @@ int main()
       auto ground_pass = prg_3d_ground.pass()
          .with(ground_buffer_desc)
          .set_uniform("colour", glm::vec4(.8f, .8f, .16f, 1.f))
-         .set_uniform("local", glm::mat4{})
          .set_uniform("model", glm::mat4{})
+         .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_proj_cb() * get_view_cb()); })
          .set_uniform("normal_matrix", glm::mat4{})
-         .set_uniform_action("view", set_view_cb)
-         .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
-         //.set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
          .set_uniform_action("t", set_time_cb);
 
 
@@ -797,13 +850,18 @@ int main()
 
 
       struct mesh_render_callback_t : public glpp::pass_t::render_callback {
-         mesh_render_callback_t(game::world_view_t::iterator itBegin, game::world_view_t::iterator itEnd)
+         mesh_render_callback_t(
+            game::world_view_t::iterator itBegin,
+            game::world_view_t::iterator itEnd,
+            glm::mat4 const & view_matrix,
+            glm::mat4 const & proj_matrix)
             : itBegin_(itBegin)
             , itEnd_(itEnd)
-            , it_(itBegin_) {
+            , it_(itBegin_)
+            , proj_view_matrix_(proj_matrix * view_matrix) {
          }
 
-         virtual bool prepare_next(glpp::program & p) const override {
+         bool prepare_next(glpp::program & p) const override {
             if (it_ == itEnd_) return false;
 
             auto & current_render_info = *it_;
@@ -811,6 +869,7 @@ int main()
 
             auto model_transform = moment.mesh_transform();
             p.uniform("model").set(model_transform);
+            p.uniform("mvp").set(proj_view_matrix_ * model_transform);
             p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
 
             it_++;
@@ -821,6 +880,7 @@ int main()
          game::world_view_t::iterator itBegin_;
          game::world_view_t::iterator itEnd_;
          mutable game::world_view_t::iterator it_;
+         glm::mat4 proj_view_matrix_;
          mutable glpp::texture_t::id_type current_tex_id_ = 0;
 
          mesh_render_callback_t(mesh_render_callback_t const &) {}
@@ -921,8 +981,9 @@ int main()
                pass.draw_batch(
                   mesh_render_callback_t{
                      world_view.creatures_begin(),
-                     world_view.creatures_end() },
-                     glpp::DrawMode::Triangles);
+                     world_view.creatures_end(),
+                     get_view_cb(), get_proj_cb()},
+                  glpp::DrawMode::Triangles);
             }
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
