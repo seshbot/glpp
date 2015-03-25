@@ -8,6 +8,7 @@ set(SHADERS
   ${PROJECT_SOURCE_DIR}/shaders/2d.vert ${PROJECT_SOURCE_DIR}/shaders/2d.frag
   ${PROJECT_SOURCE_DIR}/shaders/3d.vert ${PROJECT_SOURCE_DIR}/shaders/3d.frag
   ${PROJECT_SOURCE_DIR}/shaders/3d_particle.vert ${PROJECT_SOURCE_DIR}/shaders/3d_particle.frag
+  ${PROJECT_SOURCE_DIR}/shaders/3d_shadow.vert ${PROJECT_SOURCE_DIR}/shaders/3d_shadow.frag
   ${PROJECT_SOURCE_DIR}/shaders/post.vert ${PROJECT_SOURCE_DIR}/shaders/post.frag
   ${PROJECT_SOURCE_DIR}/shaders/sprite.vert ${PROJECT_SOURCE_DIR}/shaders/sprite.frag)
 

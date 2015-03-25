@@ -2,8 +2,6 @@
 #define PCX_GL__H
 
 // TODO:
-// - auto-generate gl functions? https://cvs.khronos.org/svn/repos/ogl/trunk/doc/registry/public/api/gl.xml
-//   - also see https://github.com/hpicgs/glbinding
 // - move to dedicated library
 //   - how to resolve GLM dependencies?
 // - allow multiple contexts
@@ -60,42 +58,65 @@ namespace glpp {
    private:
       std::string log_;
    };
-
+   
+   enum class texture_format_t {
+      RGB,
+      RGBA,
+#ifdef WIN32
+      BGRA,
+#endif
+      DEPTH,
+   };
 
    class texture_t {
    public:
       using id_type = uint32_t;
 
-      enum Format {
-         RGB,
-         RGBA,
-#ifdef WIN32
-         BGRA
-#endif
-      };
-
       texture_t(std::string const & filename);
-      texture_t(dim_t const & dims, Format format = RGBA);
+      texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
 
       id_type id() const { return state_->id_; }
 
       dim_t const & dims() const { return state_->dims_; }
 
-      void save(std::string const & filename) const;
+      // TODO: this belongs in a image_file_t class or something
+      void save_current_framebuffer(std::string const & filename) const;
 
       void bind() const;
 
    private:
+      friend class cube_map_texture_t;
+      enum Target {
+         TEXTURE_2D,
+         TEXTURE_CUBE_MAP,
+      };
+      static unsigned int to_gl(Target target);
+
       struct state {
-         state(std::string const & filename);
-         state(dim_t const & dims, Format format);
+         state(std::string const & filename, Target target);
+         state(dim_t const & dims, Target target, texture_format_t format);
          ~state();
          id_type id_;
          dim_t dims_;
-         Format format_;
+         texture_format_t format_;
       };
 
       std::shared_ptr<state> state_;
+   };
+
+   class cube_map_texture_t {
+   public:
+      using id_type = texture_t::id_type;
+
+
+      cube_map_texture_t(std::string const & filename);
+      cube_map_texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
+
+      id_type id() const { return state_->id_; }
+      dim_t const & face_dims() const { return state_->dims_; }
+
+   private:
+      std::shared_ptr<texture_t::state> state_;
    };
 
    struct texture_unit_t {
@@ -109,22 +130,34 @@ namespace glpp {
       frame_buffer_t & operator=(frame_buffer_t const &) = delete;
 
       frame_buffer_t(texture_t const & tex); // implied samples == 0
+      frame_buffer_t(cube_map_texture_t const & tex);
       frame_buffer_t(glpp::dim_t dims, unsigned samples = 0);
       ~frame_buffer_t();
 
       id_t id() const { return fbo_id_; }
       glpp::dim_t dims() const { return dims_; }
 
+      enum CubeFace { // this enum is aligned with GL_TEXTURE_CUBE_MAP_POSITIVE_*
+         POSITIVE_X = 0x8515,
+         NEGATIVE_X,
+         POSITIVE_Y,
+         NEGATIVE_Y,
+         POSITIVE_Z,
+         NEGATIVE_Z,
+      };
       enum BindTarget { Read, Draw, ReadDraw };
       void bind(BindTarget target = ReadDraw) const;
+      void bind(CubeFace face, BindTarget target = ReadDraw) const;
       void unbind(BindTarget target = ReadDraw) const;
 
       void blit_to_draw_buffer() const;
       void blit_to_screen() const;
 
    private:
+      void bind_(BindTarget target = ReadDraw) const;
       void check_fbo() const;
 
+      texture_t::id_type cube_map_texture_id_ = 0;
       dim_t dims_;
       unsigned samples_;
       id_t fbo_id_;

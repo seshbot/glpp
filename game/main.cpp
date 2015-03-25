@@ -587,6 +587,7 @@ int main()
       auto prg_3d = create_program("3d");
       auto prg_3d_ground = create_program("3d");
       auto prg_3d_particle = create_program("3d_particle");
+      auto prg_3d_shadow = create_program("3d_shadow");
       auto prg_sprite = create_program("sprite");
       auto prg_post = create_program("post");
 
@@ -630,6 +631,7 @@ int main()
          .with(screen_vertices_spec)
          .set_uniform("texture", glpp::texture_t{ "../../res/bg_green.png" });
 
+      auto shadow_tex = std::unique_ptr<glpp::cube_map_texture_t>();
       auto post_tex = std::unique_ptr<glpp::texture_t>();
       auto tex_fbo = std::unique_ptr<glpp::frame_buffer_t>();
       auto msaa_fbo = std::unique_ptr<glpp::frame_buffer_t>();
@@ -776,8 +778,16 @@ int main()
          u.set(get_view_cb());
       };
 
-      auto set_model_cb = [&get_model_cb](glpp::uniform & u) {
-         u.set(get_model_cb());
+      auto make_shadow_pass = [&](glpp::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
+         auto verts = glpp::describe_buffer(make_mesh_vert_buffer(mesh, pos))
+            .attrib("p", 3);
+
+         auto normals = glpp::describe_buffer(make_mesh_normal_buffer(mesh, pos))
+            .attrib("normal", 3);
+
+         return program.pass()
+            .with(verts)
+            .with(normals);
       };
 
       auto make_mesh_pass = [&](glpp::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
@@ -799,11 +809,13 @@ int main()
             .set_uniform_action("t", set_time_cb);
       };
 
-      std::vector<glpp::pass_t> body_passes;
+      std::vector<glpp::pass_t> d3_shadow_passes;
+      std::vector<glpp::pass_t> d3_body_passes;
 
       aiNode * node = scene->mRootNode;
       if (node) for_each_mesh(*scene, *node, glm::mat4{}, [&](aiMesh const & mesh, glm::mat4 const & pos) {
-         body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh, pos));
+         d3_shadow_passes.push_back(make_shadow_pass(prg_3d, *scene, mesh, pos));
+         d3_body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh, pos));
       });
 
 
@@ -903,6 +915,7 @@ int main()
                ::reload_program(prg_3d, "3d");
                ::reload_program(prg_3d_ground, "3d");
                ::reload_program(prg_3d_particle, "3d_particle");
+               ::reload_program(prg_3d_shadow, "3d_shadow");
                ::reload_program(prg_post, "post");
                ::reload_program(prg_sprite, "sprite");
             }
@@ -917,10 +930,11 @@ int main()
 
          if (!tex_fbo || tex_fbo->dims() != dims) {
 #ifdef WIN32 
-            glpp::texture_t::Format fmt = glpp::texture_t::BGRA;
+            glpp::texture_format_t fmt = glpp::texture_format_t::BGRA;
 #else
-            glpp::texture_t::Format fmt = glpp::texture_t::RGBA;
+            glpp::texture_format_t fmt = glpp::texture_format_t::RGBA;
 #endif
+            shadow_tex.reset(new glpp::cube_map_texture_t(dims, fmt));
             post_tex.reset(new glpp::texture_t(dims, fmt));
             tex_fbo.reset(new glpp::frame_buffer_t(*post_tex));
          }
@@ -977,7 +991,7 @@ int main()
                   glpp::DrawMode::Triangles);
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
-            for (auto & pass : body_passes) {
+            for (auto & pass : d3_body_passes) {
                pass.draw_batch(
                   mesh_render_callback_t{
                      world_view.creatures_begin(),

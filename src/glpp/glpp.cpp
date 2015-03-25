@@ -341,22 +341,24 @@ namespace glpp
    * class texture
    *
    */
+   unsigned int texture_t::to_gl(texture_t::Target target) {
+      auto tgt
+         = target == texture_t::Target::TEXTURE_2D ? gl_::texture_target_t::texture_2d
+         : target == texture_t::Target::TEXTURE_CUBE_MAP ? gl_::texture_target_t::texture_cube_map
+         : throw std::runtime_error("unrecognised texture target");
 
-   texture_t::texture_t(std::string const & filename)
-      : state_(std::make_shared<state>(filename)) {
+      return static_cast<unsigned int>(tgt);
    }
 
-   texture_t::texture_t(dim_t const & dims, Format format)
-      : state_(std::make_shared<state>(dims, format)) {
-   }
-
-   texture_t::state::state(std::string const & filename)
-   : format_(texture_t::RGBA) { // TODO: this may not be right?
+   texture_t::state::state(std::string const & filename, Target target)
+   : format_(texture_format_t::RGBA) { // TODO: this may not be right?
       int width;
       int height;
       int resized_width;
       int resized_height;
       int channels;
+
+      auto tgt = static_cast<gl_::texture_target_t>(to_gl(target));
 
       id_ = SOIL_load_OGL_texture_and_details(
          filename.c_str(),
@@ -372,39 +374,80 @@ namespace glpp
       dims_.x = width;
       dims_.y = height;
 
-      GL_VERIFY(gl_::bind_texture(gl_::texture_target_t::texture_2d, id_));
+      GL_VERIFY(gl_::bind_texture(tgt, id_));
 
       // TODO: these should come from the gles2 API
       gl::int_t TMP_GL_CLAMP_TO_EDGE = 0x812F;
       gl::int_t TMP_GL_NEAREST = 0x2600;
 
       // set texture parameters
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_NEAREST));
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_NEAREST));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
+      if (tgt == gl_::texture_target_t::texture_cube_map)
+         GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_r, TMP_GL_CLAMP_TO_EDGE));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_NEAREST));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_NEAREST));
 
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, 0));
+      GL_VERIFY(gl_::bind_texture(tgt, 0));
    }
 
-   texture_t::state::state(dim_t const & dims, texture_t::Format format)
+   texture_t::state::state(dim_t const & dims, Target target, texture_format_t format)
    : dims_(dims), format_(format) {
-      GL_VERIFY(glGenTextures(1, &id_));
-      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id_));
+      auto tgt = static_cast<gl_::texture_target_t>(to_gl(target));
 
-      auto fmt
-         = format == texture_t::RGBA ? GL_RGBA
-         : format == texture_t::RGB ? GL_RGB
+      GL_VERIFY(gl_::gen_textures(1, &id_));
+      GL_VERIFY(gl_::bind_texture(tgt, id_));
+
+      auto internal_format
+         = format == texture_format_t::RGBA ? gl_::texture_component_count_t::rgba
+         : format == texture_format_t::RGB ? gl_::texture_component_count_t::rgb
+         : format == texture_format_t::DEPTH ? gl_::texture_component_count_t::depth_component
 #ifdef WIN32
-         : format == texture_t::BGRA ? GL_BGRA_EXT
+         : format == texture_format_t::BGRA ? gl_::texture_component_count_t::bgra_ext
 #endif
          : throw error("unrecognised image format");
 
-      // TODO: add GL_ARB_texture_storage, and use e.g., RGB8 etc for storage...
-      GL_VERIFY(glTexImage2D(GL_TEXTURE_2D, 0, fmt, dims_.x, dims_.y, 0, fmt, GL_UNSIGNED_BYTE, NULL));
+      auto pixel_format
+         = format == texture_format_t::RGBA ? gl_::pixel_format_t::rgba
+         : format == texture_format_t::RGB ? gl_::pixel_format_t::rgb
+         : format == texture_format_t::DEPTH ? gl_::pixel_format_t::depth_component
+#ifdef WIN32
+         : format == texture_format_t::BGRA ? gl_::pixel_format_t::bgra_ext
+#endif
+         : throw error("unrecognised image format");
+
+
+      if (tgt == gl_::texture_target_t::texture_cube_map) {
+         for (auto i = 0u; i < 6; i++) {
+            auto img_tgt = static_cast<gl_::texture_image_target_t>((unsigned int)gl_::texture_image_target_t::texture_cube_map_positive_x + i);
+
+            GL_VERIFY(gl_::tex_image_2d(
+               img_tgt,
+               0,
+               internal_format,
+               dims_.x, dims_.x, 0, // MUST BE SQUARE!!!
+               pixel_format, gl_::pixel_type_t::unsigned_byte_,
+               nullptr));
+         }
+      }
+      else {
+         // TODO: allow for other texture targets
+         assert(tgt == gl_::texture_target_t::texture_2d && "unexpected texture target");
+
+         // TODO: add GL_ARB_texture_storage, and use e.g., RGB8 etc for storage...
+         GL_VERIFY(gl_::tex_image_2d(
+            gl_::texture_image_target_t::texture_2d,
+            0,
+            internal_format,
+            dims_.x, dims_.y, 0,
+            pixel_format, gl_::pixel_type_t::unsigned_byte_,
+            nullptr));
+      }
+
+      // glTexImage2D(GL_TEXTURE_2D, 0, fmt, dims_.x, dims_.y, 0, fmt, GL_UNSIGNED_BYTE, NULL));
       //GL_VERIFY(glTexStorage2D(GL_TEXTURE_2D, 1, fmt, dims_.x, dims_.y));
      // GL_VERIFY(glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, dims_.x, dims_.y, fmt, GL_UNSIGNED_BYTE, NULL));
 
@@ -413,30 +456,41 @@ namespace glpp
       gl::int_t TMP_GL_NEAREST = 0x2600;
 
       // set texture parameters
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_NEAREST));
-      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_NEAREST));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
+      if (tgt == gl_::texture_target_t::texture_cube_map)
+         GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_r, TMP_GL_CLAMP_TO_EDGE));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_NEAREST));
+      GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_NEAREST));
 
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, 0));
+      gl_::bind_texture(tgt, 0);
    }
 
    texture_t::state::~state() {
       glDeleteTextures(1, &id_);
    }
 
-   void texture_t::save(std::string const & filename) const {
+   texture_t::texture_t(std::string const & filename)
+      : state_(std::make_shared<state>(filename, TEXTURE_2D)) {
+   }
+
+   texture_t::texture_t(dim_t const & dims, texture_format_t format)
+      : state_(std::make_shared<state>(dims, TEXTURE_2D, format)) {
+   }
+
+   void texture_t::save_current_framebuffer(std::string const & filename) const {
       std::vector<uint8_t> buffer(4 * state_->dims_.x * state_->dims_.y);
 
       auto format = state_->format_;
       auto fmt
-         = format == texture_t::RGBA ? GL_RGBA
-         : format == texture_t::RGB ? GL_RGB
+         = format == texture_format_t::RGBA ? GL_RGBA
+         : format == texture_format_t::RGB ? GL_RGB
+         : format == texture_format_t::DEPTH ? GL_DEPTH_COMPONENT
 #ifdef WIN32
-         : format == texture_t::BGRA ? GL_BGRA_EXT
+         : format == texture_format_t::BGRA ? GL_BGRA_EXT
 #endif
          : throw error("unrecognised image format");
 
@@ -472,6 +526,18 @@ namespace glpp
 
 
    /**
+    * class cube_map_texture_t
+    */
+   cube_map_texture_t::cube_map_texture_t(std::string const & filename)
+      : state_(std::make_shared<texture_t::state>(filename, texture_t::TEXTURE_CUBE_MAP)) {
+
+   }
+
+   cube_map_texture_t::cube_map_texture_t(dim_t const & dims, texture_format_t format)
+      : state_(std::make_shared<texture_t::state>(dims, texture_t::TEXTURE_CUBE_MAP, format)) {
+   }
+
+   /**
     * class texture_unit_t
     */
 
@@ -484,6 +550,29 @@ namespace glpp
    * class frame_buffer_t
    *
    */
+
+   frame_buffer_t::frame_buffer_t(cube_map_texture_t const & tex)
+      : cube_map_texture_id_(tex.id()), dims_(tex.face_dims()), samples_(0) {
+      GL_VERIFY(gl_::gen_framebuffers(1, &fbo_id_));
+      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, fbo_id_));
+
+      // attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
+
+      // bind texture at 
+      //GL_VERIFY(gl_::framebuffer_texture_2d(gl_::framebuffer_target_t::framebuffer, gl_::framebuffer_attachment_t::color_attachment0, gl_::framebuffer_texture_target_t::texture_2d, tex.id(), 0));
+
+      // create render buffer for stencil and depth (we arent interested in reading it)
+      GL_VERIFY(gl_::gen_renderbuffers(1, &depth_rbo_id_));
+      GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, depth_rbo_id_));
+      GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::depth_component16, dims_.x, dims_.y)); // GL_DEPTH24_STENCIL8
+      GL_VERIFY(gl_::framebuffer_renderbuffer(gl_::framebuffer_target_t::framebuffer, gl_::framebuffer_attachment_t::depth_attachment, gl_::renderbuffer_target_t::renderbuffer, depth_rbo_id_)); // GL_DEPTH_STENCIL_ATTACHMENT
+
+      GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, 0));
+
+      check_fbo();
+
+      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
+   }
 
    frame_buffer_t::frame_buffer_t(texture_t const & tex)
    : dims_(tex.dims()), samples_(0) {
@@ -551,12 +640,40 @@ namespace glpp
    }
 
    void frame_buffer_t::bind(BindTarget target) const {
+      assert(cube_map_texture_id_ == 0 && "wrong bind method called on frame buffer with cube map colour buffer");
+      bind_(target);
+   }
+
+   namespace {
+      gl_::framebuffer_target_t to_gl(frame_buffer_t::BindTarget target) {
+         gl_::framebuffer_target_t t
+            = target == frame_buffer_t::ReadDraw ? gl_::framebuffer_target_t::framebuffer
+            : target == frame_buffer_t::Read ? gl_::framebuffer_target_t::read_framebuffer
+            : target == frame_buffer_t::Draw ? gl_::framebuffer_target_t::draw_framebuffer
+            : throw error("unrecognised bind target");
+
+         return t;
+      }
+
+      gl_::framebuffer_texture_target_t to_gl(frame_buffer_t::CubeFace face) {
+         return static_cast<gl_::framebuffer_texture_target_t>(face);
+      }
+   }
+
+   void frame_buffer_t::bind(CubeFace face, BindTarget target) const {
+      assert(cube_map_texture_id_ != 0 && "wrong bind method called on frame buffer without cube map colour buffer");
+      bind_(target);
+      auto t = to_gl(target);
+      auto f = to_gl(face);
+      GL_VERIFY(gl_::framebuffer_texture_2d(t, gl_::framebuffer_attachment_t::color_attachment0, f, cube_map_texture_id_, 0));
+
+      // TODO: 
+      //glDrawBuffer(GL_COLOR_ATTACHMENT0);
+   }
+
+   void frame_buffer_t::bind_(BindTarget target) const {
       check_fbo();
-      gl_::framebuffer_target_t t
-         = target == ReadDraw ? gl_::framebuffer_target_t::framebuffer
-         : target == Read ? gl_::framebuffer_target_t::read_framebuffer
-         : target == Draw ? gl_::framebuffer_target_t::draw_framebuffer
-         : throw error("unrecognised bind target");
+      auto t = to_gl(target);
 
       // TODO: this was GL_READ_FRAMEBUFFER_ANGLE for some reason???
       if (target == ReadDraw) gl_::bind_framebuffer(gl_::framebuffer_target_t::read_framebuffer, 0);
@@ -564,11 +681,7 @@ namespace glpp
    }
 
    void frame_buffer_t::unbind(BindTarget target) const {
-      gl_::framebuffer_target_t t
-         = target == ReadDraw ? gl_::framebuffer_target_t::framebuffer
-         : target == Read ? gl_::framebuffer_target_t::read_framebuffer
-         : target == Draw ? gl_::framebuffer_target_t::draw_framebuffer
-         : throw error("unrecognised bind target");
+      auto t = to_gl(target);
       GL_VERIFY(gl_::bind_framebuffer(t, 0));
    }
 

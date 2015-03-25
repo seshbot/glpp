@@ -11,8 +11,6 @@ struct PositionalLight {
 	mediump float attenuation;
 };
 
-uniform mediump mat4 view;
-uniform mediump mat4 proj;
 uniform mediump vec4 colour;
 
 varying mediump vec3 frag_position;
