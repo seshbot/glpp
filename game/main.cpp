@@ -17,6 +17,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <algorithm>
+#include <cstdlib>
+
 
 namespace gl {
 #ifdef _MSC_VER
@@ -116,9 +118,9 @@ namespace {
 
    template <typename CreatePolicy, typename UpdatePolicy, typename DeletePolicy>
    class particle_emitter_buffer_t
-      : public CreatePolicy  // CreatePolicy provides create_particles(emitter, t) {}
-      , public UpdatePolicy  // UpdatePolicy provides update_particle(emitter, idx, t)
-      , public DeletePolicy{ // DeletePolicy provides should_delete(emitter, idx)
+      : public CreatePolicy   // CreatePolicy provides create_particles(emitter, t)
+      , public UpdatePolicy   // UpdatePolicy provides update_particle(emitter, idx, t)
+      , public DeletePolicy { // DeletePolicy provides should_delete(emitter, idx)
    public:
       using cont_t = std::vector < glm::vec3 >;
       using idx_t = std::size_t;
@@ -136,15 +138,15 @@ namespace {
 
       void update(double time_since_last) {
          current_time_ += time_since_last;
-         create_particles(*this, time_since_last);
+         CreatePolicy::create_particles(*this, time_since_last);
          // glm likes floats
          auto t = static_cast<float>(time_since_last);
 
          auto idx = idx_t(0);
          while (idx < count()) {
-            update_particle(*this, idx, t);
+            UpdatePolicy::update_particle(*this, idx, t);
 
-            if (should_delete(*this, idx)) {
+            if (DeletePolicy::should_delete(*this, idx)) {
                del_at(idx);
             }
             else {
@@ -230,7 +232,7 @@ namespace {
    };
 
    using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
-      constant_create_policy_t<2000>,
+      constant_create_policy_t<8000>,
       constant_update_policy_t,
       constant_depth_delete_policy_t<0> >;
 }
@@ -414,6 +416,9 @@ int main()
       gl::enable(gl::enable_cap_t::cull_face);
       //gl::enable(gl::enable_cap_t::multisample);
       gl::enable(gl::enable_cap_t::blend);
+
+      gl::point_size(3.5);
+      gl::enable(gl::enable_cap_t::point_smooth);
 
       gl::blend_func(gl::blending_factor_src_t::src_alpha, gl::blending_factor_dest_t::one_minus_src_alpha);
 

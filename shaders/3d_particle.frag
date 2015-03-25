@@ -11,7 +11,7 @@ void main() {
 //    lowp vec4 colour = texture2D(sampler, uv);
 //    if (colour.a == 0.) discard;
 
-	mediump vec4 colour = texture2D(texture, gl_PointCoord);
+//    mediump vec4 colour = texture2D(texture, gl_PointCoord);
 
     gl_FragColor = vec4(.4, .4, .65, .5);
 }
