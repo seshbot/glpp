@@ -55,15 +55,6 @@ namespace {
    }
 }
 
-void checkOpenGLError(const char* function, const char* file, int line) {
-   auto err = gl_::get_error(); if (err == gl_::error_code_t::no_error) return;
-   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", openGlErrorString(err), err, function, file, line);
-}
-
-void checkOpenGLError(const char* stmt, const char* function, const char* file, int line) {
-   auto err = gl_::get_error(); if (err == gl_::error_code_t::no_error) return;
-   utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", openGlErrorString(err), err, stmt, function, file, line);
-}
 
 namespace {
    bool extensionEnabled(std::string const & extName) {
@@ -383,8 +374,8 @@ namespace glpp
       // set texture parameters
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
-      if (tgt == gl_::texture_target_t::texture_cube_map)
-         GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_r, TMP_GL_CLAMP_TO_EDGE));
+      //if (tgt == gl_::texture_target_t::texture_cube_map)
+      //   GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_r, TMP_GL_CLAMP_TO_EDGE));
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_NEAREST));
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_NEAREST));
 
@@ -421,6 +412,8 @@ namespace glpp
 
 
       if (tgt == gl_::texture_target_t::texture_cube_map) {
+         assert((dims_.x == dims_.y) && "cube map texture dimensions must be square");
+
          for (auto i = 0u; i < 6; i++) {
             auto img_tgt = static_cast<gl_::texture_image_target_t>((unsigned int)gl_::texture_image_target_t::texture_cube_map_positive_x + i);
 
@@ -428,7 +421,7 @@ namespace glpp
                img_tgt,
                0,
                internal_format,
-               dims_.x, dims_.x, 0, // MUST BE SQUARE!!!
+               dims_.x, dims_.y, 0, // MUST BE SQUARE!!!
                pixel_format, gl_::pixel_type_t::unsigned_byte_,
                nullptr));
          }
@@ -458,8 +451,9 @@ namespace glpp
       // set texture parameters
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
-      if (tgt == gl_::texture_target_t::texture_cube_map)
-         GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_r, TMP_GL_CLAMP_TO_EDGE));
+      // TODO: is it OK to leave this out?
+      //if (tgt == gl_::texture_target_t::texture_cube_map)
+      //   GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_wrap_r, TMP_GL_CLAMP_TO_EDGE));
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_NEAREST));
       GL_VERIFY(gl_::tex_parameteri(tgt, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_NEAREST));
 
@@ -512,30 +506,48 @@ namespace glpp
          buffer.data());
    }
 
+   namespace {
+      const int TMP_GL_LINEAR = 0x2601;
+      const int TMP_GL_NEAREST = 0x2600;
+
+      const int TMP_GL_CLAMP = 0x2900;
+      const int TMP_GL_REPEAT = 0x2901;
+      const int TMP_GL_CLAMP_TO_EDGE = 0x812F;
+   }
+
    void texture_t::bind() const {
-      GL_VERIFY(glBindTexture(GL_TEXTURE_2D, id()));
+      GL_VERIFY(gl_::bind_texture(gl_::texture_target_t::texture_2d, id()));
 
       // TODO: make this stuff configurable via the with() call...
       // TODO: or should this be initialised in texture creation?
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // GL_NEAREST
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_LINEAR));
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_NEAREST));
 
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)); // GL_CLAMP_TO_EDGE
-      GL_VERIFY(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_REPEAT));
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_2d, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_REPEAT));
    }
 
 
    /**
     * class cube_map_texture_t
     */
-   cube_map_texture_t::cube_map_texture_t(std::string const & filename)
-      : state_(std::make_shared<texture_t::state>(filename, texture_t::TEXTURE_CUBE_MAP)) {
 
+   cube_map_texture_t::cube_map_texture_t(int side_length, texture_format_t format)
+      : state_(std::make_shared<texture_t::state>(dim_t{side_length, side_length}, texture_t::TEXTURE_CUBE_MAP, format)) {
    }
 
-   cube_map_texture_t::cube_map_texture_t(dim_t const & dims, texture_format_t format)
-      : state_(std::make_shared<texture_t::state>(dims, texture_t::TEXTURE_CUBE_MAP, format)) {
+   void cube_map_texture_t::bind() const {
+      gl_::bind_texture(gl_::texture_target_t::texture_cube_map, id());
+
+      // TODO: make this stuff configurable via the with() call...
+      // TODO: or should this be initialised in texture creation?
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_cube_map, gl_::texture_parameter_name_t::texture_min_filter, TMP_GL_LINEAR));
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_cube_map, gl_::texture_parameter_name_t::texture_mag_filter, TMP_GL_LINEAR));
+
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_cube_map, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
+      GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_cube_map, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
    }
+
 
    /**
     * class texture_unit_t
@@ -667,6 +679,8 @@ namespace glpp
       auto f = to_gl(face);
       GL_VERIFY(gl_::framebuffer_texture_2d(t, gl_::framebuffer_attachment_t::color_attachment0, f, cube_map_texture_id_, 0));
 
+      check_fbo();
+
       // TODO: 
       //glDrawBuffer(GL_COLOR_ATTACHMENT0);
    }
@@ -717,13 +731,14 @@ namespace glpp
          auto status_msg = [status] {
             switch (status) {
                //case GL_FRAMEBUFFER_UNDEFINED: return "GL_FRAMEBUFFER_UNDEFINED";
-            case gl_::framebuffer_status_t::framebuffer_incomplete_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT ";
-            case gl_::framebuffer_status_t::framebuffer_incomplete_missing_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER ";
-            case gl_::framebuffer_status_t::framebuffer_unsupported: return "GL_FRAMEBUFFER_UNSUPPORTED ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ";
-               //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ";
+            case gl_::framebuffer_status_t::framebuffer_incomplete_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+            case gl_::framebuffer_status_t::framebuffer_incomplete_missing_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+               //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
+               //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
+            case gl_::framebuffer_status_t::framebuffer_unsupported: return "GL_FRAMEBUFFER_UNSUPPORTED";
+            case gl_::framebuffer_status_t::framebuffer_incomplete_dimensions: return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+               //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+               //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
             default: return "UNRECOGNISED ENUM";
             }
          }();
@@ -893,6 +908,31 @@ namespace glpp
             }
             return false;
          }
+
+         glpp::set_uniform(u.location(), val);
+         return true;
+      }
+
+      template <>
+      bool set_uniform(uniform & u, texture_unit_t const & val, bool report_errors) {
+         if (!u.is_valid()) {
+            if (report_errors) {
+               utils::log(utils::LOG_WARN, "cannot set uniform - either program does not contain '%s' or it has been invalidated\n",
+                  u.name().c_str());
+            }
+            return false;
+         }
+
+         // TODO: verify type is Sampler2d or SamplerCubeMap etc...
+         //if (uniform_type<T>() != u.type()) {
+         //   if (report_errors) {
+         //      utils::log(utils::LOG_WARN, "cannot set uniform - shader uniform '%s' is type %s, app provided %s\n",
+         //         u.name().c_str(),
+         //         ::to_string(u.type()).c_str(),
+         //         ::to_string(uniform_type<T>()).c_str());
+         //   }
+         //   return false;
+         //}
 
          glpp::set_uniform(u.location(), val);
          return true;

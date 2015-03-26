@@ -108,12 +108,12 @@ namespace glpp {
    public:
       using id_type = texture_t::id_type;
 
-
-      cube_map_texture_t(std::string const & filename);
-      cube_map_texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
+      cube_map_texture_t(int side_length, texture_format_t format = texture_format_t::RGBA);
 
       id_type id() const { return state_->id_; }
       dim_t const & face_dims() const { return state_->dims_; }
+
+      void bind() const;
 
    private:
       std::shared_ptr<texture_t::state> state_;
