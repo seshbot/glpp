@@ -736,7 +736,9 @@ namespace glpp
                //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
                //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
             case gl_::framebuffer_status_t::framebuffer_unsupported: return "GL_FRAMEBUFFER_UNSUPPORTED";
+#ifdef WIN32
             case gl_::framebuffer_status_t::framebuffer_incomplete_dimensions: return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+#endif
                //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
                //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
             default: return "UNRECOGNISED ENUM";

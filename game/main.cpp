@@ -18,6 +18,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <algorithm>
 #include <cstdlib>
+#include <float.h> // for FLT_MAX
 
 
 namespace gl {
@@ -891,7 +892,7 @@ int main()
 
       private:
          shadow_render_callback_t(shadow_render_callback_t const &) {}
-         shadow_render_callback_t & operator=(shadow_render_callback_t const &) {}
+         shadow_render_callback_t & operator=(shadow_render_callback_t const &) { return *this; }
 
          game::world_view_t::iterator itEnd_;
          mutable game::world_view_t::iterator it_;
@@ -926,7 +927,7 @@ int main()
 
       private:
          mesh_render_callback_t(mesh_render_callback_t const &) {}
-         mesh_render_callback_t & operator=(mesh_render_callback_t const &) {}
+         mesh_render_callback_t & operator=(mesh_render_callback_t const &) { return *this; }
 
          game::world_view_t::iterator itEnd_;
          mutable game::world_view_t::iterator it_;
@@ -1019,12 +1020,12 @@ int main()
          };
 
          const face_info faces[6] = {
-            { { glpp::frame_buffer_t::POSITIVE_X }, { 1., 0., 0. }, { 0., -1., 0. } },
-            { { glpp::frame_buffer_t::NEGATIVE_X }, { -1., 0., 0. }, { 0., -1., 0. } },
-            { { glpp::frame_buffer_t::POSITIVE_Y }, { 0., 1., 0. }, { 0., 0., -1. } },
-            { { glpp::frame_buffer_t::NEGATIVE_Y }, { 0., -1., 0. }, { 0., 0., 1. } },
-            { { glpp::frame_buffer_t::POSITIVE_Z }, { 0., 0., 1. }, { 0., -1., 0. } },
-            { { glpp::frame_buffer_t::NEGATIVE_Z }, { 0., 0., -1. }, { 0., -1., 0. } },
+            { glpp::frame_buffer_t::POSITIVE_X, { 1., 0., 0. }, { 0., -1., 0. } },
+            { glpp::frame_buffer_t::NEGATIVE_X, { -1., 0., 0. }, { 0., -1., 0. } },
+            { glpp::frame_buffer_t::POSITIVE_Y, { 0., 1., 0. }, { 0., 0., -1. } },
+            { glpp::frame_buffer_t::NEGATIVE_Y, { 0., -1., 0. }, { 0., 0., 1. } },
+            { glpp::frame_buffer_t::POSITIVE_Z, { 0., 0., 1. }, { 0., -1., 0. } },
+            { glpp::frame_buffer_t::NEGATIVE_Z, { 0., 0., -1. }, { 0., -1., 0. } },
          };
 
          gl::cull_face(gl::cull_face_mode_t::front);
