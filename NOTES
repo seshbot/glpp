@@ -1,0 +1,37 @@
+OSX env:
+
+GL_VERSION          : 2.1 ATI-1.30.5
+GL_VENDOR           : ATI Technologies Inc.
+GL_RENDERER         : AMD Radeon HD 6750M OpenGL Engine
+GL_SHADING_LANGUAGE_VERSION : 1.20
+GL EXTENSIONS [135]:
+ - GL_ARB_color_buffer_float
+ - GL_ARB_depth_buffer_float
+ - GL_ARB_depth_clamp
+ - GL_ARB_depth_texture
+ - GL_ARB_draw_buffers
+ - GL_ARB_draw_elements_base_vertex
+ - GL_ARB_draw_instanced
+ - GL_ARB_fragment_program
+ - GL_ARB_fragment_program_shadow
+ - GL_ARB_fragment_shader
+ - GL_ARB_framebuffer_object
+ - GL_ARB_framebuffer_sRGB
+ - GL_ARB_half_float_pixel
+ - GL_ARB_half_float_vertex
+ - GL_ARB_imaging
+ - GL_ARB_instanced_arrays
+ - GL_ARB_multisample
+ - GL_ARB_multitexture
+ - GL_ARB_occlusion_query
+ - GL_ARB_pixel_buffer_object
+ - GL_ARB_point_parameters
+ - GL_ARB_point_sprite
+ - GL_ARB_provoking_vertex
+ - GL_ARB_seamless_cube_map
+ - GL_ARB_shader_objects
+ - GL_ARB_shader_texture_lod
+ - GL_ARB_shading_language_100
+ - GL_ARB_shadow
+ - GL_ARB_shadow_ambient
+ - GL_ARB_sync

@@ -9,10 +9,10 @@ uniform mediump mat4 mvp;
 
 attribute mediump vec3 p;
 
-varying mediump vec3 frag_position;
+varying mediump vec4 frag_position;
 
 
 void main() {
    gl_Position = mvp * vec4(p, 1.);
-   frag_position = vec4(model * vec4(p, 1.)).xyz;
+   frag_position = model * vec4(p, 1.);
 }

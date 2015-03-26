@@ -4,23 +4,26 @@
 #define lowp
 #endif
 
-struct PositionalLight {
-	mediump vec3 position;
-	mediump vec3 ambient;
-	mediump vec3 diffuse;
-	mediump float attenuation;
-};
+varying mediump vec4 frag_position;
 
-uniform mediump vec4 colour;
 
-varying mediump vec3 frag_position;
+// see https://github.com/fabiensanglard/dEngine/blob/master/data/shaders/f_shadowMapGenerator.glsl
+mediump vec4 pack(mediump float val) {
+   const vec4 packFactors = vec4( 256.0 * 256.0 * 256.0,    256.0 * 256.0  ,    256.0       ,    1.0);
+   const vec4 bitMask     = vec4(0.0                    , 1.0 / 256.0       ,  1.0 / 256.0   , 1.0 / 256.0);
+   vec4 packedValue = vec4(fract(packFactors*val));
+   packedValue -= packedValue.xxyz * bitMask;
+   return packedValue;
+}
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
 
 void main() {
-   mediump vec3 vLight = frag_position - c_light.position;
-   mediump float dist_squared = dot(vLight, vLight);
+   mediump float normalizedDistance  = frag_position.z / frag_position.w;
+   normalizedDistance = (normalizedDistance + 1.0) / 2.0;
+   normalizedDistance += 0.0005;
 
-   // TODO: https://github.com/fabiensanglard/dEngine/blob/master/data/shaders/f_shadowMapGenerator.glsl
-   gl_FragColor = vec4(1., 1., 1., 1.);
+//   mediump vec3 vLight = frag_position - c_light.position;
+//   mediump float dist_squared = dot(vLight, vLight);
+
+   gl_FragColor = pack(normalizedDistance);
 }

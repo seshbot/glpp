@@ -12,6 +12,7 @@ struct PositionalLight {
 };
 
 uniform mediump vec4 colour;
+uniform samplerCube shadow_texture;
 
 varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
@@ -23,6 +24,25 @@ const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0.
 const PositionalLight c_light2 = PositionalLight(vec3(200., 30., -200.), vec3(0., 0., 0.), vec3(.2, .8, .9), .1);
 
 const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .01;
+
+
+
+mediump float unpack(mediump vec4 packedZValue)
+{
+   const mediump vec4 unpackFactors = vec4( 1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0 );
+   return dot(packedZValue,unpackFactors);
+}
+
+mediump float getShadowFactor(mediump vec4 lightZ)
+{
+   mediump vec4 packedZValue = textureCube(shadow_texture, lightZ.xyz);
+
+   mediump float unpackedZValue = unpack(packedZValue);
+
+   return float((unpackedZValue+0.0001) > lightZ.z);
+}
+
+
 
 lowp vec4 gamma(lowp vec4 c) {
 	// return vec4(sqrt(c.rgb), c.a);  // 2.0 gamma correction (use below for 2.2)

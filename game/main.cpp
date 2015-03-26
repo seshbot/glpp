@@ -638,6 +638,7 @@ int main()
 
       auto shadow_tex = std::unique_ptr<glpp::cube_map_texture_t>();
       auto post_tex = std::unique_ptr<glpp::texture_t>();
+      auto shadow_fbo = std::unique_ptr<glpp::frame_buffer_t>();
       auto tex_fbo = std::unique_ptr<glpp::frame_buffer_t>();
       auto msaa_fbo = std::unique_ptr<glpp::frame_buffer_t>();
 
@@ -787,12 +788,8 @@ int main()
          auto verts = glpp::describe_buffer(make_mesh_vert_buffer(mesh, pos))
             .attrib("p", 3);
 
-         auto normals = glpp::describe_buffer(make_mesh_normal_buffer(mesh, pos))
-            .attrib("normal", 3);
-
          return program.pass()
-            .with(verts)
-            .with(normals);
+            .with(verts);
       };
 
       auto make_mesh_pass = [&](glpp::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
@@ -933,14 +930,17 @@ int main()
 
          auto dims = context.win().frame_buffer_dims();
 
-         if (!tex_fbo || tex_fbo->dims() != dims) {
 #ifdef WIN32 
-            glpp::texture_format_t fmt = glpp::texture_format_t::BGRA;
+         const glpp::texture_format_t tex_fmt = glpp::texture_format_t::BGRA;
 #else
-            glpp::texture_format_t fmt = glpp::texture_format_t::RGBA;
+         const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
 #endif
-            shadow_tex.reset(new glpp::cube_map_texture_t(dims, fmt));
-            post_tex.reset(new glpp::texture_t(dims, fmt));
+         if (false && (!shadow_fbo || shadow_fbo->dims() != dims)) {
+            shadow_tex.reset(new glpp::cube_map_texture_t(dims, tex_fmt));
+            shadow_fbo.reset(new glpp::frame_buffer_t(*shadow_tex));
+         }
+         if (!tex_fbo || tex_fbo->dims() != dims) {
+            post_tex.reset(new glpp::texture_t(dims, tex_fmt));
             tex_fbo.reset(new glpp::frame_buffer_t(*post_tex));
          }
          if (!msaa_fbo || msaa_fbo->dims() != dims) {
@@ -972,6 +972,36 @@ int main()
             gl::clear_buffer_flags_t::depth_buffer_bit);
          gl::viewport(0, 0, dims.x, dims.y);
 
+
+         //
+         // draw to shadow texture
+         //
+
+         // shadow_fbo->bind(glpp::frame_buffer_t::Draw);
+         // {
+         //    gl::clear_color(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
+         //    gl::clear(
+         //       gl::clear_buffer_flags_t::color_buffer_bit |
+         //       gl::clear_buffer_flags_t::depth_buffer_bit);
+         //    gl::cull_face(gl::cull_face_mode_t::front);
+
+         //    prg_3d_shadow.uniform("light_view").set();
+         //    prg_3d_shadow.uniform("light_proj").set();
+         //    for (auto & pass : d3_shadow_passes) {
+         //       pass.draw_batch(
+         //          // TODO: create shadow_render_callback_t
+         //          shadow_render_callback_t{
+         //             world_view.creatures_begin(),
+         //             world_view.creatures_end(),
+         //             get_view_cb(), get_proj_cb()},
+         //          glpp::DrawMode::Triangles);
+         //    }
+         // }
+
+         //
+         // draw to anti-aliasing frame buffer
+         //
+
          msaa_fbo->bind();
          {
             gl::clear(
@@ -981,6 +1011,7 @@ int main()
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 
+            gl::cull_face(gl::cull_face_mode_t::back);
             ground_pass.draw(glpp::DrawMode::Triangles);
 
             //sprite_pass.draw_batch(
