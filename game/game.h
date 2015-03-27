@@ -6,9 +6,11 @@
 #include <memory>
 #include <stdint.h>
 
+#define GLM_FORCE_RADIANS
 #include <glm/vec2.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/geometric.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 // TODO: this should be sprite.h
 #include <glpp/glpp.h>
@@ -64,6 +66,7 @@ private:
 namespace game {
 
    glm::vec2 random_world_location();
+   glm::vec2 center_world_location();
 
    using entity_id_t = int;
 
@@ -92,6 +95,7 @@ namespace game {
       }
       void set_pos(glm::vec2 const & pos) { pos_ = pos; }
       void set_vel(glm::vec2 const & vel) { vel_ = vel; speed_ = glm::length(vel); }
+      void rotate(float rads) { set_dir(glm::rotate(dir(), rads)); }
 
       void update(double time_since_last);
 

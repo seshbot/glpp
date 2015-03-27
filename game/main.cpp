@@ -16,6 +16,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <float.h> // for FLT_MAX
@@ -513,6 +514,10 @@ int main()
          glpp::sprite_t big_rock_sprite_;
       };
 
+      //
+      // create world
+      //
+
       game::creature_info_table creature_db;
       game::particle_info_table particle_db;
 
@@ -589,6 +594,17 @@ int main()
       bool do_special_thing = false;
       controls.register_action_handler(glpp::Key::KEY_X, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          do_special_thing = true;
+         return true;
+      });
+      float view_height = 1.;
+      controls.register_action_handler(glpp::Key::KEY_KP_ADD, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
+         view_height += .2f;
+         view_height = std::min(1.f, view_height);
+         return true;
+      });
+      controls.register_action_handler(glpp::Key::KEY_KP_SUBTRACT, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
+         view_height -= .2f;
+         view_height = std::max(0.f, view_height);
          return true;
       });
 
@@ -771,19 +787,17 @@ int main()
       // state callbacks
       //
 
-      auto get_view_cb = [] {
-         auto xpos = 0;
-         auto ypos = 100.f;
-         auto zpos = 100.f;
-         return glm::lookAt(glm::vec3{ xpos, ypos, zpos }, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. });
-      };
-
-      auto get_model_cb = [] {
-         return glm::scale(glm::mat4{}, glm::vec3{ 32. });
+      auto get_view_cb = [&] {
+         auto center_2d = game::center_world_location();
+         auto center = glm::vec3{ center_2d.x, 0.f, -center_2d.y };
+         auto eye = center + glm::vec3{ 0.f, 100.f * view_height, 100.f };
+         auto result = glm::lookAt(eye, center, glm::vec3{ 0., 1., 0. });
+         return result;
       };
 
       auto get_proj_cb = [] {
-         return glm::ortho<float>(0., 800., 0., 600., 0., 1000.);
+         // 0, 0 is the bottom left of the lookAt target!
+         return glm::ortho<float>(-400., 400., -300., 300., -1000., 1000.);
          // return glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f);
       };
 
@@ -940,6 +954,43 @@ int main()
       };
 
 
+      //
+      // debug diamond
+      //
+
+      // verts are the same as normals! (we can reuse the same buffer for each)
+      const float diamond_mesh_verts[] = {
+         0., 1., 0.,  // 0: top 
+         0., 0., 1.,   1., 0., 0.,    0., 0., -1.,    -1., 0., 0.,   // 1-4: mid band
+         0., -1., 0., // 5: bottom
+      };
+
+      const unsigned short diamond_mesh_indices[] = {
+         0, 1, 2,   0, 2, 3,   0, 3, 4,   0, 4, 1, // top
+         1, 5, 2,   2, 5, 3,   3, 5, 4,   4, 5, 1, // bottom
+      };
+
+      auto get_diamond_model_matrix = [] {
+         auto moment = game::moment_t{ {400.f, 300.f}, {} };
+         moment.set_dir({0., 1.});
+         moment.rotate((float)glpp::get_time());
+         return moment.mesh_transform();
+      };
+
+      auto diamond_model = get_diamond_model_matrix();
+
+      auto diamond_vert_buffer = glpp::describe_buffer({ diamond_mesh_verts, diamond_mesh_indices })
+         .attrib("p", 3);
+      auto diamond_normal_buffer = glpp::describe_buffer({ diamond_mesh_verts })
+         .attrib("normal", 3);
+      auto diamond_pass = prg_3d.pass()
+         .with(diamond_vert_buffer)
+         .with(diamond_normal_buffer)
+         .set_uniform("colour", glm::vec4(.1f, .8f, .2f, 1.f))
+         .set_uniform_action("model", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); })
+         .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_proj_cb() * get_view_cb() * get_diamond_model_matrix()); })
+         .set_uniform_action("normal_matrix", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); });
+
 
       //
       // game loop
@@ -1004,7 +1055,8 @@ int main()
          // render
          //
 
-         gl::clear_color(.7f, .87f, .63f, 1.);
+         // gl::clear_color(.7f, .87f, .63f, 1.);
+         gl::clear_color(1.f, 1.f, 1.f, 1.);
          gl::clear(
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit);
@@ -1037,7 +1089,6 @@ int main()
          const auto light_view = glm::lookAt(light_pos, light_pos + faces[0].view_direction, faces[0].up_direction);
 
          gl::cull_face(gl::cull_face_mode_t::front);
-         //gl::clear_color(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
          gl::clear_color(1., 1., 1., 1.);
 
          for (auto face_idx = 0; face_idx < 6; face_idx++) {
@@ -1047,6 +1098,8 @@ int main()
             gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);
+            
+            ground_pass.draw(glpp::DrawMode::Triangles);
 
             for (auto & pass : d3_shadow_passes) {
                pass.draw_batch(
@@ -1062,6 +1115,8 @@ int main()
             }
          }
          do_special_thing = false;
+         shadow_fbo->unbind();
+         gl::cull_face(gl::cull_face_mode_t::back);
 
          prg_3d.use();
          glpp::texture_unit_t tu{ 3 };
@@ -1076,15 +1131,11 @@ int main()
 
          msaa_fbo->bind();
          {
-            gl::clear_color(0., 0., 0., 1.);
+            gl::clear_color(1., 1., 1., 1.);
             gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);
-            // bg_pass.draw(glpp::DrawMode::Triangles);
 
-            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
-
-            gl::cull_face(gl::cull_face_mode_t::back);
             ground_pass.draw(glpp::DrawMode::Triangles);
 
             //sprite_pass.draw_batch(
@@ -1093,7 +1144,7 @@ int main()
             //      world_view.creatures_end() },
             //   glpp::DrawMode::Triangles);
 
-            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+            //gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
             for (auto & pass : d3_body_passes) {
                pass.draw_batch(
                   mesh_render_callback_t{
@@ -1103,9 +1154,11 @@ int main()
                   glpp::DrawMode::Triangles);
             }
 
-            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+            diamond_pass.draw(glpp::DrawMode::Triangles);
 
-            particle_pass.draw(glpp::DrawMode::Points);
+            //gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+
+            //particle_pass.draw(glpp::DrawMode::Points);
          }
          // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
          tex_fbo->bind(glpp::frame_buffer_t::Draw);

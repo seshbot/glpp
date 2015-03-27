@@ -5,18 +5,26 @@
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/vector_angle.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include <algorithm>
 #include <random>
 
 namespace {
+   // world dimensions go from 0 - 800, 0 - 600
+
+   // 3d world space goes from:
+   //  x: 0 - 800
+   //  y: 0 (altitude)
+   //  z: 0 - -600 (north is -z)
+
+   const float VIEW_VISIBLE_HEIGHT_SCALING = 1.414213562373f;
    const float VIEW_DIMENSION_WIDTH = 800.f;
    const float VIEW_DIMENSION_HEIGHT = 600.f;
-   const float VIEW_DIMENSION_DEPTH = 2.f; // -1 - 1
-   const float WORLD_MIN_Y = -VIEW_DIMENSION_HEIGHT / 2.f;
-   const float WORLD_MAX_Y = VIEW_DIMENSION_HEIGHT / 2.f * 1.414213562373f;
-   const float WORLD_MIN_X = -VIEW_DIMENSION_WIDTH / 2.f;
-   const float WORLD_MAX_X = VIEW_DIMENSION_WIDTH / 2.f;
+   const float WORLD_MIN_Y = 0.f;
+   const float WORLD_MAX_Y = VIEW_DIMENSION_HEIGHT * VIEW_VISIBLE_HEIGHT_SCALING;
+   const float WORLD_MIN_X = 0.f;
+   const float WORLD_MAX_X = VIEW_DIMENSION_WIDTH;
 
    const float CREATURE_SPEED_PER_SECOND = 150.f;
 }
@@ -29,6 +37,16 @@ namespace game {
       return{
          (float)(std::rand() % WORLD_SPAN_X + WORLD_MIN_X),
          (float)(std::rand() % WORLD_SPAN_Y + WORLD_MIN_Y)
+      };
+   }
+
+   // center is 400, 300
+   glm::vec2 center_world_location() {
+      const auto WORLD_SPAN_X = (int)(WORLD_MAX_X - WORLD_MIN_X);
+      const auto WORLD_SPAN_Y = (int)(WORLD_MAX_Y - WORLD_MIN_Y);
+      return{
+         (float)(WORLD_SPAN_X / 2. + WORLD_MIN_X),
+         (float)(WORLD_SPAN_Y / 2. + WORLD_MIN_Y)
       };
    }
 
@@ -59,16 +77,21 @@ namespace game {
    }
 
    glm::mat4 moment_t::mesh_transform() const {
-      float x = (VIEW_DIMENSION_WIDTH / 2.f) + pos().x;  // 0 - 800
-      float z = -((VIEW_DIMENSION_HEIGHT / 2.f) + pos().y); // 0 - 600
-      auto moved = glm::translate(glm::mat4{}, glm::vec3{ x, 0., z });
+      float x = pos().x;  // 0 - 800
+      float z = -pos().y; // 0 - -600
 
-      return
-         glm::rotate(
-//            glm::rotate(
-               glm::scale(moved, glm::vec3{ 32. }),
-//               glm::radians(-45.f), glm::vec3{ 1., 0., 0. }),
-            angle(), glm::vec3{ 0., 1., 0. });
+      auto scale = glm::scale(glm::vec3{ 32. });
+      auto rot = glm::rotate(angle(), glm::vec3{ 0., 1., 0. });
+      auto trans = glm::translate(glm::vec3{ x, 0., z });
+
+      auto result = trans * rot * scale;
+      return result;
+
+      //auto result = glm::mat4{ 1. };
+      //result = glm::translate(result, glm::vec3{ x, 0., z }); // move
+      //result = glm::rotate(result, angle(), glm::vec3{ 0., 1., 0. }); // rotate
+      //result = glm::scale(result, glm::vec3{ 32. });          // scale
+      //return result;
    }
 
    glm::vec2::value_type moment_t::angle() const {
@@ -91,7 +114,7 @@ namespace game {
       : entity_db_(entity_db)
       , particle_db_(particle_db)
       , player_controller_(player_controller)
-      , player_id_(create_creature(creature_t::types::person, {}))
+      , player_id_(create_creature(creature_t::types::person, { center_world_location(), {} }))
    {
    }
 
@@ -375,8 +398,3 @@ void table_index_t::delete_row(table_row_id_type row_id) {
    row_id_to_row_idx[row_id] = -1;
    row_idx_to_row_id.pop_back();
 }
-
-
-//
-//
-//
