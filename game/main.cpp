@@ -586,6 +586,11 @@ int main()
          return true;
       });
 
+      bool do_special_thing = false;
+      controls.register_action_handler(glpp::Key::KEY_X, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
+         do_special_thing = true;
+         return true;
+      });
 
       // 
       // load shaders
@@ -1011,25 +1016,29 @@ int main()
          //
 
          // const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
-         const auto light_pos = glm::vec3{ 400., 30., -300. };
-         const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, .1f, 1000.f);
          struct face_info {
             glpp::frame_buffer_t::CubeFace face;
             glm::vec3 view_direction;
             glm::vec3 up_direction;
+            std::string name;
          };
 
          const face_info faces[6] = {
-            { glpp::frame_buffer_t::POSITIVE_X, { 1., 0., 0. }, { 0., -1., 0. } },
-            { glpp::frame_buffer_t::NEGATIVE_X, { -1., 0., 0. }, { 0., -1., 0. } },
-            { glpp::frame_buffer_t::POSITIVE_Y, { 0., 1., 0. }, { 0., 0., -1. } },
-            { glpp::frame_buffer_t::NEGATIVE_Y, { 0., -1., 0. }, { 0., 0., 1. } },
-            { glpp::frame_buffer_t::POSITIVE_Z, { 0., 0., 1. }, { 0., -1., 0. } },
-            { glpp::frame_buffer_t::NEGATIVE_Z, { 0., 0., -1. }, { 0., -1., 0. } },
+            { glpp::frame_buffer_t::POSITIVE_X, { 1., 0., 0. }, { 0., -1., 0. }, "x_pos" },
+            { glpp::frame_buffer_t::NEGATIVE_X, { -1., 0., 0. }, { 0., -1., 0. }, "x_neg" },
+            { glpp::frame_buffer_t::POSITIVE_Y, { 0., 1., 0. }, { 0., 0., -1. }, "y_pos" },
+            { glpp::frame_buffer_t::NEGATIVE_Y, { 0., -1., 0. }, { 0., 0., 1. }, "y_neg" },
+            { glpp::frame_buffer_t::POSITIVE_Z, { 0., 0., 1. }, { 0., -1., 0. }, "z_pos" },
+            { glpp::frame_buffer_t::NEGATIVE_Z, { 0., 0., -1. }, { 0., -1., 0. }, "z_neg" },
          };
 
+         const auto light_pos = glm::vec3{ 400., 30., -300. };
+         const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, .1f, 1000.f);
+         const auto light_view = glm::lookAt(light_pos, light_pos + faces[0].view_direction, faces[0].up_direction);
+
          gl::cull_face(gl::cull_face_mode_t::front);
-         gl::clear_color(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
+         //gl::clear_color(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
+         gl::clear_color(1., 1., 1., 1.);
 
          for (auto face_idx = 0; face_idx < 6; face_idx++) {
             auto & face = faces[face_idx];
@@ -1047,13 +1056,19 @@ int main()
                   view, light_proj },
                   glpp::DrawMode::Triangles);
             }
+
+            if (do_special_thing) {
+               shadow_tex->save_current_framebuffer(std::string("screen_" + face.name + ".png"));
+            }
          }
+         do_special_thing = false;
 
          prg_3d.use();
          glpp::texture_unit_t tu{ 3 };
          tu.activate();
          shadow_tex->bind();
          prg_3d.uniform("shadow_texture").set(tu);
+         prg_3d.uniform("light_vp").set(light_proj * light_view);
 
          //
          // draw to anti-aliasing frame buffer
@@ -1061,6 +1076,7 @@ int main()
 
          msaa_fbo->bind();
          {
+            gl::clear_color(0., 0., 0., 1.);
             gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);

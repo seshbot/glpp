@@ -16,6 +16,7 @@ const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), vec3(0.,
 uniform mediump mat4 model;
 uniform mediump vec4 colour;
 uniform samplerCube shadow_texture;
+uniform mediump mat4 light_vp;
 
 varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
@@ -32,16 +33,15 @@ mediump float unpack(mediump vec4 packed_dist)
    return dot(packed_dist,unpackFactors);
 }
 
-mediump float calc_shadow_factor(mediump vec3 pos_from_light)
+mediump float calc_shadow_factor()
 {
-   mediump vec4 packed_dist_squared = textureCube(shadow_texture, pos_from_light);
+   mediump vec3 pos_from_light = c_light.world_position - frag_position;
+   mediump vec4 packed_dist = textureCube(shadow_texture, -pos_from_light);
 
-   mediump float dist_squared = unpack(packed_dist_squared);
+   mediump float unpacked_dist = unpack(packed_dist);
 
-   return dist_squared;
-   return dot(pos_from_light, pos_from_light);
-   return dist_squared;
-   return float((dist_squared+0.0001) > dot(pos_from_light, pos_from_light));
+   mediump vec4 frag_from_light = light_vp * vec4(frag_position, 1.);
+   return float((unpacked_dist+0.0001) > (frag_from_light.z / frag_from_light.w));
 }
 
 
@@ -73,15 +73,10 @@ void main() {
    mediump vec3 l = normalize(-c_sky_light_dir);
    mediump float diffuse_intensity = clamp( dot( n,l ), 0.0, 1.0 );
 
-   mediump float shadow_factor = calc_shadow_factor(c_light.world_position - frag_position);
+   mediump float shadow_factor = calc_shadow_factor();
 
    mediump vec3 diffuse = colour.rgb * diffuse_intensity * c_sky_light_intensity;
    mediump vec3 ambient = colour.rgb * c_ambient_intensity;
 
-   mediump vec4 cs = textureCube(shadow_texture, frag_position - c_light.world_position);
-
-   mediump float c = cs.x;
-   // mediump float c = shadow_factor; // sqrt(shadow_factor) / 800.;
-   gl_FragColor = vec4(c, c, c, 1.);
-   //gl_FragColor = gamma(vec4(ambient + shadow_factor * diffuse + shadow_factor * light(c_light, colour.rgb, n), 1.));
+   gl_FragColor = gamma(vec4(ambient + shadow_factor * diffuse + shadow_factor * light(c_light, colour.rgb, n), 1.));
 }

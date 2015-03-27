@@ -86,6 +86,7 @@ namespace glpp {
 
    private:
       friend class cube_map_texture_t;
+
       enum Target {
          TEXTURE_2D,
          TEXTURE_CUBE_MAP,
@@ -102,6 +103,8 @@ namespace glpp {
       };
 
       std::shared_ptr<state> state_;
+
+      static void save_current_framebuffer_(state const & s, std::string const & filename);
    };
 
    class cube_map_texture_t {
@@ -114,6 +117,9 @@ namespace glpp {
       dim_t const & face_dims() const { return state_->dims_; }
 
       void bind() const;
+
+      // TODO: these are clunky, put this on the framebuffer?
+      void save_current_framebuffer(std::string const & filename) const;
 
    private:
       std::shared_ptr<texture_t::state> state_;

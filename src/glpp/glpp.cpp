@@ -475,10 +475,11 @@ namespace glpp
       : state_(std::make_shared<state>(dims, TEXTURE_2D, format)) {
    }
 
-   void texture_t::save_current_framebuffer(std::string const & filename) const {
-      std::vector<uint8_t> buffer(4 * state_->dims_.x * state_->dims_.y);
+   void texture_t::save_current_framebuffer_(texture_t::state const & state, std::string const & filename) {
 
-      auto format = state_->format_;
+      std::vector<uint8_t> buffer(4 * state.dims_.x * state.dims_.y);
+
+      auto format = state.format_;
       auto fmt
          = format == texture_format_t::RGBA ? GL_RGBA
          : format == texture_format_t::RGB ? GL_RGB
@@ -488,7 +489,7 @@ namespace glpp
 #endif
          : throw error("unrecognised image format");
 
-      GL_VERIFY(glReadPixels(0, 0, state_->dims_.x, state_->dims_.y, fmt, GL_UNSIGNED_BYTE, &buffer[0]));
+      GL_VERIFY(glReadPixels(0, 0, state.dims_.x, state.dims_.y, fmt, GL_UNSIGNED_BYTE, &buffer[0]));
 
       auto soil_format = [&filename] {
          auto ext = filename.substr(filename.length() - 4);
@@ -502,8 +503,12 @@ namespace glpp
 
       SOIL_save_image(
          filename.c_str(), soil_format,
-         state_->dims_.x, state_->dims_.y, 4, // TODO: channels?
+         state.dims_.x, state.dims_.y, 4, // TODO: channels?
          buffer.data());
+   }
+   
+   void texture_t::save_current_framebuffer(std::string const & filename) const {
+      save_current_framebuffer_(*state_, filename);
    }
 
    namespace {
@@ -546,6 +551,10 @@ namespace glpp
 
       GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_cube_map, gl_::texture_parameter_name_t::texture_wrap_s, TMP_GL_CLAMP_TO_EDGE));
       GL_VERIFY(gl_::tex_parameteri(gl_::texture_target_t::texture_cube_map, gl_::texture_parameter_name_t::texture_wrap_t, TMP_GL_CLAMP_TO_EDGE));
+   }
+
+   void cube_map_texture_t::save_current_framebuffer(std::string const & filename) const {
+      texture_t::save_current_framebuffer_(*state_, filename);
    }
 
 
