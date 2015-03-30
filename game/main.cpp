@@ -515,7 +515,7 @@ int main()
       };
 
       //
-      // create world
+      // populate world
       //
 
       game::creature_info_table creature_db;
@@ -612,7 +612,6 @@ int main()
       // load shaders
       //
 
-      auto prg_2d = create_program("2d");
       auto prg_3d = create_program("3d");
       auto prg_3d_particle = create_program("3d_particle");
       auto prg_3d_shadow = create_program("3d_shadow");
@@ -654,10 +653,6 @@ int main()
          auto dims = context.win().frame_buffer_dims();
          u.set(glm::vec2{ dims.x, dims.y });
       };
-
-      auto bg_pass = prg_2d.pass()
-         .with(screen_vertices_spec)
-         .set_uniform("texture", glpp::texture_t{ "../../res/bg_green.png" });
 
       auto shadow_tex = std::unique_ptr<glpp::cube_map_texture_t>();
       auto post_tex = std::unique_ptr<glpp::texture_t>();
@@ -1002,7 +997,6 @@ int main()
       {
          if (should_reload_program) {
             try {
-               ::reload_program(prg_2d, "2d");
                ::reload_program(prg_3d, "3d");
                ::reload_program(prg_3d_particle, "3d_particle");
                ::reload_program(prg_3d_shadow, "3d_shadow");
@@ -1019,13 +1013,15 @@ int main()
          auto dims = context.win().frame_buffer_dims();
          auto square_dims = glpp::dim_t{ dims.x, dims.x };
 
+         const int shadow_texture_width = 100;
+
 #ifdef WIN32 
          const glpp::texture_format_t tex_fmt = glpp::texture_format_t::BGRA;
 #else
          const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
 #endif
          if (!shadow_fbo || shadow_fbo->dims() != square_dims) {
-            shadow_tex.reset(new glpp::cube_map_texture_t(square_dims.x, tex_fmt));
+            shadow_tex.reset(new glpp::cube_map_texture_t(shadow_texture_width, tex_fmt));
             shadow_fbo.reset(new glpp::frame_buffer_t(*shadow_tex));
          }
          if (!tex_fbo || tex_fbo->dims() != dims) {
@@ -1060,7 +1056,6 @@ int main()
          gl::clear(
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit);
-         gl::viewport(0, 0, dims.x, dims.y);
 
 
          //
@@ -1078,18 +1073,22 @@ int main()
          const face_info faces[6] = {
             { glpp::frame_buffer_t::POSITIVE_X, { 1., 0., 0. }, { 0., -1., 0. }, "x_pos" },
             { glpp::frame_buffer_t::NEGATIVE_X, { -1., 0., 0. }, { 0., -1., 0. }, "x_neg" },
-            { glpp::frame_buffer_t::POSITIVE_Y, { 0., 1., 0. }, { 0., 0., -1. }, "y_pos" },
-            { glpp::frame_buffer_t::NEGATIVE_Y, { 0., -1., 0. }, { 0., 0., 1. }, "y_neg" },
+            { glpp::frame_buffer_t::POSITIVE_Y, { 0., 1., 0. }, { 0., 0., 1. }, "y_pos" },
+            { glpp::frame_buffer_t::NEGATIVE_Y, { 0., -1., 0. }, { 0., 0., -1. }, "y_neg" },
             { glpp::frame_buffer_t::POSITIVE_Z, { 0., 0., 1. }, { 0., -1., 0. }, "z_pos" },
             { glpp::frame_buffer_t::NEGATIVE_Z, { 0., 0., -1. }, { 0., -1., 0. }, "z_neg" },
          };
 
          const auto light_pos = glm::vec3{ 400., 30., -300. };
-         const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, .1f, 1000.f);
+         const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
          const auto light_view = glm::lookAt(light_pos, light_pos + faces[0].view_direction, faces[0].up_direction);
 
+         gl::disable(gl::enable_cap_t::blend);
          gl::cull_face(gl::cull_face_mode_t::front);
          gl::clear_color(1., 1., 1., 1.);
+
+         // HOLY CRAP this took me ages to figure out people
+         gl::viewport(0, 0, shadow_texture_width, shadow_texture_width);
 
          for (auto face_idx = 0; face_idx < 6; face_idx++) {
             auto & face = faces[face_idx];
@@ -1098,8 +1097,6 @@ int main()
             gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);
-            
-            ground_pass.draw(glpp::DrawMode::Triangles);
 
             for (auto & pass : d3_shadow_passes) {
                pass.draw_batch(
@@ -1114,21 +1111,21 @@ int main()
                shadow_tex->save_current_framebuffer(std::string("screen_" + face.name + ".png"));
             }
          }
-         do_special_thing = false;
          shadow_fbo->unbind();
          gl::cull_face(gl::cull_face_mode_t::back);
+         gl::enable(gl::enable_cap_t::blend);
 
          prg_3d.use();
          glpp::texture_unit_t tu{ 3 };
          tu.activate();
          shadow_tex->bind();
          prg_3d.uniform("shadow_texture").set(tu);
-         prg_3d.uniform("light_vp").set(light_proj * light_view);
 
          //
          // draw to anti-aliasing frame buffer
          //
 
+         gl::viewport(0, 0, dims.x, dims.y);
          msaa_fbo->bind();
          {
             gl::clear_color(1., 1., 1., 1.);
@@ -1136,7 +1133,11 @@ int main()
                gl::clear_buffer_flags_t::color_buffer_bit |
                gl::clear_buffer_flags_t::depth_buffer_bit);
 
-            ground_pass.draw(glpp::DrawMode::Triangles);
+            static bool show_light_perspective = false;
+            if (do_special_thing) show_light_perspective = !show_light_perspective;
+
+            if (!show_light_perspective)
+               ground_pass.draw(glpp::DrawMode::Triangles);
 
             //sprite_pass.draw_batch(
             //   sprite_render_callback_t{
@@ -1145,20 +1146,23 @@ int main()
             //   glpp::DrawMode::Triangles);
 
             //gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+            auto view = show_light_perspective ? light_view : get_view_cb();
+            auto proj = show_light_perspective ? light_proj : get_proj_cb();
             for (auto & pass : d3_body_passes) {
                pass.draw_batch(
                   mesh_render_callback_t{
                      world_view.creatures_begin(),
                      world_view.creatures_end(),
-                     get_view_cb(), get_proj_cb()},
+                     view, proj},
+//                     get_view_cb(), get_proj_cb()},
                   glpp::DrawMode::Triangles);
             }
 
             diamond_pass.draw(glpp::DrawMode::Triangles);
 
-            //gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 
-            //particle_pass.draw(glpp::DrawMode::Points);
+            particle_pass.draw(glpp::DrawMode::Points);
          }
          // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
          tex_fbo->bind(glpp::frame_buffer_t::Draw);
@@ -1176,6 +1180,8 @@ int main()
          post_pass.draw(glpp::DrawMode::Triangles);
 
          last_tick = this_tick;
+
+         do_special_thing = false;
 
          context.win().swap();
       }

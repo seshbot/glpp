@@ -17,7 +17,7 @@ varying mediump vec3 frag_normal;
 
 
 void main() {
-   frag_normal = normalize(vec4(normal_matrix * vec4(normal, 0.)).xyz);
    gl_Position = mvp * vec4(p, 1.);
    frag_position = vec4(model * vec4(p, 1.)).xyz;
+   frag_normal = normalize(vec4(normal_matrix * vec4(normal, 0.)).xyz);
 }

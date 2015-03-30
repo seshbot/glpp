@@ -26,12 +26,12 @@ mediump vec4 pack(mediump float val) {
 }
 
 void main() {
-   mediump float normalizedDistance = frag_position.z / frag_position.w;
-   normalizedDistance = (normalizedDistance + 1.0) / 2.0;
-   normalizedDistance += 0.0005;
+   //mediump float normalizedDistance = frag_position.z / frag_position.w;
+   //normalizedDistance = (normalizedDistance + 1.0) / 2.0;
+   //normalizedDistance += 0.0005;
 
-//   mediump vec3 vLight = frag_position.xyz - c_light.world_position;
-//   mediump float dist = distance(frag_position.xyz, c_light.world_position);
-//   mediump float dist_squared = dot(vLight, vLight);
-   gl_FragColor = pack(normalizedDistance);
+   mediump float dist = distance(frag_position.xyz, c_light.world_position);
+
+   mediump vec4 packed_ = pack(dist / 800.);
+   gl_FragColor = packed_;
 }
