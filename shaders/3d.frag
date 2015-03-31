@@ -25,6 +25,11 @@ const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .01;
 
 const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .01;
 
+mediump float random(mediump vec4 seed4) {
+   mediump float dot_product = dot(seed4, vec4(12.9898,78.233,45.164,94.673));
+   return fract(sin(dot_product) * 43758.5453);
+}
+
 mediump float unpack(mediump vec4 packed_dist)
 {
    const mediump vec4 unpackFactors = vec4( 1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0 );

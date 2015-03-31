@@ -4,7 +4,7 @@
 #define lowp
 #endif
 
-uniform sampler2D texture;
+//uniform sampler2D texture;
 
 void main() {
 //    lowp vec2 uv = vec2(frag_uv.x, frag_uv.y + timer);
