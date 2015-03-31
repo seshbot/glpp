@@ -590,8 +590,6 @@ namespace glpp
 
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, 0));
 
-      check_fbo();
-
       GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
    }
 
@@ -732,7 +730,6 @@ namespace glpp
       blit_to_draw_buffer();
    }
 
-
    void frame_buffer_t::check_fbo() const {
       // Your framebuffer can only be used as a render target if memory has been allocated to store the results
       auto status = gl_::check_framebuffer_status(gl_::framebuffer_target_t::framebuffer);
@@ -747,6 +744,8 @@ namespace glpp
             case gl_::framebuffer_status_t::framebuffer_unsupported: return "GL_FRAMEBUFFER_UNSUPPORTED";
 #ifdef WIN32
             case gl_::framebuffer_status_t::framebuffer_incomplete_dimensions: return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+#else
+            case gl_::framebuffer_status_t::framebuffer_incomplete_draw_buffer: return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
 #endif
                //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
                //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";

@@ -4,6 +4,12 @@
 #define lowp
 #endif
 
+// for some light colours: http://planetpixelemporium.com/tutorialpages/light.html
+// fire (black body palette) http://pages.cs.wisc.edu/~dekruijf/docs/capstone.pdf:
+const lowp vec3 COLOUR_FIRE_LOW = vec3(.75, .40, .05);
+const lowp vec3 COLOUR_FIRE_MID = vec3(.80, .55, .10);
+const lowp vec3 COLOUR_FIRE_HOT = vec3(.95, .70, .15);
+
 struct PositionalLight {
 	mediump vec3 world_position;
 	mediump vec3 ambient;
@@ -11,7 +17,7 @@ struct PositionalLight {
 	mediump float attenuation;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .6);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), COLOUR_FIRE_LOW, .4);
 
 uniform mediump mat4 model;
 uniform mediump vec4 colour;

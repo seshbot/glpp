@@ -17,6 +17,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <float.h> // for FLT_MAX
@@ -73,6 +74,7 @@ namespace {
       }
 
       void register_action_handler(glpp::Key k, glpp::KeyAction a, action_func f) { actions_[{k, a}] = f; }
+      void register_action_handlers(std::vector<glpp::Key> ks, glpp::KeyAction a, action_func f) { for (auto k : ks) register_action_handler(k, a, f); }
 
       bool is_moving() const { return dir_flags_ != 0; }
       glm::vec2 const & direction() const { return direction_; }
@@ -95,7 +97,10 @@ namespace {
             }
          }();
 
-         if (key_dir == dir::none) return;
+         if (key_dir == dir::none) {
+            utils::log(utils::LOG_INFO, "key pressed: %s\n", glpp::to_string(key).c_str());
+            return;
+         }
          if (action == glpp::KEY_ACTION_PRESS) dir_flags_ |= static_cast<uint16_t>(key_dir);
          if (action == glpp::KEY_ACTION_RELEASE) dir_flags_ &= ~static_cast<uint16_t>(key_dir);
 
@@ -127,13 +132,14 @@ namespace {
       using cont_t = std::vector < glm::vec3 >;
       using idx_t = std::size_t;
 
-      glm::vec3 vel_{0., -200., 0.};
+      glm::vec3 vel_{0., -400., 0.};
 
+      // NOTE see http://research.microsoft.com/pubs/70320/RealTimeRain_MSTR.pdf for rain simulation
       void create_particle() {
          auto pos = glm::vec3{
-            (float)(std::rand() % 460) - 230.,
-            100.,
-            (float)(std::rand() % 350) - 250. };
+            (float)(std::rand() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
+            400.,
+            400.f -(float)(std::rand() % 1200) };// (float)(std::rand() % 350) - 250. };
 
          add(pos, vel_);
       }
@@ -234,7 +240,7 @@ namespace {
    };
 
    using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
-      constant_create_policy_t<8000>,
+      constant_create_policy_t<4000>,
       constant_update_policy_t,
       constant_depth_delete_policy_t<0> >;
 }
@@ -597,12 +603,12 @@ int main()
          return true;
       });
       float view_height = 1.;
-      controls.register_action_handler(glpp::Key::KEY_KP_ADD, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
+      controls.register_action_handlers({glpp::Key::KEY_KP_ADD, glpp::Key::KEY_EQUAL}, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          view_height += .2f;
          view_height = std::min(1.f, view_height);
          return true;
       });
-      controls.register_action_handler(glpp::Key::KEY_KP_SUBTRACT, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
+      controls.register_action_handlers({glpp::Key::KEY_KP_SUBTRACT, glpp::Key::KEY_MINUS}, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          view_height -= .2f;
          view_height = std::max(0.f, view_height);
          return true;
@@ -785,7 +791,7 @@ int main()
       auto get_view_cb = [&] {
          auto center_2d = game::center_world_location();
          auto center = glm::vec3{ center_2d.x, 0.f, -center_2d.y };
-         auto eye = center + glm::vec3{ 0.f, 100.f * view_height, 100.f };
+         auto eye = center + glm::vec3{ 0.f, 400.f * view_height, 400.f };
          auto result = glm::lookAt(eye, center, glm::vec3{ 0., 1., 0. });
          return result;
       };
@@ -868,13 +874,15 @@ int main()
          u.set(glm::vec2{dims.x, dims.y});
       };
 
+
       auto emitter_buffer_desc = glpp::describe_buffer(emitter.buffer())
          .attrib("position", 3);
       auto particle_pass = prg_3d_particle.pass()
          .with(emitter_buffer_desc)
-         .set_uniform("texture", glpp::texture_t{ "../../res/drop.png" })
-         .set_uniform_action("screenSize", set_screensize_cb)
-         .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f))
+         //.set_uniform("texture", glpp::texture_t{ "../../res/drop.png" })
+         .set_uniform_action("screen_size", set_screensize_cb)
+         .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f))
+         //.set_uniform("view", glm::lookAt<float>(glm::vec3{400., 200., 100.}, glm::vec3{400., 0., -300.}, glm::vec3{0., 1., 0.}));
          //.set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., 0., 1000.))
          .set_uniform_action("view", set_view_cb);
 
