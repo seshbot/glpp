@@ -35,3 +35,48 @@ GL EXTENSIONS [135]:
  - GL_ARB_shadow
  - GL_ARB_shadow_ambient
  - GL_ARB_sync
+
+Windows (ANGLE) env:
+
+GLFW version        : 3.0.4 Win32 EGL VisualC LoadLibrary(winmm)
+GL_VERSION          : OpenGL ES 2.0 (ANGLE 2.1.a6d110e2811b)
+GL_VENDOR           : Google Inc.
+GL_RENDERER         : ANGLE (NVIDIA GeForce GTX 560  Direct3D11 vs_5_0 ps_5_0)
+GL EXTENSIONS [36]:
+ANGLE (* == DX11 only)
+ - GL_OES_element_index_uint
+ - GL_OES_packed_depth_stencil
+ - GL_OES_get_program_binary
+ - GL_OES_rgb8_rgba8
+ - GL_EXT_texture_format_BGRA8888
+ - GL_EXT_read_format_bgra
+*- GL_NV_pixel_buffer_object
+*- GL_OES_mapbuffer
+*- GL_EXT_map_buffer_range
+ - GL_OES_texture_half_float
+ - GL_OES_texture_half_float_linear
+ - GL_OES_texture_float
+ - GL_OES_texture_float_linear
+ - GL_EXT_texture_rg
+ - GL_EXT_texture_compression_dxt1
+ - GL_ANGLE_texture_compression_dxt3
+ - GL_ANGLE_texture_compression_dxt5
+*- GL_EXT_sRGB
+ - GL_ANGLE_depth_texture
+ - GL_EXT_texture_storage
+ - GL_OES_texture_npot
+*- GL_EXT_draw_buffers
+ - GL_EXT_texture_filter_anisotropic
+ - GL_EXT_occlusion_query_boolean
+ - GL_NV_fence
+ - GL_EXT_robustness
+ - GL_EXT_blend_minmax
+ - GL_ANGLE_framebuffer_blit
+ - GL_ANGLE_framebuffer_multisample
+ - GL_ANGLE_instanced_arrays
+ - GL_ANGLE_pack_reverse_row_order
+ - GL_OES_standard_derivatives
+ - GL_EXT_shader_texture_lod
+ - GL_EXT_frag_depth
+ - GL_ANGLE_texture_usage
+ - GL_ANGLE_translated_shader_source

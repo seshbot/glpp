@@ -20,8 +20,15 @@
 #include <glm/gtx/string_cast.hpp>
 #include <algorithm>
 #include <cstdlib>
-#include <float.h> // for FLT_MAX
 
+// TODO:
+// - animate imported meshes
+// - fire mesh
+// - grass texture
+// - pass lights in uniforms
+// - day/night cycle
+// - text
+// - audio
 
 namespace gl {
 #ifdef _MSC_VER
@@ -240,7 +247,7 @@ namespace {
    };
 
    using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
-      constant_create_policy_t<4000>,
+      constant_create_policy_t<6000>,
       constant_update_policy_t,
       constant_depth_delete_policy_t<0> >;
 }
@@ -1019,16 +1026,16 @@ int main()
          }
 
          auto dims = context.win().frame_buffer_dims();
-         auto square_dims = glpp::dim_t{ dims.x, dims.x };
 
          const int shadow_texture_width = 100;
+         auto shadow_texture_dims = glpp::dim_t{ shadow_texture_width, shadow_texture_width };
 
 #ifdef WIN32 
          const glpp::texture_format_t tex_fmt = glpp::texture_format_t::BGRA;
 #else
          const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
 #endif
-         if (!shadow_fbo || shadow_fbo->dims() != square_dims) {
+         if (!shadow_fbo || shadow_fbo->dims() != shadow_texture_dims) {
             shadow_tex.reset(new glpp::cube_map_texture_t(shadow_texture_width, tex_fmt));
             shadow_fbo.reset(new glpp::frame_buffer_t(*shadow_tex));
          }
@@ -1043,7 +1050,7 @@ int main()
          double this_tick = glpp::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
-         const double MAX_TICK = 1000. / 15.;
+         const double MAX_TICK = 1. / 15.;
          if (time_since_last_tick > MAX_TICK) time_since_last_tick = MAX_TICK;
 
          //

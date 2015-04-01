@@ -1943,6 +1943,24 @@ namespace glpp
       destroy();
    }
 
+   std::vector<std::string> context::extensions() const {
+      std::vector<std::string> extensions;
+      auto es = glGetString(GL_EXTENSIONS);
+      for (auto i = 0, iTokBegin = 0; es[i]; i++) {
+         auto endOfToken = es[i + 1] == ' ' || es[i + 1] == '\0';
+         if (!endOfToken) continue;
+
+         auto token = std::string{ es + iTokBegin, es + i + 1 };
+         auto tokenIsEmpty = std::string::npos == token.find_last_not_of(" \t");
+
+         if (!tokenIsEmpty)
+            extensions.push_back(token);
+
+         iTokBegin = i + 2;
+      }
+      return extensions;
+   }
+
    std::string context::info(bool with_extensions) const {
       std::string buf;
       buf += "GLFW version        : "; buf += glfwGetVersionString();
@@ -1954,23 +1972,9 @@ namespace glpp
 #endif
 
       if (with_extensions) {
-         std::vector<std::string> extensions;
-         auto es = glGetString(GL_EXTENSIONS);
-         for (auto i = 0, iTokBegin = 0; es[i]; i++) {
-            auto endOfToken = es[i + 1] == ' ' || es[i + 1] == '\0';
-            if (!endOfToken) continue;
-
-            auto token = std::string{ es + iTokBegin, es + i + 1 };
-            auto tokenIsEmpty = std::string::npos == token.find_last_not_of(" \t");
-
-            if (!tokenIsEmpty)
-               extensions.push_back(token);
-
-            iTokBegin = i + 2;
-         }
-
-         buf += "\nGL EXTENSIONS [" + std::to_string(extensions.size()) + "]:";
-         for (auto e : extensions) buf += "\n - " + e;
+         auto es = extensions();
+         buf += "\nGL EXTENSIONS [" + std::to_string(es.size()) + "]:";
+         for (auto e : es) buf += "\n - " + e;
       }
 
       return buf;
