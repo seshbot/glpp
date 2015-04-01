@@ -122,7 +122,7 @@ namespace {
       std::map<action_key, action_func> actions_;
    };
 
-
+   // TODO: lifetime (create/delete), movement (update), render (vertices, buffer) policies
    template <typename CreatePolicy, typename UpdatePolicy, typename DeletePolicy>
    class particle_emitter_buffer_t
       : public CreatePolicy   // CreatePolicy provides create_particles(emitter, t)
@@ -132,7 +132,7 @@ namespace {
       using cont_t = std::vector < glm::vec3 >;
       using idx_t = std::size_t;
 
-      glm::vec3 vel_{0., -400., 0.};
+      glm::vec3 vel_{0., -1000., 0.};
 
       // NOTE see http://research.microsoft.com/pubs/70320/RealTimeRain_MSTR.pdf for rain simulation
       void create_particle() {
@@ -178,7 +178,7 @@ namespace {
       glm::vec3 & vel_at(idx_t idx) { return particle_velocities_[idx]; }
 
    private:
-      glpp::buffer_t buffer_ = {glpp::buffer_t::Usage::Stream};
+      glpp::buffer_t buffer_ = {glpp::buffer_t::Usage::Dynamic};
       double current_time_ = 0.;
       std::vector<double> particle_create_times_;
       std::vector<glm::vec3> particle_positions_;
@@ -240,7 +240,7 @@ namespace {
    };
 
    using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
-      constant_create_policy_t<4000>,
+      constant_create_policy_t<6000>,
       constant_update_policy_t,
       constant_depth_delete_policy_t<0> >;
 }
@@ -426,7 +426,7 @@ int main()
       gl::enable(gl::enable_cap_t::blend);
 
 #ifndef WIN32
-      gl::point_size(3.5);
+      gl::point_size(3.);
       gl::enable(gl::enable_cap_t::point_smooth);
 #endif
 
@@ -1043,8 +1043,8 @@ int main()
          double this_tick = glpp::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
-         const double MAX_TICK = 1000. / 15.;
-         if (time_since_last_tick > MAX_TICK) time_since_last_tick = MAX_TICK;
+         const double MAX_TICK_SECONDS = 1. / 15.;
+         if (time_since_last_tick > MAX_TICK_SECONDS) time_since_last_tick = MAX_TICK_SECONDS;
 
          //
          // update world
