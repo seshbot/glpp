@@ -346,7 +346,7 @@ namespace glpp {
    class buffer_t {
    public:
       enum class Target { ArrayBuffer, IndexBuffer };
-      enum class Usage { Static, Stream };
+      enum class Usage { Static, Stream, Dynamic };
 
       buffer_t(Usage usage = Usage::Static);
       buffer_t(Target target, static_array_t data, Usage usage = Usage::Static);

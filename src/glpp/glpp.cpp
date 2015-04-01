@@ -1073,8 +1073,9 @@ namespace glpp
       }
 
       if (!vertex_id_) gl_::gen_buffers(1, &vertex_id_);
-      auto usage = usage_ == Usage::Static
-         ? gl_::buffer_usage_arb_t::static_draw
+      auto usage
+         = usage_ == Usage::Static ? gl_::buffer_usage_arb_t::static_draw
+         : usage_ == Usage::Dynamic ? gl_::buffer_usage_arb_t::dynamic_draw
          : gl_::buffer_usage_arb_t::stream_draw;
       gl_::bind_buffer(gl_::buffer_target_arb_t::array_buffer, vertex_id_);
       gl_::buffer_data(gl_::buffer_target_arb_t::array_buffer, vertex_data_byte_size, vertex_data, usage);
