@@ -425,7 +425,11 @@ int main()
       }
 #endif
 
-      utils::log(utils::LOG_INFO, "%s\n", context.info().c_str());
+      auto extensions = context.extensions();
+      utils::log(utils::LOG_INFO, "%s\n", context.info(false).c_str());
+      utils::log(utils::LOG_INFO, "GL EXTENSIONS [%s]:\n", std::to_string(extensions.size()).c_str());
+      for (auto e : extensions)
+         utils::log(utils::LOG_INFO, " - %s\n", e.c_str());
 
       gl::enable(gl::enable_cap_t::depth_test);
       gl::enable(gl::enable_cap_t::cull_face);
