@@ -292,6 +292,149 @@ void for_each_mesh(aiScene const & scene, aiNode const & node, glm::mat4 const &
    }
 }
 
+
+
+// assimp structure:
+// node (locate by name)
+// - default_local_xform (overridden by animation channel transforms)
+// - global_xform (derived from local_xform and parent local_xforms)
+
+// animation
+// - channel[]
+//   - node (locate by node name)
+//   - position_key[] (all key frames have mTime and mValue)
+//   - rotation_key[]
+//   - scaling_key[]
+//   - local_xform(t) (derived from above key at time t. Note that keys could rotate back to beginning, allow for t overflow)
+
+// mesh
+// - primitive_types (point, line, tri - TODO: this affects size of index buffer! for now just assume tri)
+// - bone[] (remember to handle if !mesh.mHasBones - set bone data to 0)
+//   - offset_matrix
+//   - node (locate by node name)
+//   - global_xform (derived from node global_xform * offset_matrix)
+//   - vertex_weight[]
+//     - vertex_id
+//     - weight
+// - vertices[]
+//   - pos (mesh.mVertices[x])
+//   - bone_weights[] (generally limit to 4)
+//     - bone
+//     - weight
+// - normals[] (indexed by vertex index)
+
+// shader:
+// attibute vec3 pos; // ... etc
+// attribute int bone_ids[]; // practical to use ivec4
+// attribute float bone_weights[]; // practical to use vec4
+// uniform mat4 bones[];
+// ...
+// mat4 bone_transform = bones[bone_id[0]] * bone_weights[0]
+// bone_transform += bones[bone_id[1]] * bone_weights[1]
+// gl_Position = wvp * bone_transform * pos
+
+struct node_animation_t {
+   node_animation_t(aiNode const & node_in, aiNodeAnim const & animation_in) : node(node_in), animation(animation_in) {}
+   aiNode const & node;
+   aiNodeAnim const & animation; // declares local transformations
+   std::weak_ptr<node_animation_t> parent;
+   std::vector<std::weak_ptr<node_animation_t>> children;
+};
+
+struct animation_t {
+   aiAnimation const & animation;
+   std::vector<std::shared_ptr<node_animation_t>> node_animations;
+};
+
+animation_t create_animation(aiScene const & scene, aiAnimation const & animation) {
+   // create node lookup table
+   std::map<std::string, aiNode*> nodes_by_name;
+   std::function<void(aiNode* n)> visit_node = [&](aiNode* n) {
+      nodes_by_name[n->mName.C_Str()] = n;
+      for (auto idx = 0U; idx < n->mNumChildren; idx++)
+         visit_node(n->mChildren[idx]);
+   };
+   visit_node(scene.mRootNode);
+
+   std::vector<std::shared_ptr<node_animation_t>> node_animations;
+   node_animations.reserve(animation.mNumChannels);
+   
+   // create node animations
+   std::map<std::string, std::shared_ptr<node_animation_t>> node_animations_by_name;
+   auto create_node_animation = [&nodes_by_name](aiNodeAnim * n) -> std::shared_ptr<node_animation_t>{
+      auto node_name = std::string{ n->mNodeName.C_Str() };
+      return std::make_shared<node_animation_t>(*nodes_by_name[node_name], *n);
+   };
+
+   for (auto chan_idx = 0U; chan_idx < animation.mNumChannels; chan_idx++) {
+      auto* channel = animation.mChannels[chan_idx];
+      auto node_animation = create_node_animation(channel);
+      node_animations.push_back(node_animation);
+      node_animations_by_name[std::string{channel->mNodeName.C_Str()}] = node_animation;
+   }
+
+   auto lookup_node_anim = [&](aiNode const * node)->std::shared_ptr < node_animation_t > {
+      if (!node) return{};
+      return node_animations_by_name[std::string{ node->mName.C_Str() }];
+   };
+
+   // connect node animation hierarchy
+   for (auto & anim : node_animations) {
+      auto & node = anim->node;
+      // set parent
+      anim->parent = lookup_node_anim(node.mParent);
+      // set children
+      for (auto child_idx = 0U; child_idx < node.mNumChildren; child_idx++) {
+         std::weak_ptr<node_animation_t> elem = lookup_node_anim(node.mChildren[child_idx]);
+         anim->children.push_back(elem);
+      }
+   }
+
+   return{ animation, node_animations};
+};
+
+struct node_animation_snapshot_t {
+   node_animation_t const & node_animation;
+   glm::mat4 local_transform;
+   glm::mat4 global_transform;
+   std::unique_ptr<node_animation_snapshot_t> parent;
+   std::vector<std::unique_ptr<node_animation_snapshot_t>> children;
+};
+
+node_animation_snapshot_t animate(animation_t const & animation, float time) {
+   //for (auto & node : animation.)
+   throw std::runtime_error("not yet implemented");
+};
+
+struct bone_animation {
+   aiBone const & bone;
+   glm::mat4 offset;
+   node_animation_t const & animation;
+};
+
+std::vector<glm::mat4> get_bone_transforms(aiScene const & scene, aiMesh const & mesh, aiAnimation const & anim, float t) {
+   std::vector<glm::mat4> result;
+   result.reserve(10);
+   for (auto bone_idx = 0U; bone_idx < mesh.mNumBones; bone_idx++) {
+
+      //result.push_back();
+   }
+   return result;
+};
+
+
+
+
+struct animated_vertex {
+   glm::vec3 position;
+   glm::ivec4 bone_ids;
+   glm::vec4 bone_weights;
+};
+
+
+
+
+
 #ifdef WIN32
 int CALLBACK WinMain(
    HINSTANCE hInstance,
@@ -318,6 +461,7 @@ int main()
       scene->mNumTextures,
       scene->mNumAnimations
    );
+
 
    auto * node = scene->mRootNode;
    if (node) print_node_info(*node);
