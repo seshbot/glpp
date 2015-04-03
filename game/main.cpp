@@ -382,7 +382,9 @@ animation_t create_animation(aiScene const & scene, aiAnimation const & animatio
    for (auto & anim : node_animations) {
       auto & node = anim->node;
       // set parent
+      assert(!anim->parent);
       anim->parent = lookup_node_anim(node.mParent);
+
       // set children
       for (auto child_idx = 0U; child_idx < node.mNumChildren; child_idx++) {
          std::weak_ptr<node_animation_t> elem = lookup_node_anim(node.mChildren[child_idx]);
@@ -394,22 +396,60 @@ animation_t create_animation(aiScene const & scene, aiAnimation const & animatio
 };
 
 struct node_animation_snapshot_t {
+   node_animation_snapshot_t(node_animation_t const & node_animation_in) : node_animation(node_animation_in) {}
    node_animation_t const & node_animation;
+   int rot_key_idx;
+   int pos_key_idx;
+   int scale_key_idx;
    glm::mat4 local_transform;
    glm::mat4 global_transform;
    std::unique_ptr<node_animation_snapshot_t> parent;
    std::vector<std::unique_ptr<node_animation_snapshot_t>> children;
 };
 
-node_animation_snapshot_t animate(animation_t const & animation, float time) {
-   //for (auto & node : animation.)
-   throw std::runtime_error("not yet implemented");
+struct animation_snapshot_t {
+   std::vector<node_animation_snapshot_t> node_snapshots;
 };
 
-struct bone_animation {
-   aiBone const & bone;
-   glm::mat4 offset;
-   node_animation_t const & animation;
+animation_snapshot_t animate(animation_t const & animation, float time) {
+   node_animation_snapshot_t result;
+
+   for (auto & node_anim : animation.node_animations) {
+      auto node_snapshot = node_animation_snapshot_t{node_anim};
+      auto & animation = node_anim.animation;
+
+      // TODO: 
+      // - find keyframe for rot, pos and scale
+      // - create local transform from above
+      // - create global transform from hieararchies of local transforms
+
+
+      // FOR EACH chan (bone) in anim.mChannels
+      //    key_idx = FIND INDEX OF FIRST key in chan.mPositionKeys where key.time < now
+      //    next_key_idx = (key_idx + 1) % chan.mNumPositionKeys
+
+      //    fraction = (now - key_idx.time) / (next_key_idx.time - key_idx.time) // allow for overflow back to start
+      //    position : v3 = interpolate(key.mPosition, next_key.mPosition, fraction) 
+
+      //    // do same for rotation keys (quat)
+
+      //    // do same for scaling keys (v3) - interpolate???
+
+
+      //    aiMatrix4x4& mat = mTransforms[a];
+      //    mat = aiMatrix4x4( presentRotation.GetMatrix());
+      //    mat.a1 *= presentScaling.x; mat.b1 *= presentScaling.x; mat.c1 *= presentScaling.x;
+      //    mat.a2 *= presentScaling.y; mat.b2 *= presentScaling.y; mat.c2 *= presentScaling.y;
+      //    mat.a3 *= presentScaling.z; mat.b3 *= presentScaling.z; mat.c3 *= presentScaling.z;
+      //    mat.a4 = presentPosition.x; mat.b4 = presentPosition.y; mat.c4 = presentPosition.z;
+
+
+
+
+      result.node_snapshots.push_back(node_snapshot);
+   }
+
+   return result;
 };
 
 std::vector<glm::mat4> get_bone_transforms(aiScene const & scene, aiMesh const & mesh, aiAnimation const & anim, float t) {
