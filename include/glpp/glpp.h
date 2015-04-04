@@ -22,11 +22,11 @@
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 
-//#define _DEBUG
-#ifdef _DEBUG
-   void checkOpenGLError(const char* function, const char* file, int line);
-   void checkOpenGLError(const char* stmt, const char* function, const char* file, int line);
+#if defined(GLPP_DEBUG_OPENGL) || (defined(_DEBUG) && !defined(GLPP_NO_DEBUG_OPENGL))
+#define GLPP_DEBUG_OPENGL
+#endif
 
+#ifdef GLPP_DEBUG_OPENGL
 #  define GL_VERIFY(stmt) do { stmt; checkOpenGLError(#stmt, __FUNCTION__, __FILE__, __LINE__); } while (0)
 #  define GL_CHECK() do { checkOpenGLError(__FUNCTION__, __FILE__, __LINE__); } while (0)
 #  define GL_IGNORE(stmt) do { GL_CHECK(); stmt; glGetError(); } while (0)
@@ -45,6 +45,8 @@ namespace glpp {
    inline bool operator!=(dim_t const & d1, dim_t const & d2) { return !(d1 == d2); }
 
    //const char * openGlErrorString(id_t err);
+   void checkOpenGLError(const char* function, const char* file, int line);
+   void checkOpenGLError(const char* stmt, const char* function, const char* file, int line);
 
    struct error : public std::runtime_error {
       error() : std::runtime_error("") { }

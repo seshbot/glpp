@@ -141,7 +141,7 @@ namespace {
 
       glm::vec3 vel_{0., -1000., 0.};
 
-      // NOTE see http://research.microsoft.com/pubs/70320/RealTimeRain_MSTR.pdf for rain simulation
+      // see http://research.microsoft.com/pubs/70320/RealTimeRain_MSTR.pdf for rain simulation
       void create_particle() {
          auto pos = glm::vec3{
             (float)(std::rand() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
@@ -258,12 +258,23 @@ namespace {
 #include <assimp/mesh.h>
 #include <assimp/material.h>
 
-void print_node_info(aiNode const & node, int depth = 0) {
+void print_node_info(aiScene const & scene, aiNode const & node, int depth = 0) {
    auto indent = std::string(depth * 2, '-');
    utils::log(utils::LOG_INFO, " %s- %s %d children, %d meshes\n", indent.c_str(), node.mName.C_Str(), node.mNumChildren, node.mNumMeshes);
 
+   for (auto mesh_idx = 0U; mesh_idx < node.mNumMeshes; mesh_idx++) {
+      auto & mesh = *scene.mMeshes[node.mMeshes[mesh_idx]];
+      std::string bones;
+      for (auto bone_idx = 0U; bone_idx < mesh.mNumBones; bone_idx++) {
+         if (bones.length() > 0) bones += ", ";
+         bones = bones + mesh.mBones[bone_idx]->mName.C_Str();
+      }
+      if (bones.length() > 0) bones = " (" + bones + ")";
+      utils::log(utils::LOG_INFO, " --%s- [mesh '%s' %d bones%s]\n", indent.c_str(), mesh.mName.C_Str(), mesh.mNumBones, bones.c_str());
+   }
+
    for (auto idx = 0U; idx < node.mNumChildren; idx++) {
-      print_node_info(*node.mChildren[idx], depth + 1);
+      print_node_info(scene, *node.mChildren[idx], depth + 1);
    }
 }
 
@@ -277,6 +288,21 @@ glm::mat4 to_mat4(aiMatrix4x4 const & from) {
    to[2][2] = from.c3; to[3][2] = from.c4;
    to[0][3] = from.d1; to[1][3] = from.d2;
    to[2][3] = from.d3; to[3][3] = from.d4;
+
+   return to;
+}
+
+glm::mat4 to_mat4(aiQuaternion const & from) {
+   auto from_mat = aiMatrix4x4(from.GetMatrix());
+   glm::mat4 to;
+   to[0][0] = from_mat.a1; to[1][0] = from_mat.a2;
+   to[2][0] = from_mat.a3; to[3][0] = from_mat.a4;
+   to[0][1] = from_mat.b1; to[1][1] = from_mat.b2;
+   to[2][1] = from_mat.b3; to[3][1] = from_mat.b4;
+   to[0][2] = from_mat.c1; to[1][2] = from_mat.c2;
+   to[2][2] = from_mat.c3; to[3][2] = from_mat.c4;
+   to[0][3] = from_mat.d1; to[1][3] = from_mat.d2;
+   to[2][3] = from_mat.d3; to[3][3] = from_mat.d4;
 
    return to;
 }
@@ -296,6 +322,7 @@ void for_each_mesh(aiScene const & scene, aiNode const & node, glm::mat4 const &
 
 // assimp structure:
 // node (locate by name)
+// - meshes and bones are different nodes - mesh nodes reference bone nodes
 // - default_local_xform (overridden by animation channel transforms)
 // - global_xform (derived from local_xform and parent local_xforms)
 
@@ -334,123 +361,365 @@ void for_each_mesh(aiScene const & scene, aiNode const & node, glm::mat4 const &
 // gl_Position = wvp * bone_transform * pos
 
 struct node_animation_t {
-   node_animation_t(aiNode const & node_in, aiNodeAnim const & animation_in) : node(node_in), animation(animation_in) {}
-   aiNode const & node;
-   aiNodeAnim const & animation; // declares local transformations
-   std::weak_ptr<node_animation_t> parent;
-   std::vector<std::weak_ptr<node_animation_t>> children;
+   node_animation_t(aiNode const & node_in) : node_(node_in), animation_(nullptr) {
+   }
+
+   aiNode const & node() const { return node_; }
+   std::string name() const { return{ node_.mName.C_Str() }; }
+
+   bool has_animation() const { return nullptr != animation_; }
+   aiNodeAnim const & animation() const {
+      if (!has_animation()) throw std::runtime_error("no animation data for node");
+      return *animation_;
+   }
+   unsigned animation_idx() const { return anim_idx_; }
+
+   aiMatrix4x4 const & default_tranform() const { return node_.mTransformation; }
+
+   node_animation_t const * parent = nullptr;
+   std::vector<node_animation_t const *> children;
+
+private:
+   friend struct animation_t;
+
+   void attach_animation(aiNodeAnim const & animation_in, unsigned anim_idx) {
+      assert(!animation_ && anim_idx_ == 0 && "unexpectedly set node animation multiple times");
+      animation_ = &animation_in;
+      anim_idx_ = anim_idx;
+      assert((animation_->mNodeName == node_.mName) && "associating wrong animation with animation node");
+   }
+
+   aiNode const & node_;
+   aiNodeAnim const * animation_; // declares local transformations
+   unsigned anim_idx_ = 0;
 };
 
 struct animation_t {
-   aiAnimation const & animation;
-   std::vector<std::shared_ptr<node_animation_t>> node_animations;
-};
+   // disallow copy to ensure memory locations remain consistent
+   animation_t(animation_t const &) = delete;
+   animation_t & operator=(animation_t const &) = delete;
 
-animation_t create_animation(aiScene const & scene, aiAnimation const & animation) {
-   // create node lookup table
-   std::map<std::string, aiNode*> nodes_by_name;
-   std::function<void(aiNode* n)> visit_node = [&](aiNode* n) {
-      nodes_by_name[n->mName.C_Str()] = n;
-      for (auto idx = 0U; idx < n->mNumChildren; idx++)
-         visit_node(n->mChildren[idx]);
-   };
-   visit_node(scene.mRootNode);
+   // allow move because it keeps memory locations for our hierarchy
+   animation_t(animation_t && other)
+      : animation(other.animation)
+      , scene(other.scene)
+      , root_node(other.root_node)
+      , nodes(std::move(other.nodes))
+      , meshes(std::move(other.meshes))
+   {}
 
-   std::vector<std::shared_ptr<node_animation_t>> node_animations;
-   node_animations.reserve(animation.mNumChannels);
-   
-   // create node animations
-   std::map<std::string, std::shared_ptr<node_animation_t>> node_animations_by_name;
-   auto create_node_animation = [&nodes_by_name](aiNodeAnim * n) -> std::shared_ptr<node_animation_t>{
-      auto node_name = std::string{ n->mNodeName.C_Str() };
-      return std::make_shared<node_animation_t>(*nodes_by_name[node_name], *n);
-   };
-
-   for (auto chan_idx = 0U; chan_idx < animation.mNumChannels; chan_idx++) {
-      auto* channel = animation.mChannels[chan_idx];
-      auto node_animation = create_node_animation(channel);
-      node_animations.push_back(node_animation);
-      node_animations_by_name[std::string{channel->mNodeName.C_Str()}] = node_animation;
+   animation_t & operator=(animation_t && other) {
+      animation = other.animation;
+      scene = other.scene;
+      root_node = other.root_node;
+      nodes = std::move(other.nodes);
+      meshes = std::move(other.meshes);
    }
 
-   auto lookup_node_anim = [&](aiNode const * node)->std::shared_ptr < node_animation_t > {
-      if (!node) return{};
-      return node_animations_by_name[std::string{ node->mName.C_Str() }];
+   ~animation_t() = default;
+
+   animation_t(aiScene const & scene, aiAnimation const & animation)
+      : animation(&animation)
+   {
+      // ensure node data never moves - allocate enough space for one entry per node
+      std::function<unsigned(aiNode* n)> child_count = [&](aiNode* n) {
+         auto count = 1U; // count ourselves
+         for (auto idx = 0U; idx < n->mNumChildren; idx++) count += child_count(n->mChildren[idx]);
+         return count;
+      };
+      auto node_count = child_count(scene.mRootNode);
+      nodes.reserve(node_count);
+
+      // node node_animation lookup table
+      std::map<std::string, node_animation_t*> nodes_by_name;
+      auto lookup_node_anim = [&](aiNode const * node)->node_animation_t * {
+         if (!node) return{};
+         auto it = nodes_by_name.find(std::string{ node->mName.C_Str() });
+         assert(it != nodes_by_name.end());
+         return it->second;
+      };
+      auto lookup_bone_anim = [&](aiBone const * bone)->node_animation_t * {
+         assert(bone);
+         auto it = nodes_by_name.find(std::string{ bone->mName.C_Str() });
+         assert(it != nodes_by_name.end());
+         return it->second;
+      };
+
+      std::function<void(aiNode* n)> create_node_recursive = [&](aiNode* n) {
+         auto node_name = n->mName.C_Str();
+         assert(nodes_by_name.find(node_name) == nodes_by_name.end());
+         nodes.push_back({ *n });
+         nodes_by_name[node_name] = &nodes.back();
+         for (auto idx = 0U; idx < n->mNumChildren; idx++)
+            create_node_recursive(n->mChildren[idx]);
+      };
+      create_node_recursive(scene.mRootNode);
+      
+      std::function<void(aiNode* n)> create_mesh_recursive = [&](aiNode* n) {
+         auto * node = lookup_node_anim(n);
+         for (auto mesh_idx = 0U; mesh_idx < n->mNumMeshes; mesh_idx++) {
+            auto & mesh = *scene.mMeshes[n->mMeshes[mesh_idx]];
+            std::vector<mesh_t::bone_t> bones;
+            for (auto bone_idx = 0U; bone_idx < mesh.mNumBones; bone_idx++) {
+               auto * bone = mesh.mBones[bone_idx];
+               auto * bone_node = lookup_bone_anim(bone);
+               bones.push_back({*bone, *bone_node});
+            }
+            meshes.push_back({mesh, node, std::move(bones)});
+         }
+         for (auto idx = 0U; idx < n->mNumChildren; idx++)
+            create_mesh_recursive(n->mChildren[idx]);
+      };
+      create_mesh_recursive(scene.mRootNode);
+
+      // add animations to nodes and track channels
+      for (auto chan_idx = 0U; chan_idx < animation.mNumChannels; chan_idx++) {
+         auto* channel = animation.mChannels[chan_idx];
+         auto node_name = std::string{ channel->mNodeName.C_Str() };
+
+         auto * node_animation = nodes_by_name.find(node_name)->second;
+         node_animation->attach_animation(*channel, chan_idx);
+      }
+
+      // connect node animation hierarchy
+      for (auto & anim : nodes) {
+         auto & node = anim.node_;
+         // set parent
+         assert(!anim.parent);
+         anim.parent = lookup_node_anim(node.mParent);
+
+         // set children
+         for (auto child_idx = 0U; child_idx < node.mNumChildren; child_idx++) {
+            auto * elem = lookup_node_anim(node.mChildren[child_idx]);
+            anim.children.push_back(elem);
+         }
+      }
+
+      auto root_node_name = std::string{ scene.mRootNode->mName.C_Str() };
+      root_node = nodes_by_name.find(root_node_name)->second;
+   }
+
+   std::string name() const { return{animation->mName.C_Str()}; }
+
+   aiAnimation const * animation;
+   aiScene const * scene;
+   node_animation_t const * root_node;
+   std::vector<node_animation_t> nodes; // storage for node anim hierarchy
+
+   struct mesh_t {
+      aiMesh const & mesh;
+      node_animation_t const * node;
+
+      struct bone_t {
+         aiBone const & bone;
+         node_animation_t const & node;
+      };
+      std::vector<bone_t> bones;
+   };
+   std::vector<mesh_t> meshes;
+};
+//
+//struct scene_t {
+//   struct vertex_t {
+//      glm::vec3 position;
+//      glm::ivec4 bone_ids;
+//      glm::vec4 bone_weights;
+//   };
+//
+//   struct bone_t {
+//      glm::mat4 offset;
+//   };
+//   struct mesh_bones_t {
+//      aiMesh const & mesh;
+//      std::vector<bone_t const *> bones;
+//   };
+//
+//   scene_t(aiScene const & scene_in)
+//      : scene(scene_in)
+//   {
+//      animations.reserve(scene.mNumAnimations);
+//
+//      for (auto idx = 0U; idx < scene.mNumAnimations; idx++) {
+//         animations.emplace_back(scene, *scene.mAnimations[idx]);
+//      }
+//   }
+//
+//   aiScene const & scene;
+//   std::vector<animation_t> animations;
+//
+//   std::vector<mesh_bones_t> meshes;
+//   std::vector<bone_t> bones;
+//};
+
+struct node_animation_snapshot_t {
+   template <typename TransformT>
+   struct frame {
+      unsigned key_index;
+      TransformT transform;
    };
 
-   // connect node animation hierarchy
-   for (auto & anim : node_animations) {
-      auto & node = anim->node;
-      // set parent
-      assert(!anim->parent);
-      anim->parent = lookup_node_anim(node.mParent);
+   static aiQuaternion interpolate(aiQuaternion const & q1, aiQuaternion const & q2, float fraction) {
+      aiQuaternion result{ 1, 0, 0, 0 };
+      aiQuaternion::Interpolate(result, q1, q2, fraction);
+      return result;
+   }
 
-      // set children
-      for (auto child_idx = 0U; child_idx < node.mNumChildren; child_idx++) {
-         std::weak_ptr<node_animation_t> elem = lookup_node_anim(node.mChildren[child_idx]);
-         anim->children.push_back(elem);
+   static aiVector3D interpolate(aiVector3D const & v1, aiVector3D const & v2, float fraction) {
+      return v1 + (v2 - v1) * fraction;
+   }
+
+   template <typename ResultTransformT, typename KeyT>
+   static frame<ResultTransformT> make_frame(unsigned num_keys, KeyT* keys, double time_ticks, double duration_ticks) {
+      if (num_keys == 0) return{};
+
+      unsigned key_index = 0;
+      for (auto idx = 0U; idx < num_keys; idx++) {
+         auto & key = keys[idx];
+         if (key.mTime < time_ticks) {
+            key_index = idx;
+            break;
+         }
+      }
+
+      auto next_key_index = key_index + 1;
+      if (next_key_index >= num_keys) next_key_index = 0;
+
+      auto & key1 = keys[key_index];
+      auto & key2 = keys[next_key_index];
+
+      auto time_diff = key2.mTime - key1.mTime;
+      time_diff = (time_diff < 0.) ? time_diff + duration_ticks : time_diff;
+
+      decltype(KeyT::mValue) frame_xform;
+      if (time_diff == 0.) {
+         frame_xform = key1.mValue;
+      }
+      else {
+         auto fraction = (float)((time_ticks - key1.mTime) / time_diff);
+         assert(fraction > 0. && fraction <= 1.);
+         frame_xform = interpolate(key1.mValue, key2.mValue, fraction);
+      }
+
+      return{key_index, frame_xform};
+   }
+
+   node_animation_snapshot_t(node_animation_t const & node_animation_in, node_animation_snapshot_t const * parent_in, double time_ticks_in, double time_ticks_total)
+      : node_animation(node_animation_in)
+      , parent(parent_in)
+      , time_ticks(time_ticks_in)
+   {
+      if (!node_animation.has_animation()) {
+         local_transform = to_mat4(node_animation.default_tranform());
+      }
+      else {
+         auto & ai_anim = node_animation.animation();
+
+         // interpolate key frame from pos, rot and scale keys
+         auto rot_frame = make_frame<aiQuaternion>(ai_anim.mNumRotationKeys, ai_anim.mRotationKeys, time_ticks, time_ticks_total);
+         auto pos_frame = make_frame<aiVector3D>(ai_anim.mNumPositionKeys, ai_anim.mPositionKeys, time_ticks, time_ticks_total);
+         auto scale_frame = make_frame<aiVector3D>(ai_anim.mNumScalingKeys, ai_anim.mScalingKeys, time_ticks, time_ticks_total);
+
+         rot_key_idx = rot_frame.key_index;
+         pos_key_idx = pos_frame.key_index;
+         scale_key_idx = scale_frame.key_index;
+
+         auto ai_xform = aiMatrix4x4(rot_frame.transform.GetMatrix());
+         //    aiMatrix4x4& mat = mTransforms[a];
+         //    mat = aiMatrix4x4( presentRotation.GetMatrix());
+         ai_xform.a1 *= scale_frame.transform.x; ai_xform.b1 *= scale_frame.transform.x; ai_xform.c1 *= scale_frame.transform.x;
+         ai_xform.a2 *= scale_frame.transform.y; ai_xform.b2 *= scale_frame.transform.y; ai_xform.c2 *= scale_frame.transform.y;
+         ai_xform.a3 *= scale_frame.transform.z; ai_xform.b3 *= scale_frame.transform.z; ai_xform.c3 *= scale_frame.transform.z;
+         ai_xform.a4 = pos_frame.transform.x; ai_xform.b4 = pos_frame.transform.y; ai_xform.c4 = pos_frame.transform.z;
+
+         // create local transform from above
+         local_transform = to_mat4(ai_xform);
+      }
+
+      // create global_transform from parent + local
+      if (parent) {
+         global_transform = local_transform;
+      }
+      else {
+         global_transform = parent->global_transform * local_transform;
       }
    }
 
-   return{ animation, node_animations};
-};
+   std::string name() const { return node_animation.name(); }
 
-struct node_animation_snapshot_t {
-   node_animation_snapshot_t(node_animation_t const & node_animation_in) : node_animation(node_animation_in) {}
+   aiNode const & node() const { return node_animation.node(); }
+
    node_animation_t const & node_animation;
+   node_animation_snapshot_t const * parent;
+   std::vector<node_animation_snapshot_t const *> children;
+   double time_ticks;
+
    int rot_key_idx;
    int pos_key_idx;
    int scale_key_idx;
    glm::mat4 local_transform;
    glm::mat4 global_transform;
-   std::unique_ptr<node_animation_snapshot_t> parent;
-   std::vector<std::unique_ptr<node_animation_snapshot_t>> children;
 };
 
 struct animation_snapshot_t {
+   // disallow copy to ensure memory locations remain consistent
+   animation_snapshot_t(animation_snapshot_t const &) = delete;
+   animation_snapshot_t & operator=(animation_snapshot_t const &) = delete;
+
+   animation_snapshot_t(animation_snapshot_t && other) : node_snapshots(std::move(other.node_snapshots)) {}
+   animation_snapshot_t & operator=(animation_snapshot_t && other) { node_snapshots = std::move(other.node_snapshots); }
+
+   ~animation_snapshot_t() = default;
+
+   animation_snapshot_t(animation_t const & animation_in, double time_secs)
+      : animation(&animation_in)
+   {
+      auto ticks_per_sec = animation_in.animation->mTicksPerSecond != 0.0 ? animation_in.animation->mTicksPerSecond : 25.0;
+      auto animation_time_ticks = time_secs * ticks_per_sec;
+      animation_time_ticks = (animation_in.animation->mDuration > 0.) ? std::fmod(animation_time_ticks, animation_in.animation->mDuration) : 0.;
+
+      node_snapshots.reserve(animation_in.nodes.size());
+
+      std::function<node_animation_snapshot_t const *(node_animation_t const &, node_animation_snapshot_t const *)> create_and_add_snapshot_recursive = [&](node_animation_t const & n, node_animation_snapshot_t const * parent) {
+         node_snapshots.emplace_back(n, parent, animation_time_ticks, animation_in.animation->mDuration);
+         auto * new_snapshot = &node_snapshots.back();
+
+         for (auto & child : n.children) {
+            auto * new_child = create_and_add_snapshot_recursive(*child, &node_snapshots.back());
+            new_snapshot->children.push_back(new_child);
+         }
+
+         return new_snapshot;
+      };
+
+      root_node_snapshot = create_and_add_snapshot_recursive(*animation_in.root_node, nullptr);
+   }
+
+   // callback void(aiNode const &, aiMesh const &, glm::mat4 const &)
+   template <typename CallbackT>
+   void for_each_mesh_impl(node_animation_snapshot_t const & node_snapshot, CallbackT callback) {
+      auto & node = node_snapshot.node();
+      auto transform = parent_transform * to_mat4(node.mTransformation);
+      for (auto idx = 0U; idx < node.mNumMeshes; idx++) {
+         // TODO: get bones and bone node transforms
+         callback(*scene.mMeshes[node.mMeshes[idx]], transform);
+      }
+
+      for (auto * child : node_snapshot.children) {
+         for_each_mesh_impl(*child, callback);
+      }
+   }
+
+   // callback void(aiMesh const &, glm::mat4 const &)
+   template <typename CallbackT>
+   void for_each_mesh(CallbackT callback) {
+      for_each_mesh_impl(*root_node_snapshot, callback);
+   }
+
+   animation_t const * animation;
+   node_animation_snapshot_t const * root_node_snapshot;
    std::vector<node_animation_snapshot_t> node_snapshots;
 };
 
-animation_snapshot_t animate(animation_t const & animation, float time) {
-   node_animation_snapshot_t result;
-
-   for (auto & node_anim : animation.node_animations) {
-      auto node_snapshot = node_animation_snapshot_t{node_anim};
-      auto & animation = node_anim.animation;
-
-      // TODO: 
-      // - find keyframe for rot, pos and scale
-      // - create local transform from above
-      // - create global transform from hieararchies of local transforms
-
-
-      // FOR EACH chan (bone) in anim.mChannels
-      //    key_idx = FIND INDEX OF FIRST key in chan.mPositionKeys where key.time < now
-      //    next_key_idx = (key_idx + 1) % chan.mNumPositionKeys
-
-      //    fraction = (now - key_idx.time) / (next_key_idx.time - key_idx.time) // allow for overflow back to start
-      //    position : v3 = interpolate(key.mPosition, next_key.mPosition, fraction) 
-
-      //    // do same for rotation keys (quat)
-
-      //    // do same for scaling keys (v3) - interpolate???
-
-
-      //    aiMatrix4x4& mat = mTransforms[a];
-      //    mat = aiMatrix4x4( presentRotation.GetMatrix());
-      //    mat.a1 *= presentScaling.x; mat.b1 *= presentScaling.x; mat.c1 *= presentScaling.x;
-      //    mat.a2 *= presentScaling.y; mat.b2 *= presentScaling.y; mat.c2 *= presentScaling.y;
-      //    mat.a3 *= presentScaling.z; mat.b3 *= presentScaling.z; mat.c3 *= presentScaling.z;
-      //    mat.a4 = presentPosition.x; mat.b4 = presentPosition.y; mat.c4 = presentPosition.z;
-
-
-
-
-      result.node_snapshots.push_back(node_snapshot);
-   }
-
-   return result;
-};
 
 std::vector<glm::mat4> get_bone_transforms(aiScene const & scene, aiMesh const & mesh, aiAnimation const & anim, float t) {
    std::vector<glm::mat4> result;
@@ -504,7 +773,28 @@ int main()
 
 
    auto * node = scene->mRootNode;
-   if (node) print_node_info(*node);
+   if (node) print_node_info(*scene, *node);
+
+   std::vector<animation_t> animations;
+   animations.reserve(scene->mNumAnimations);
+
+   std::function<void(node_animation_t const &, std::string)> print_rec = [&](node_animation_t const & n, std::string indent) {
+      if (n.has_animation())
+         utils::log(utils::LOG_INFO, "%s node %s (chan%d: %d rot %d pos %d scale keys)\n", indent.c_str(), n.name().c_str(), n.animation_idx(), n.animation().mNumRotationKeys, n.animation().mNumPositionKeys, n.animation().mNumScalingKeys);
+      else
+         utils::log(utils::LOG_INFO, "%s node %s (no keys)\n", indent.c_str(), n.name().c_str());
+      for (auto & c : n.children) {
+         print_rec(*c, "  " + indent);
+      }
+   };
+   for (auto idx = 0U; idx < scene->mNumAnimations; idx++) {
+      animations.emplace_back(*scene, *scene->mAnimations[idx]);
+      // to snapshot: animation_snapshot_t(animation_t const & animation, double time_secs)
+      auto & animation = animations.back();
+      utils::log(utils::LOG_INFO, " - animation %s (%d animated nodes)\n", animation.name().c_str(), animation.nodes.size());
+      print_rec(*animation.root_node, "   - ");
+   }
+
 
 #if 1
    auto mat_name = [scene](unsigned idx) {
@@ -1033,6 +1323,10 @@ int main()
 
       aiNode * node = scene->mRootNode;
       if (node) for_each_mesh(*scene, *node, glm::mat4{}, [&](aiMesh const & mesh, glm::mat4 const & pos) {
+         // NOTE
+         // TODO: get bone index in here as well
+         //       create bone transform buffer - pass as uniform
+         //       pass bone indices as attribute
          d3_shadow_passes.push_back(make_shadow_pass(prg_3d_shadow, *scene, mesh, pos));
          d3_body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh, pos));
       });
