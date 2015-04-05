@@ -414,6 +414,7 @@ struct animation_t {
       root_node = other.root_node;
       nodes = std::move(other.nodes);
       meshes = std::move(other.meshes);
+      return *this;
    }
 
    ~animation_t() = default;
@@ -445,17 +446,17 @@ struct animation_t {
          return it->second;
       };
 
-      std::function<void(aiNode* n)> create_node_recursive = [&](aiNode* n) {
+      std::function<void(aiNode* n)> create_nodes_recursive = [&](aiNode* n) {
          auto node_name = n->mName.C_Str();
          assert(nodes_by_name.find(node_name) == nodes_by_name.end());
          nodes.push_back({ *n });
          nodes_by_name[node_name] = &nodes.back();
          for (auto idx = 0U; idx < n->mNumChildren; idx++)
-            create_node_recursive(n->mChildren[idx]);
+            create_nodes_recursive(n->mChildren[idx]);
       };
-      create_node_recursive(scene.mRootNode);
+      create_nodes_recursive(scene.mRootNode);
       
-      std::function<void(aiNode* n)> create_mesh_recursive = [&](aiNode* n) {
+      std::function<void(aiNode* n)> create_meshes_recursive = [&](aiNode* n) {
          auto * node = lookup_node_anim(n);
          for (auto mesh_idx = 0U; mesh_idx < n->mNumMeshes; mesh_idx++) {
             auto & mesh = *scene.mMeshes[n->mMeshes[mesh_idx]];
@@ -468,9 +469,9 @@ struct animation_t {
             meshes.push_back({mesh, node, std::move(bones)});
          }
          for (auto idx = 0U; idx < n->mNumChildren; idx++)
-            create_mesh_recursive(n->mChildren[idx]);
+            create_meshes_recursive(n->mChildren[idx]);
       };
-      create_mesh_recursive(scene.mRootNode);
+      create_meshes_recursive(scene.mRootNode);
 
       // add animations to nodes and track channels
       for (auto chan_idx = 0U; chan_idx < animation.mNumChannels; chan_idx++) {
@@ -665,8 +666,17 @@ struct animation_snapshot_t {
    animation_snapshot_t(animation_snapshot_t const &) = delete;
    animation_snapshot_t & operator=(animation_snapshot_t const &) = delete;
 
-   animation_snapshot_t(animation_snapshot_t && other) : node_snapshots(std::move(other.node_snapshots)) {}
-   animation_snapshot_t & operator=(animation_snapshot_t && other) { node_snapshots = std::move(other.node_snapshots); }
+   animation_snapshot_t(animation_snapshot_t && other)
+   : animation(other.animation)
+   , root_node_snapshot(other.root_node_snapshot)
+   , node_snapshots(std::move(other.node_snapshots))
+   {}
+   animation_snapshot_t & operator=(animation_snapshot_t && other) {
+      animation = other.animation;
+      root_node_snapshot = other.root_node_snapshot;
+      node_snapshots = std::move(other.node_snapshots);
+      return *this;
+   }
 
    ~animation_snapshot_t() = default;
 
@@ -697,16 +707,16 @@ struct animation_snapshot_t {
    // callback void(aiNode const &, aiMesh const &, glm::mat4 const &)
    template <typename CallbackT>
    void for_each_mesh_impl(node_animation_snapshot_t const & node_snapshot, CallbackT callback) {
-      auto & node = node_snapshot.node();
-      auto transform = parent_transform * to_mat4(node.mTransformation);
-      for (auto idx = 0U; idx < node.mNumMeshes; idx++) {
-         // TODO: get bones and bone node transforms
-         callback(*scene.mMeshes[node.mMeshes[idx]], transform);
-      }
+      // auto & node = node_snapshot.node();
+      // auto transform = parent_transform * to_mat4(node.mTransformation);
+      // for (auto idx = 0U; idx < node.mNumMeshes; idx++) {
+      //    // TODO: get bones and bone node transforms
+      //    callback(*scene.mMeshes[node.mMeshes[idx]], transform);
+      // }
 
-      for (auto * child : node_snapshot.children) {
-         for_each_mesh_impl(*child, callback);
-      }
+      // for (auto * child : node_snapshot.children) {
+      //    for_each_mesh_impl(*child, callback);
+      // }
    }
 
    // callback void(aiMesh const &, glm::mat4 const &)
