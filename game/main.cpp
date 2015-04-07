@@ -719,18 +719,22 @@ struct animation_snapshot_t {
 
    ~animation_snapshot_t() = default;
 
-   animation_snapshot_t(animation_t const & animation_in, double time_secs)
+   animation_snapshot_t(animation_t const & animation_in, double time_secs = 0)
       : animation(&animation_in)
    {
-      auto ticks_per_sec = animation_in.ai_animation->mTicksPerSecond != 0.0 ? animation_in.ai_animation->mTicksPerSecond : 25.0;
-      auto animation_time_ticks = time_secs * ticks_per_sec;
-      animation_time_ticks = (animation_in.ai_animation->mDuration > 0.) ? std::fmod(animation_time_ticks, animation_in.ai_animation->mDuration) : 0.;
+      advance_to(time_secs);
+   }
 
-      node_snapshots.reserve(animation_in.nodes.size());
+   void advance_to(double time_secs) {
+      auto ticks_per_sec = animation->ai_animation->mTicksPerSecond != 0.0 ? animation->ai_animation->mTicksPerSecond : 25.0;
+      auto animation_time_ticks = time_secs * ticks_per_sec;
+      animation_time_ticks = (animation->ai_animation->mDuration > 0.) ? std::fmod(animation_time_ticks, animation->ai_animation->mDuration) : 0.;
+
+      node_snapshots.reserve(animation->nodes.size());
       std::map<std::string, node_animation_snapshot_t const *> node_snapshots_by_name;
 
       std::function<node_animation_snapshot_t const *(node_animation_t const &, node_animation_snapshot_t const *)> create_and_add_snapshot_recursive = [&](node_animation_t const & n, node_animation_snapshot_t const * parent) {
-         node_snapshots.emplace_back(n, parent, animation_time_ticks, animation_in.ai_animation->mDuration);
+         node_snapshots.emplace_back(n, parent, animation_time_ticks, animation->ai_animation->mDuration);
          auto * new_snapshot = &node_snapshots.back();
 
          auto ins = node_snapshots_by_name.insert(std::make_pair(new_snapshot->name(), new_snapshot));
@@ -744,7 +748,7 @@ struct animation_snapshot_t {
          return new_snapshot;
       };
 
-      root_node_snapshot = create_and_add_snapshot_recursive(*animation_in.root_node, nullptr);
+      root_node_snapshot = create_and_add_snapshot_recursive(*animation->root_node, nullptr);
 
       for (auto & node : node_snapshots) {
          std::map<std::string, glm::mat4> bone_transforms_by_name;
@@ -760,7 +764,8 @@ struct animation_snapshot_t {
                assert(it != node_snapshots_by_name.end());
                auto bone_node = it->second;
                auto bone_node_name = bone_node->name();
-               auto bone_transform = bone_node->global_transform * to_mat4(b.ai_bone.mOffsetMatrix);
+               // NOTE
+               auto bone_transform = bone_node->global_transform;// * to_mat4(b.ai_bone.mOffsetMatrix);
                bone_transforms.push_back(bone_transform);
                auto boneIt = bone_transforms_by_name.find(bone_node->name());
                if (boneIt == bone_transforms_by_name.end()) {
@@ -782,8 +787,10 @@ struct animation_snapshot_t {
          assert(node_bone_transforms_.find(node_name) == node_bone_transforms_.end());
          if (bone_transforms_by_name.size() > 0) {
             auto & transforms = node_bone_transforms_[node_name];
+            auto & names = node_bone_names_[node_name];
             for (auto & bone_name_pair : bone_transforms_by_name) {
                transforms.push_back(bone_name_pair.second);
+               names.push_back(bone_name_pair.first);
             }
          }
       }
@@ -824,7 +831,11 @@ struct animation_snapshot_t {
    std::vector<glm::mat4> const & node_bone_transforms(std::string const & node_name) const {
       return node_bone_transforms_.find(node_name)->second;
    }
+   std::vector<std::string> const & node_bone_names(std::string const & node_name) const {
+      return node_bone_names_.find(node_name)->second;
+   }
    std::map<std::string, std::vector<glm::mat4>> node_bone_transforms_;
+   std::map<std::string, std::vector<std::string>> node_bone_names_;
 };
 
 
@@ -1602,6 +1613,13 @@ int main()
       }
       utils::log(utils::LOG_INFO, "== Nodes with bones: %s\n", bone_node_names.c_str());
 
+      std::string dudebody_bones;
+      int bone_idx = 0;
+      for (auto name : animation_snapshot.node_bone_names("DudeBody")) {
+         if (dudebody_bones.length() > 0) dudebody_bones += ", ";
+         dudebody_bones += name + "[" + std::to_string(bone_idx) + "]";
+      }
+      utils::log(utils::LOG_INFO, "== DudeBody bones %s\n", dudebody_bones.c_str());
 
       struct bone_render_callback_t : public glpp::pass_t::render_callback {
          bone_render_callback_t(
@@ -1609,19 +1627,59 @@ int main()
             glm::mat4 const & view_matrix,
             glm::mat4 const & proj_matrix)
             : snapshot_(snapshot)
-            , it_(snapshot.node_bone_transforms("DudeBody").begin())
+            , itBegin_(snapshot.node_bone_transforms("DudeBody").begin())
             , itEnd_(snapshot.node_bone_transforms("DudeBody").end())
+            , it_(itBegin_)
             , proj_view_matrix_(proj_matrix * view_matrix) {
+               auto & names = snapshot.node_bone_names("DudeBody");
+               names_.assign(names.begin(), names.end());
          }
+         std::vector<std::string> names_;
 
          bool prepare_next(glpp::program & p) const override {
             if (it_ == itEnd_) return false;
 
-            auto scale = glm::scale(glm::vec3{ 100. });
-            auto trans = glm::translate(glm::vec3{ 400.f, 0., -300.f });
+            auto size = std::distance(itBegin_, itEnd_);
+            auto time = glpp::get_time();
 
-            auto model_transform = trans * scale  * *it_ * glm::scale(glm::vec3{ .2f });
-            auto model_str = glm::to_string(model_transform);
+            // NOTE
+            auto world_transform = glm::translate(glm::vec3{ 400.f, 0., -300.f }) * glm::scale(glm::vec3{ 100. });
+            auto local_transform = glm::scale(glm::vec3{ .2f });
+
+            auto model_transform = world_transform * *it_ * local_transform;
+            
+            auto dist = std::distance(itBegin_, it_);
+
+            static int last_mesh_to_show = -1;
+            static auto start_time = time;
+            auto mesh_to_show = (int)(time - start_time) % size;
+            if (last_mesh_to_show != mesh_to_show && dist == mesh_to_show) {
+               utils::log(utils::LOG_INFO, "** SHOWING MESH %:10s %d/%d (%s)\n", names_[mesh_to_show].c_str(), mesh_to_show, size, glm::to_string(*it_ * glm::vec4{0., 0., 0., 1.}).c_str());
+               last_mesh_to_show = mesh_to_show;
+            }
+
+            auto r = 0.f;
+            auto g = 0.f;
+            auto b = 0.f;
+            auto a = 1.f; // (dist == mesh_to_show) ? 1.f : 0.;
+
+            if (dist < 3) {
+               r = 0.5f * dist;
+            } else if (dist < 5) {
+               g = 0.5f * (dist - 2);
+            } else if (dist < 7) {
+               b = 0.5f * (dist - 4);
+            } else {
+               r = 1.f;
+               b = 1.f;
+            }
+            if (dist == mesh_to_show) {
+               r = 1.f;
+               g = 1.f;
+               b = 0.f;
+            }
+
+            p.uniform("colour").set(glm::vec4(r, g, b, a));
             p.uniform("model").set(model_transform);
             p.uniform("mvp").set(proj_view_matrix_ * model_transform);
             p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
@@ -1635,16 +1693,16 @@ int main()
          bone_render_callback_t & operator=(bone_render_callback_t const &) { return *this; }
 
          animation_snapshot_t const & snapshot_;
-         mutable std::vector<glm::mat4>::const_iterator it_;
+         std::vector<glm::mat4>::const_iterator itBegin_;
          std::vector<glm::mat4>::const_iterator itEnd_;
+         mutable std::vector<glm::mat4>::const_iterator it_;
          glm::mat4 proj_view_matrix_;
       };
 
 
       auto bone_pass = prg_3d.pass()
          .with(diamond_vert_buffer)
-         .with(diamond_normal_buffer)
-         .set_uniform("colour", glm::vec4(1.f, 1.f, 0.f, 1.f));
+         .with(diamond_normal_buffer);
 
       //
       // game loop
@@ -1821,6 +1879,7 @@ int main()
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 
+            animation_snapshot.advance_to(glpp::get_time());
             bone_pass.draw_batch(
                bone_render_callback_t{ animation_snapshot, view, proj },
                glpp::DrawMode::Triangles);
