@@ -111,4 +111,5 @@ void main() {
    mediump float shadow_factor = calc_shadow_factor();
    gl_FragColor = gamma(vec4(ambient + diffuse + shadow_factor * light(c_light, colour.rgb, n), 1.));
    //gl_FragColor = gamma(vec4(ambient + diffuse, 1.));
+   //gl_FragColor = vec4(n, 1.); //vec4(0., 0., 0., 1.);
 }
