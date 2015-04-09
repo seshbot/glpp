@@ -100,6 +100,12 @@ mediump vec3 light(PositionalLight light, mediump vec3 mat, mediump vec3 n) {
    return val;
 }
 
+varying lowp vec4 frag_bone_indices;
+varying lowp vec4 frag_bone_weights;
+varying mediump mat4 frag_bone_xform;
+uniform mediump mat4 bones[20];
+varying mediump float frag_bone_weight_acc;
+
 void main() {
    mediump vec3 n = normalize(frag_normal);
    mediump vec3 l = normalize(-c_sky_light_dir);
@@ -108,8 +114,9 @@ void main() {
    mediump vec3 diffuse = colour.rgb * diffuse_intensity * c_sky_light_intensity;
    mediump vec3 ambient = colour.rgb * c_ambient_intensity;
    
-   mediump float shadow_factor = calc_shadow_factor();
-   gl_FragColor = gamma(vec4(ambient + diffuse + shadow_factor * light(c_light, colour.rgb, n), 1.));
+   mediump float shadow_factor = 1.; //calc_shadow_factor();
+   gl_FragColor = gamma(vec4(ambient + diffuse + shadow_factor * light(c_light, colour.rgb, n), colour.a));
    //gl_FragColor = gamma(vec4(ambient + diffuse, 1.));
-   //gl_FragColor = vec4(frag_normal, 1.); //vec4(0., 0., 0., 1.);
+   //gl_FragColor = vec4(vec3(frag_bone_weights.x), 1.); //vec4(0., 0., 0., 1.);
+   gl_FragColor = vec4(vec3(int(frag_bone_indices.x - 1.)) / 4., 1.);
 }

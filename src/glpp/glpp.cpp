@@ -884,6 +884,7 @@ namespace glpp
    }
 
    namespace {
+
       template <typename T>
       ValueType uniform_type();
       template <> ValueType uniform_type<int>() { return ValueType::Int; }
@@ -897,6 +898,8 @@ namespace glpp
       template <> ValueType uniform_type<glm::mat2>() { return ValueType::FloatMat2; }
       template <> ValueType uniform_type<glm::mat3>() { return ValueType::FloatMat3; }
       template <> ValueType uniform_type<glm::mat4>() { return ValueType::FloatMat4; }
+      template <> ValueType uniform_type<std::vector<glm::vec4>>() { return ValueType::FloatVec4; }
+      template <> ValueType uniform_type<std::vector<glm::mat4>>() { return ValueType::FloatMat4; }
       template <> ValueType uniform_type<texture_unit_t>() { return ValueType::Sampler2d; }
 
       template <typename T>
@@ -1008,6 +1011,18 @@ namespace glpp
       auto success = set_uniform(*this, tex, !state_->error_);
       if (!success) state_->error_ = true;
    }
+
+   void uniform::set(std::vector<glm::mat4> const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void uniform::set(std::vector<glm::vec4> const & val) {
+      auto success = set_uniform(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+
 
 
   /**
@@ -2180,7 +2195,7 @@ namespace glpp
       return glfwGetTime();
    }
 
-   // TODO: ensure program is bound
+   void set_uniform(int location, glm::mat4 const * mats, unsigned count) { GL_VERIFY(gl_::uniform_matrix_4fv(location, count, false, glm::value_ptr(mats[0]))); }
    void set_uniform(int location, glm::mat4 const & mat) { GL_VERIFY(gl_::uniform_matrix_4fv(location, 1, false, glm::value_ptr(mat))); }
    void set_uniform(int location, glm::mat3 const & mat) { GL_VERIFY(gl_::uniform_matrix_3fv(location, 1, false, glm::value_ptr(mat))); }
    void set_uniform(int location, glm::mat2 const & mat) { GL_VERIFY(gl_::uniform_matrix_2fv(location, 1, false, glm::value_ptr(mat))); }
@@ -2192,6 +2207,8 @@ namespace glpp
    void set_uniform(int location, glm::ivec2 const & vec) { GL_VERIFY(gl_::uniform_2i(location, vec.x, vec.y)); }
    void set_uniform(int location, float f) { GL_VERIFY(gl_::uniform_1f(location, f)); }
    void set_uniform(int location, int i) { GL_VERIFY(gl_::uniform_1i(location, i)); }
+   void set_uniform(int location, std::vector<glm::vec4> const & vec_vec) { GL_VERIFY(gl_::uniform_4fv(location, vec_vec.size(), glm::value_ptr(vec_vec[0]))); }
+   void set_uniform(int location, std::vector<glm::mat4> const & mat_vec) { GL_VERIFY(gl_::uniform_matrix_4fv(location, mat_vec.size(), false, glm::value_ptr(mat_vec[0]))); }
    void set_uniform(int location, texture_unit_t tex) { GL_VERIFY(gl_::uniform_1i(location, tex.id)); }
 
    //void set_uniform(gl::int_t location, GLuint i) { glUniform1ui(location, i); }

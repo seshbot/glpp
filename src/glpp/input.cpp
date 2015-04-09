@@ -4,6 +4,20 @@
 
 namespace glpp {
 
+   std::vector<Key> Keys::All = Keys::Range(Key::KEY_SPACE, Key::KEY_MENU);
+   std::vector<Key> Keys::Numbers = Keys::Range(Key::KEY_0, Key::KEY_9);
+   std::vector<Key> Keys::Range(Key first, Key last) {
+      std::vector<Key> result;
+      result.reserve(last - first);
+
+      using int_type = std::underlying_type_t<Key>;
+      for (auto k = static_cast<int_type>(first); k <= last; k++){
+         result.push_back(static_cast<Key>(k));
+      }
+
+      return result;
+   }
+
    std::string to_string(KeyModFlag mods) {
       
       switch (mods) {

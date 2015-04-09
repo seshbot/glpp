@@ -2,6 +2,7 @@
 #define PCX_KEYS_H
 
 #include <string>
+#include <vector>
 
 namespace glpp {
    enum KeyModFlag {
@@ -147,6 +148,12 @@ namespace glpp {
       KEY_RIGHT_ALT = 346,
       KEY_RIGHT_SUPER = 347,
       KEY_MENU = 348,
+   };
+
+   struct Keys {
+      static std::vector<Key> All;
+      static std::vector<Key> Numbers;
+      static std::vector<Key> Range(Key first, Key last);
    };
 
    std::string to_string(Key key);

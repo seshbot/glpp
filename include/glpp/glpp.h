@@ -261,6 +261,8 @@ namespace glpp {
       void set(glm::ivec4 const & vec);
       void set(glm::ivec3 const & vec);
       void set(glm::ivec2 const & vec);
+      void set(std::vector<glm::vec4> const & vec_vec);
+      void set(std::vector<glm::mat4> const & mat_vec);
       void set(texture_unit_t tex);
 
       std::string const & name() const { return state_->name_; }
@@ -616,6 +618,8 @@ namespace glpp {
 
    double get_time();
 
+   void set_uniform(int location, std::vector<glm::mat4> const & mat_vec);
+   void set_uniform(int location, glm::mat4 const * mats, unsigned count);
    void set_uniform(int location, glm::mat4 const & mat);
    void set_uniform(int location, glm::mat3 const & mat);
    void set_uniform(int location, glm::mat2 const & mat);
