@@ -432,6 +432,7 @@ struct animation_t {
       ai_animation = other.ai_animation;
       ai_scene = other.ai_scene;
       root_node = other.root_node;
+      global_inverse_transform = std::move(other.global_inverse_transform);
       nodes = std::move(other.nodes);
       mesh_animations = std::move(other.mesh_animations);
       return *this;
@@ -541,6 +542,8 @@ struct animation_t {
 
       auto root_node_name = std::string{ scene.mRootNode->mName.C_Str() };
       root_node = nodes_by_name.find(root_node_name)->second;
+
+      global_inverse_transform = glm::inverse(to_mat4(root_node->ai_default_tranform()));
    }
 
    std::string name() const { return{ai_animation->mName.C_Str()}; }
@@ -548,6 +551,7 @@ struct animation_t {
    aiAnimation const * ai_animation;
    aiScene const * ai_scene;
    node_animation_t const * root_node;
+   glm::mat4 global_inverse_transform;
    std::vector<node_animation_t> nodes; // storage for node anim hierarchy
    std::vector<mesh_animation_t> mesh_animations;
 };
@@ -671,9 +675,10 @@ struct node_animation_snapshot_t {
       return{key_index, frame_xform};
    }
 
-   node_animation_snapshot_t(node_animation_t const & node_animation_in, node_animation_snapshot_t const * parent_in, double time_ticks_in, double time_ticks_total_in)
+   node_animation_snapshot_t(node_animation_t const & node_animation_in, node_animation_snapshot_t const * parent_in, glm::mat4 const & global_inverse_transform_in, double time_ticks_in, double time_ticks_total_in)
       : node_animation(node_animation_in)
       , parent(parent_in)
+      , global_inverse_transform(global_inverse_transform_in)
       , time_ticks(time_ticks_in)
       , time_ticks_total(time_ticks_total_in)
    {
@@ -727,8 +732,11 @@ struct node_animation_snapshot_t {
          for (auto idx = 0U; idx < bone_count; idx++) {
             auto & bone_node = mesh_bones.bone_nodes[idx];
             auto & bone_offset = mesh_bones.bone_offsets[idx];
-            auto bone_transform = bone_node->global_transform * bone_offset;
+            auto bone_transform = global_inverse_transform * bone_node->global_transform * bone_offset;
             bone_transforms.push_back(bone_transform);
+         }
+         for (auto idx = bone_count; idx < 4; idx++) {
+            bone_transforms.push_back(glm::mat4{});
          }
       }
    }
@@ -740,6 +748,7 @@ struct node_animation_snapshot_t {
    node_animation_t const & node_animation;
    node_animation_snapshot_t const * parent;
    std::vector<node_animation_snapshot_t const *> children;
+   glm::mat4 const & global_inverse_transform;
    double time_ticks;
    double time_ticks_total;
 
@@ -792,14 +801,14 @@ struct animation_snapshot_t {
       std::map<std::string, node_animation_snapshot_t const *> node_snapshots_by_name;
 
       std::function<node_animation_snapshot_t const *(node_animation_t const &, node_animation_snapshot_t const *)> create_and_add_snapshot_recursive = [&](node_animation_t const & n, node_animation_snapshot_t const * parent) {
-         node_snapshots.emplace_back(n, parent, animation_time_ticks, animation->ai_animation->mDuration);
+         node_snapshots.emplace_back(n, parent, animation->global_inverse_transform, animation_time_ticks, animation->ai_animation->mDuration);
          auto * new_snapshot = &node_snapshots.back();
 
          auto ins = node_snapshots_by_name.insert(std::make_pair(new_snapshot->name(), new_snapshot));
          assert(ins.second && "node snapshot already existed with this name");
 
          for (auto & child : n.children) {
-            auto * new_child = create_and_add_snapshot_recursive(*child, &node_snapshots.back());
+            auto * new_child = create_and_add_snapshot_recursive(*child, new_snapshot);
             new_snapshot->children.push_back(new_child);
          }
 
@@ -1524,7 +1533,7 @@ int main()
 
       auto get_proj_cb = [] {
          // 0, 0 is the bottom left of the lookAt target!
-         return glm::ortho<float>(-200., 200., -150., 150., -1000., 1000.);
+         return glm::ortho<float>(-400., 400., -300., 300., -1000., 1000.);
          //return glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f);
       };
 
@@ -1540,32 +1549,9 @@ int main()
       //      .with(verts);
       //};
 
-      static std::vector<glm::mat4> test_bone_transforms{
-         glm::translate(glm::vec3{ -4., 0., 4. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ -2., 0., 4. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 0., 0., 4. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 2., 0., 4. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 4., 0., 4. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ -4., 0., 2. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ -2., 0., 2. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 0., 0., 2. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 2., 0., 2. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 4., 0., 2. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ -4., 0., 0. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ -2., 0., 0. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 0., 0., 0. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 2., 0., 0. }) * glm::scale(glm::vec3{ .5 }),
-         glm::translate(glm::vec3{ 4., 0., 0. }) * glm::scale(glm::vec3{ .5 }),
-         glm::scale(glm::vec3{ 5. }),
-         glm::scale(glm::vec3{ 5. }),
-         glm::scale(glm::vec3{ 5. }),
-         glm::scale(glm::vec3{ 5. }),
-         glm::scale(glm::vec3{ 5. }),
-      };
-
       static std::vector<glm::vec4> cs = { glm::vec4{ 1., 0., 0., 1. }, glm::vec4{ 0., 1., 0., 1. }, glm::vec4{ 0., 0., 1., 1. } };
       auto make_mesh_pass = [&](glpp::program & program, aiScene const & scene, mesh_bone_snapshot_t const & mesh_bone_snapshots) {
-         utils::log(utils::LOG_INFO, "== Creating mesh %s buffers\n", mesh_bone_snapshots.mesh_node.name().c_str());
+         utils::log(utils::LOG_INFO, "== Creating buffers for mesh '%s' \n", mesh_bone_snapshots.mesh_node.name().c_str());
          utils::log(utils::LOG_INFO, "   - %s\n", to_string(mesh_bone_snapshots).c_str());
 
          auto & mesh = mesh_bone_snapshots.ai_mesh;
@@ -1575,9 +1561,11 @@ int main()
          auto normals = glpp::describe_buffer(make_mesh_normal_buffer2(mesh))
             .attrib("normal", 3);
 
-         std::vector<unsigned> vertex_bone_counts(mesh.mNumVertices);
-         std::vector<std::array<float, 4>> vertex_bone_indices(mesh.mNumVertices);
-         std::vector<std::array<float, 4>> vertex_bone_weights(mesh.mNumVertices);
+         auto num_vertices = mesh.mNumVertices;
+
+         std::vector<unsigned> vertex_bone_counts(num_vertices);
+         std::vector<std::array<float, 4>> vertex_bone_indices(num_vertices);
+         std::vector<std::array<float, 4>> vertex_bone_weights(num_vertices);
 
          // NOTE
          auto bone_idx = unsigned char{ 0 };
@@ -1592,28 +1580,15 @@ int main()
             bone_idx++;
          }
 
-         std::vector<float> vert_weights;
-         for (auto v = 0U; v < mesh.mNumVertices; v++) {
-            float total_weight = 0.f;
-            for (auto b = 0U; b < 4; b++) {
-               vertex_bone_indices[v][b] = 3.;
-               vertex_bone_weights[v][b] = b == 0 ? 1.f : 0.f;
-
-               total_weight += vertex_bone_weights[v][b];
-            }
-            vert_weights.push_back(total_weight);
-            assert(std::fabs(total_weight - 1.) <= 0.01 && "weights do not add up to 1");
-         }
-
-         assert(vertex_bone_indices.size() == mesh.mNumVertices);
-         assert(vertex_bone_weights.size() == mesh.mNumVertices);
+         assert(vertex_bone_indices.size() == num_vertices);
+         assert(vertex_bone_weights.size() == num_vertices);
 
          // TODO: scene class should expose meshes[] and bones[] ??? 
          //       doesnt need node hierarchy (in its public api)!
 
-         auto bone_indices = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_indices.data()->data(), vertex_bone_indices.size() * 4 })
+         auto bone_indices = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_indices.data()->data(), num_vertices * 4 })
             .attrib("bone_indices", 4);
-         auto bone_weights = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_weights.data()->data(), vertex_bone_weights.size() * 4 })
+         auto bone_weights = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_weights.data()->data(), num_vertices * 4 })
             .attrib("bone_weights", 4);
 
          aiColor4D color(1.f, 0.f, 1.f, 1.f);
@@ -1626,10 +1601,7 @@ int main()
             .with(bone_weights)
             .with(verts)
             .with(normals)
-            .set_uniform_action("bones[0]", [&](glpp::uniform & u) {
-//               u.set(mesh_bone_snapshots.bone_transforms); 
-               u.set(test_bone_transforms);
-            })
+            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh_bone_snapshots.bone_transforms); })
             .set_uniform("colour", mesh_colour)
             .set_uniform_action("t", set_time_cb);
       };
@@ -1649,9 +1621,11 @@ int main()
          utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.mName.C_Str(), bone_nodes.size(), bone_transforms.size());
       });
 
+
       std::vector<std::string> d3_body_mesh_names;
       // void(aiMesh const & mesh, std::vector<node_animation_snapshot_t const *> const & bone_nodes, std::vector<glm::mat4> const & bone_transforms)
       animation_snapshot.for_each_mesh([&](mesh_bone_snapshot_t const & mesh_bone_snapshots) {
+         auto mesh_name = mesh_bone_snapshots.mesh_node.name();
          d3_body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh_bone_snapshots));
          d3_body_mesh_names.push_back(mesh_bone_snapshots.mesh_node.name());
       });
@@ -1805,146 +1779,6 @@ int main()
          .set_uniform_action("normal_matrix", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); });
 
 
-      // NOTE
-      std::string bone_node_names;
-      for (auto & name : animation_snapshot.node_names_with_bones()) {
-         if (bone_node_names.length() > 0) bone_node_names += ", ";
-         auto bone_node_count = animation_snapshot.node_bone_transforms(name).size();
-         bone_node_names += name + "[" + std::to_string(bone_node_count) + "]";
-      }
-      utils::log(utils::LOG_INFO, "== Nodes with bones: %s\n", bone_node_names.c_str());
-
-#define MESH_NAME "DudeBody"
-
-      std::string dudebody_bones;
-      int bone_idx = 0;
-      for (auto name : animation_snapshot.node_bone_names(MESH_NAME)) {
-         if (dudebody_bones.length() > 0) dudebody_bones += ", ";
-         dudebody_bones += name + "[" + std::to_string(bone_idx++) + "]";
-      }
-      utils::log(utils::LOG_INFO, "== %s bones %s\n", MESH_NAME, dudebody_bones.c_str());
-
-      struct bone_render_callback_t : public glpp::pass_t::render_callback {
-         bone_render_callback_t(
-            animation_snapshot_t const & snapshot,
-            glm::mat4 const & view_matrix,
-            glm::mat4 const & proj_matrix, 
-            int selected_item, bool special_mode_enabled)
-            : snapshot_(snapshot)
-            , itBegin_(snapshot.node_bone_transforms(MESH_NAME).begin())
-            , itEnd_(snapshot.node_bone_transforms(MESH_NAME).end())
-            , it_(itBegin_)
-            , proj_view_matrix_(proj_matrix * view_matrix)
-            , selected_item_(selected_item)
-            , special_mode_enabled_(special_mode_enabled) {
-            auto & names = snapshot.node_bone_names(MESH_NAME);
-            names_.assign(names.begin(), names.end());
-
-            auto & arm_root = snapshot.root_node_snapshot->children[0];
-            std::function<void(node_animation_snapshot_t const &)> add = [&](node_animation_snapshot_t const & node) {
-               armature_nodes_.push_back(&node);
-               for (auto & c : node.children) add(*c);
-            };
-            add(*arm_root);
-            armItBegin_ = armature_nodes_.begin();
-            armItEnd_ = armature_nodes_.end();
-            armIt_ = armItBegin_;
-            for (auto a : armature_nodes_) {
-               arm_names_.push_back(a->name());
-            }
-         }
-         int selected_item_;
-         bool special_mode_enabled_;
-         std::vector<std::string> names_;
-         std::vector<std::string> arm_names_;
-         std::vector<node_animation_snapshot_t const *> armature_nodes_;
-         std::vector<node_animation_snapshot_t const *>::const_iterator armItBegin_;
-         std::vector<node_animation_snapshot_t const *>::const_iterator armItEnd_;
-         mutable std::vector<node_animation_snapshot_t const *>::const_iterator armIt_;
-
-         bool prepare_next(glpp::program & p) const override {
-            auto &it = armIt_;
-            auto &itBegin = armItBegin_;
-            auto &itEnd = armItEnd_;
-            auto &names = arm_names_;
-
-            if (it == itEnd) return false;
-
-            auto size = std::distance(itBegin, itEnd);
-            auto time = glpp::get_time();
-            auto angle = 0.f;// (float)glpp::get_time();
-
-            // NOTE
-            auto world_transform = glm::translate(glm::vec3{ 450.f, 0., -300.f }) * glm::scale(glm::vec3{ 100. }) * glm::rotate(angle, glm::vec3{ 0., 1., 0. });
-            auto local_transform = glm::scale(glm::vec3{ .1f });
-
-            auto mesh_transform = (*it)->global_transform;
-            //auto mesh_transform = to_mat4((*it)->node_animation.ai_default_tranform());
-            auto model_transform = world_transform * mesh_transform * local_transform;
-            
-            auto dist = std::distance(itBegin, it);
-
-            static int last_mesh_to_show = -1;
-            static auto start_time = time;
-            auto mesh_to_show = selected_item_; // (int)(time - start_time) % size;
-            if (last_mesh_to_show != mesh_to_show && dist == mesh_to_show) {
-               utils::log(utils::LOG_INFO, "** SHOWING MESH %10s %d/%d (%s)\n", names[mesh_to_show].c_str(), mesh_to_show, size, glm::to_string(mesh_transform * glm::vec4{ 0., 0., 0., 1. }).c_str());
-               last_mesh_to_show = mesh_to_show;
-            }
-
-            auto r = 0.f;
-            auto g = 0.f;
-            auto b = 0.f;
-            auto a = 1.f; // (dist == mesh_to_show) ? 1.f : 0.;
-            if (special_mode_enabled_ && dist != mesh_to_show) {
-               a = 0.f;
-            }
-
-            auto perc = (float)dist / (float)size;
-            r = g = b = perc * .9f;
-
-            //if (dist < 3) {
-            //   r = 0.5f * dist;
-            //} else if (dist < 5) {
-            //   g = 0.5f * (dist - 2);
-            //} else if (dist < 7) {
-            //   b = 0.5f * (dist - 4);
-            //} else {
-            //   r = 1.f;
-            //   b = 1.f;
-            //}
-
-            if (dist == mesh_to_show) {
-               r = 1.f;
-               g = 1.f;
-               b = 0.f;
-            }
-
-            p.uniform("colour").set(glm::vec4(r, g, b, a));
-            p.uniform("model").set(model_transform);
-            p.uniform("mvp").set(proj_view_matrix_ * model_transform);
-            p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
-
-            it++;
-            return true;
-         }
-
-      private:
-         bone_render_callback_t(bone_render_callback_t const & s) : snapshot_(s.snapshot_) { }
-         bone_render_callback_t & operator=(bone_render_callback_t const &) { return *this; }
-
-         animation_snapshot_t const & snapshot_;
-         std::vector<glm::mat4>::const_iterator itBegin_;
-         std::vector<glm::mat4>::const_iterator itEnd_;
-         mutable std::vector<glm::mat4>::const_iterator it_;
-         glm::mat4 proj_view_matrix_;
-      };
-
-
-      auto bone_pass = prg_3d.pass()
-         .with(diamond_vert_buffer)
-         .with(diamond_normal_buffer);
-
       //
       // game loop
       //
@@ -2097,8 +1931,8 @@ int main()
             static bool show_light_perspective = false;
             if (do_special_thing) show_light_perspective = !show_light_perspective;
 
-            //if (!show_light_perspective)
-            //   ground_pass.draw(glpp::DrawMode::Triangles);
+            if (!show_light_perspective)
+               ground_pass.draw(glpp::DrawMode::Triangles);
 
             //sprite_pass.draw_batch(
             //   sprite_render_callback_t{
@@ -2128,14 +1962,9 @@ int main()
                item++;
             }
 
-            //diamond_pass.draw(glpp::DrawMode::Triangles);
+            diamond_pass.draw(glpp::DrawMode::Triangles);
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
-
-            //// NOTE draw bones
-            //bone_pass.draw_batch(
-            //   bone_render_callback_t{ animation_snapshot, view, proj, selected_item, special_mode_enabled },
-            //   glpp::DrawMode::Triangles);
 
             //particle_pass.draw(glpp::DrawMode::Points);
          }

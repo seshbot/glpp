@@ -367,6 +367,7 @@ namespace glpp {
       // convenience: assume array and index buffers
       void update(static_array_t vertex_data, static_array_t indices);
 
+      std::size_t vertex_count() const { return state_->vertex_count_; }
       std::size_t vertex_buffer_size() const { return state_->vertex_buffer_size_; }
 
       id_t vertex_buffer_id() const { return state_->vertex_id_; }
@@ -385,18 +386,19 @@ namespace glpp {
    private:
       struct state {
          state(Usage usage);
-         state(void* vertex_data, std::size_t vertex_byte_size, Usage usage);
-         state(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size, Usage usage);
-         state(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size, Usage usage);
+         state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, Usage usage);
+         state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type, Usage usage);
+         state(void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type, Usage usage);
          ~state();
 
-         void assign(void* vertex_data, std::size_t vertex_byte_size);
-         void assign(void* vertex_data, std::size_t vertex_byte_size, void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
-         void assign(void* index_data, ValueType index_data_type, unsigned index_count, std::size_t index_byte_size);
+         void assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size);
+         void assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type);
+         void assign(void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type);
 
          Usage usage_;
          id_t vertex_id_ = 0;
          id_t index_id_ = 0;
+         std::size_t vertex_count_ = 0;
          std::size_t vertex_buffer_size_ = 0;
          ValueType index_data_type_ = Unknown;
          unsigned index_count_ = 0;
