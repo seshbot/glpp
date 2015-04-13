@@ -7,7 +7,6 @@
 uniform mediump float t;
 uniform mediump mat4 model;
 uniform mediump mat4 mvp;
-uniform mediump mat4 normal_matrix;
 uniform mediump mat4 bones[20];
 
 attribute mediump vec3 p;

@@ -1222,9 +1222,9 @@ int main()
       game::world_t world(creature_db, particle_db, controller);
       game::world_view_t world_view(creature_db, particle_db, sprite_repository);
 
-      //for (auto i = 0; i < 20; i++) {
-      //   world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
-      //}
+      for (auto i = 0; i < 20; i++) {
+         world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
+      }
 
       // world.create_creature(game::creature_t::types::person, { {0., 0.}, {} });
 
@@ -1541,13 +1541,43 @@ int main()
          u.set(get_view_cb());
       };
 
-      //auto make_shadow_pass = [&](glpp::program & program, aiScene const & scene, aiMesh const & mesh, glm::mat4 const & pos) {
-      //   auto verts = glpp::describe_buffer(make_mesh_vert_buffer(mesh, pos))
-      //      .attrib("p", 3);
+      auto make_shadow_pass = [&](glpp::program & program, aiScene const & scene, mesh_bone_snapshot_t const & mesh_bone_snapshots) {
+         auto & mesh = mesh_bone_snapshots.ai_mesh;
+         auto verts = glpp::describe_buffer(make_mesh_vert_buffer2(mesh))
+            .attrib("p", 3);
 
-      //   return program.pass()
-      //      .with(verts);
-      //};
+         auto num_vertices = mesh.mNumVertices;
+
+         std::vector<unsigned> vertex_bone_counts(num_vertices);
+         std::vector<std::array<float, 4>> vertex_bone_indices(num_vertices);
+         std::vector<std::array<float, 4>> vertex_bone_weights(num_vertices);
+
+         unsigned char bone_idx = 0;
+         for (auto bone_node : mesh_bone_snapshots.bones) {
+            for (auto weight_idx = 0U; weight_idx < bone_node->mNumWeights; weight_idx++) {
+               auto & weight = bone_node->mWeights[weight_idx];
+               auto array_idx = vertex_bone_counts[weight.mVertexId]++;
+               assert(array_idx < 4 && "vertex has more than 4 bones");
+               vertex_bone_indices[weight.mVertexId][array_idx] = bone_idx;
+               vertex_bone_weights[weight.mVertexId][array_idx] = weight.mWeight;
+            }
+            bone_idx++;
+         }
+
+         assert(vertex_bone_indices.size() == num_vertices);
+         assert(vertex_bone_weights.size() == num_vertices);
+
+         auto bone_indices = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_indices.data()->data(), num_vertices * 4 })
+            .attrib("bone_indices", 4);
+         auto bone_weights = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_weights.data()->data(), num_vertices * 4 })
+            .attrib("bone_weights", 4);
+
+         return program.pass()
+            .with(verts)
+            .with(bone_indices)
+            .with(bone_weights)
+            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh_bone_snapshots.bone_transforms); });
+      };
 
       static std::vector<glm::vec4> cs = { glm::vec4{ 1., 0., 0., 1. }, glm::vec4{ 0., 1., 0., 1. }, glm::vec4{ 0., 0., 1., 1. } };
       auto make_mesh_pass = [&](glpp::program & program, aiScene const & scene, mesh_bone_snapshot_t const & mesh_bone_snapshots) {
@@ -1566,8 +1596,7 @@ int main()
          std::vector<unsigned> vertex_bone_counts(num_vertices);
          std::vector<std::array<float, 4>> vertex_bone_indices(num_vertices);
          std::vector<std::array<float, 4>> vertex_bone_weights(num_vertices);
-
-         // NOTE
+          
          unsigned char bone_idx = 0;
          for (auto bone_node : mesh_bone_snapshots.bones) {
             for (auto weight_idx = 0U; weight_idx < bone_node->mNumWeights; weight_idx++) {
@@ -1597,10 +1626,10 @@ int main()
          auto mesh_colour = glm::vec4(color.r, color.g, color.b, color.a);
 
          return program.pass()
-            .with(bone_indices)
-            .with(bone_weights)
             .with(verts)
             .with(normals)
+            .with(bone_indices)
+            .with(bone_weights)
             .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh_bone_snapshots.bone_transforms); })
             .set_uniform("colour", mesh_colour)
             .set_uniform_action("t", set_time_cb);
@@ -1625,9 +1654,10 @@ int main()
       std::vector<std::string> d3_body_mesh_names;
       // void(aiMesh const & mesh, std::vector<node_animation_snapshot_t const *> const & bone_nodes, std::vector<glm::mat4> const & bone_transforms)
       animation_snapshot.for_each_mesh([&](mesh_bone_snapshot_t const & mesh_bone_snapshots) {
-         auto mesh_name = mesh_bone_snapshots.mesh_node.name();
-         d3_body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh_bone_snapshots));
          d3_body_mesh_names.push_back(mesh_bone_snapshots.mesh_node.name());
+
+         d3_body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh_bone_snapshots));
+         d3_shadow_passes.push_back(make_shadow_pass(prg_3d_shadow, *scene, mesh_bone_snapshots));
       });
 
       static const float ground_verts[] = {
@@ -1669,7 +1699,7 @@ int main()
          .set_uniform("colour", glm::vec4(.8f, .8f, .16f, 1.f))
          .set_uniform("model", glm::mat4{})
          .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_proj_cb() * get_view_cb()); })
-         .set_uniform("normal_matrix", glm::mat4{})
+//         .set_uniform("normal_matrix", glm::mat4{})
          .set_uniform_action("t", set_time_cb)
          .set_uniform("bones[0]", ground_bones);
 
@@ -1744,7 +1774,7 @@ int main()
             auto model_transform = moment.mesh_transform();
             p.uniform("model").set(model_transform);
             p.uniform("mvp").set(proj_view_matrix_ * model_transform);
-            p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
+//            p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
 
             it_++;
             return true;
@@ -1794,8 +1824,8 @@ int main()
          .with(diamond_normal_buffer)
          .set_uniform("colour", glm::vec4(.1f, .8f, .2f, 1.f))
          .set_uniform_action("model", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); })
-         .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_proj_cb() * get_view_cb() * get_diamond_model_matrix()); })
-         .set_uniform_action("normal_matrix", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); });
+         .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_proj_cb() * get_view_cb() * get_diamond_model_matrix()); });
+//         .set_uniform_action("normal_matrix", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); });
 
 
       //

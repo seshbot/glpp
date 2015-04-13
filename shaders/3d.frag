@@ -17,7 +17,7 @@ struct PositionalLight {
 	mediump float attenuation;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), COLOUR_FIRE_LOW, .4);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .05, COLOUR_FIRE_LOW, .2);
 
 uniform mediump mat4 model;
 uniform mediump vec4 colour;
@@ -53,13 +53,13 @@ const mediump vec2 SAMP_2 = vec2(0.94558609,-0.76890725);
 const mediump vec2 SAMP_3 = vec2(-0.094184101,-0.92938870);
 const mediump vec2 SAMP_4 = vec2(0.34495938,0.29387760);
 
-mediump float calc_shadow_factor()
+mediump float calc_shadow_factor(mediump vec3 world_position)
 {
-   mediump vec3 pos_from_light = c_light.world_position - frag_position;
+   mediump vec3 pos_from_light = world_position - frag_position;
    mediump vec3 sample_norm1 = normalize(cross(vec3(0., 1., 0.), pos_from_light));
    mediump vec3 sample_norm2 = normalize(cross(sample_norm1, pos_from_light));
 
-   mediump float dist = distance(c_light.world_position, frag_position);
+   mediump float dist = distance(world_position, frag_position);
    mediump float sample_range = dist / 100.;
    const mediump float sample_fact = .25;
 
@@ -78,26 +78,33 @@ mediump float calc_shadow_factor()
 
 
 lowp vec4 gamma(lowp vec4 c) {
-	// return vec4(sqrt(c.rgb), c.a);  // 2.0 gamma correction (use below for 2.2)
-	return vec4(pow(c.r, 1. / 2.2), pow(c.g, 1. / 2.2), pow(c.b, 1. / 2.2), c.a);
+	return vec4(sqrt(c.rgb), c.a);  // 2.0 gamma correction (use below for 2.2)
+	//return vec4(pow(c.r, 1. / 2.2), pow(c.g, 1. / 2.2), pow(c.b, 1. / 2.2), c.a);
 }
 
-mediump vec3 light(PositionalLight light, mediump vec3 mat, mediump vec3 n) {
-   // calculate attenuation (light strenght based on inverse square law)
+mediump vec3 light(PositionalLight light) {
+   // calculate attenuation (light strengtht based on inverse square law)
    mediump float dist = distance(frag_position, light.world_position) / 50.;
    mediump float att = 1. / (1. + light.attenuation * dist + light.attenuation * dist * dist);
 
    // from http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
    // att = clamp(1.0 - dist*dist/(radius*radius), 0.0, 1.0); att *= att
 
-   // calculate lambertian intensity
-   mediump vec3 dir = normalize(frag_position - light.world_position);
-   mediump float intensity = max(0., dot(n, -dir));
+   
+   mediump vec3 n = normalize(frag_normal);
+   mediump float shadow_factor = calc_shadow_factor(light.world_position);
 
-   // phong calculation
-   mediump vec3 val = att * (mat * light.ambient + mat * light.diffuse * intensity);
+   // in shadow, dont bother calculating diffuse factor
+   if (shadow_factor < 0.01) {
+      return att * light.ambient;
+   }
 
-   return val;
+    // calculate lambertian intensity
+    mediump vec3 dir = normalize(frag_position - light.world_position);
+    mediump float diffuse_intensity = max(0., dot(n, -dir));
+
+    // phong calculation
+    return att * (light.ambient + light.diffuse * diffuse_intensity * shadow_factor);
 }
 
 void main() {
@@ -108,7 +115,6 @@ void main() {
    mediump vec3 diffuse = colour.rgb * diffuse_intensity * c_sky_light_intensity;
    mediump vec3 ambient = colour.rgb * c_ambient_intensity;
    
-   mediump float shadow_factor = calc_shadow_factor();
-   gl_FragColor = gamma(vec4(ambient + diffuse + shadow_factor * light(c_light, colour.rgb, n), colour.a));
+   gl_FragColor = gamma(vec4(ambient + diffuse + colour.rgb * light(c_light), colour.a));
    //gl_FragColor = gamma(vec4(ambient + diffuse, 1.));
 }
