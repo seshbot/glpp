@@ -10,7 +10,7 @@ namespace glpp {
       std::vector<Key> result;
       result.reserve(last - first);
 
-      using int_type = std::underlying_type_t<Key>;
+      using int_type = std::underlying_type<Key>::type;
       for (auto k = static_cast<int_type>(first); k <= last; k++){
          result.push_back(static_cast<Key>(k));
       }

@@ -620,6 +620,7 @@ namespace glpp {
 
    double get_time();
 
+   void set_uniform(int location, std::vector<glm::vec4> const & vec_vec);
    void set_uniform(int location, std::vector<glm::mat4> const & mat_vec);
    void set_uniform(int location, glm::mat4 const * mats, unsigned count);
    void set_uniform(int location, glm::mat4 const & mat);

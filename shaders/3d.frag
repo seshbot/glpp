@@ -27,9 +27,9 @@ varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
 
 const mediump vec3 c_sky_light_dir = vec3(-1., -1., -1.);
-const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .4;
+const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .1;
 
-const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .4;
+const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .01;
 
 mediump float random(mediump vec4 seed4) {
    mediump float dot_product = dot(seed4, vec4(12.9898,78.233,45.164,94.673));
@@ -108,7 +108,7 @@ void main() {
    mediump vec3 diffuse = colour.rgb * diffuse_intensity * c_sky_light_intensity;
    mediump vec3 ambient = colour.rgb * c_ambient_intensity;
    
-   mediump float shadow_factor = 1.; //calc_shadow_factor();
+   mediump float shadow_factor = calc_shadow_factor();
    gl_FragColor = gamma(vec4(ambient + diffuse + shadow_factor * light(c_light, colour.rgb, n), colour.a));
    //gl_FragColor = gamma(vec4(ambient + diffuse, 1.));
 }

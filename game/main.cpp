@@ -604,7 +604,7 @@ struct mesh_bone_snapshot_t {
 std::string to_string(mesh_bone_snapshot_t const & mesh_bone_snapshots) {
    std::string bone_info_str;
 
-   auto bone_idx = unsigned char{ 0 };
+   unsigned char bone_idx = 0;
    for (auto bone_node : mesh_bone_snapshots.bones) {
       auto avg_weight = 0.f;
       for (auto weight_idx = 0U; weight_idx < bone_node->mNumWeights; weight_idx++) {
@@ -865,7 +865,7 @@ struct animation_snapshot_t {
          for (auto & mesh_bones : node.mesh_bone_snapshots) {
             auto bone_count = mesh_bones.bone_nodes.size();
             for (auto idx = 0U; idx < bone_count; idx++) {
-               auto & bone_node_name = mesh_bones.bone_nodes[idx]->name();
+               auto bone_node_name = mesh_bones.bone_nodes[idx]->name();
                auto & bone_transform = mesh_bones.bone_transforms[idx];
                bone_transforms_by_name[bone_node_name] = bone_transform;
             }
@@ -1568,7 +1568,7 @@ int main()
          std::vector<std::array<float, 4>> vertex_bone_weights(num_vertices);
 
          // NOTE
-         auto bone_idx = unsigned char{ 0 };
+         unsigned char bone_idx = 0;
          for (auto bone_node : mesh_bone_snapshots.bones) {
             for (auto weight_idx = 0U; weight_idx < bone_node->mNumWeights; weight_idx++) {
                auto & weight = bone_node->mWeights[weight_idx];
@@ -1606,7 +1606,7 @@ int main()
             .set_uniform_action("t", set_time_cb);
       };
 
-      //std::vector<glpp::pass_t> d3_shadow_passes;
+      std::vector<glpp::pass_t> d3_shadow_passes;
       std::vector<glpp::pass_t> d3_body_passes;
 
       // NOTE
@@ -1640,19 +1640,38 @@ int main()
          0, 2, 1,
          1, 2, 3,
       };
+      static const float ground_bone_indices[] = {
+         0., 0., 0., 0.,
+         0., 0., 0., 0.,
+         0., 0., 0., 0.,
+         0., 0., 0., 0.,
+      };
+      static const float ground_bone_weights[] = {
+         1., 0., 0., 0.,
+         1., 0., 0., 0.,
+         1., 0., 0., 0.,
+         1., 0., 0., 0.,
+      };
+      static const std::vector<glm::mat4> ground_bones = { glm::mat4{} };
 
       auto ground_buffer_desc = glpp::describe_buffer({ground_verts, ground_indices})
          .attrib("p", 3)
          .attrib("normal", 3);
-
+      auto ground_bone_indices_buffer_desc = glpp::describe_buffer(glpp::static_array_t{ ground_bone_indices })
+         .attrib("bone_indices", 4);
+      auto ground_bone_weights_buffer_desc = glpp::describe_buffer(glpp::static_array_t{ ground_bone_weights })
+         .attrib("bone_weights", 4);
 
       auto ground_pass = prg_3d.pass()
          .with(ground_buffer_desc)
+         .with(ground_bone_indices_buffer_desc)
+         .with(ground_bone_weights_buffer_desc)
          .set_uniform("colour", glm::vec4(.8f, .8f, .16f, 1.f))
          .set_uniform("model", glm::mat4{})
          .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_proj_cb() * get_view_cb()); })
          .set_uniform("normal_matrix", glm::mat4{})
-         .set_uniform_action("t", set_time_cb);
+         .set_uniform_action("t", set_time_cb)
+         .set_uniform("bones[0]", ground_bones);
 
 
       constant_particle_emitter_buffer_t emitter;
@@ -1671,39 +1690,39 @@ int main()
          .set_uniform_action("view", set_view_cb);
 
 
-      //struct shadow_render_callback_t : public glpp::pass_t::render_callback {
-      //   shadow_render_callback_t(
-      //      game::world_view_t::iterator itBegin,
-      //      game::world_view_t::iterator itEnd,
-      //      glm::mat4 const & view_matrix,
-      //      glm::mat4 const & proj_matrix)
-      //      : itEnd_(itEnd)
-      //      , it_(itBegin)
-      //      , proj_view_matrix_(proj_matrix * view_matrix) {
-      //   }
+      struct shadow_render_callback_t : public glpp::pass_t::render_callback {
+        shadow_render_callback_t(
+           game::world_view_t::iterator itBegin,
+           game::world_view_t::iterator itEnd,
+           glm::mat4 const & view_matrix,
+           glm::mat4 const & proj_matrix)
+           : itEnd_(itEnd)
+           , it_(itBegin)
+           , proj_view_matrix_(proj_matrix * view_matrix) {
+        }
 
-      //   bool prepare_next(glpp::program & p) const override {
-      //      if (it_ == itEnd_) return false;
+        bool prepare_next(glpp::program & p) const override {
+           if (it_ == itEnd_) return false;
 
-      //      auto & current_render_info = *it_;
-      //      auto & moment = *current_render_info.moment;
+           auto & current_render_info = *it_;
+           auto & moment = *current_render_info.moment;
 
-      //      auto model_transform = moment.mesh_transform();
-      //      p.uniform("model").set(model_transform);
-      //      p.uniform("mvp").set(proj_view_matrix_ * model_transform);
+           auto model_transform = moment.mesh_transform();
+           p.uniform("model").set(model_transform);
+           p.uniform("mvp").set(proj_view_matrix_ * model_transform);
 
-      //      it_++;
-      //      return true;
-      //   }
+           it_++;
+           return true;
+        }
 
-      //private:
-      //   shadow_render_callback_t(shadow_render_callback_t const &) {}
-      //   shadow_render_callback_t & operator=(shadow_render_callback_t const &) { return *this; }
+      private:
+        shadow_render_callback_t(shadow_render_callback_t const &) {}
+        shadow_render_callback_t & operator=(shadow_render_callback_t const &) { return *this; }
 
-      //   game::world_view_t::iterator itEnd_;
-      //   mutable game::world_view_t::iterator it_;
-      //   glm::mat4 proj_view_matrix_;
-      //};
+        game::world_view_t::iterator itEnd_;
+        mutable game::world_view_t::iterator it_;
+        glm::mat4 proj_view_matrix_;
+      };
 
       struct mesh_render_callback_t : public glpp::pass_t::render_callback {
          mesh_render_callback_t(
@@ -1878,43 +1897,43 @@ int main()
          const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
          const auto light_view = glm::lookAt(light_pos, light_pos + faces[0].view_direction, faces[0].up_direction);
 
-         //gl::disable(gl::enable_cap_t::blend);
-         //gl::cull_face(gl::cull_face_mode_t::front);
-         //gl::clear_color(1., 1., 1., 1.);
+         gl::disable(gl::enable_cap_t::blend);
+         gl::cull_face(gl::cull_face_mode_t::front);
+         gl::clear_color(1., 1., 1., 1.);
 
-         //// HOLY CRAP this took me ages to figure out people
-         //gl::viewport(0, 0, shadow_texture_width, shadow_texture_width);
+         // HOLY CRAP this took me ages to figure out people
+         gl::viewport(0, 0, shadow_texture_width, shadow_texture_width);
 
-         //for (auto face_idx = 0; face_idx < 6; face_idx++) {
-         //   auto & face = faces[face_idx];
-         //   const auto view = glm::lookAt(light_pos, light_pos + face.view_direction, face.up_direction);
-         //   shadow_fbo->bind(face.face);
-         //   gl::clear(
-         //      gl::clear_buffer_flags_t::color_buffer_bit |
-         //      gl::clear_buffer_flags_t::depth_buffer_bit);
+         for (auto face_idx = 0; face_idx < 6; face_idx++) {
+           auto & face = faces[face_idx];
+           const auto view = glm::lookAt(light_pos, light_pos + face.view_direction, face.up_direction);
+           shadow_fbo->bind(face.face);
+           gl::clear(
+              gl::clear_buffer_flags_t::color_buffer_bit |
+              gl::clear_buffer_flags_t::depth_buffer_bit);
 
-         //   for (auto & pass : d3_shadow_passes) {
-         //      pass.draw_batch(
-         //         shadow_render_callback_t{
-         //         world_view.creatures_begin(),
-         //         world_view.creatures_end(),
-         //         view, light_proj },
-         //         glpp::DrawMode::Triangles);
-         //   }
+           for (auto & pass : d3_shadow_passes) {
+              pass.draw_batch(
+                 shadow_render_callback_t{
+                 world_view.creatures_begin(),
+                 world_view.creatures_end(),
+                 view, light_proj },
+                 glpp::DrawMode::Triangles);
+           }
 
-         //   if (do_special_thing) {
-         //      shadow_tex->save_current_framebuffer(std::string("screen_" + face.name + ".png"));
-         //   }
-         //}
-         //shadow_fbo->unbind();
+           if (do_special_thing) {
+              shadow_tex->save_current_framebuffer(std::string("screen_" + face.name + ".png"));
+           }
+         }
+         shadow_fbo->unbind();
          gl::cull_face(gl::cull_face_mode_t::back);
          gl::enable(gl::enable_cap_t::blend);
 
-         //prg_3d.use();
-         //glpp::texture_unit_t tu{ 3 };
-         //tu.activate();
-         //shadow_tex->bind();
-         //prg_3d.uniform("shadow_texture").set(tu);
+         prg_3d.use();
+         glpp::texture_unit_t tu{ 3 };
+         tu.activate();
+         shadow_tex->bind();
+         prg_3d.uniform("shadow_texture").set(tu);
 
          //
          // draw to anti-aliasing frame buffer
@@ -1966,7 +1985,7 @@ int main()
 
             gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 
-            //particle_pass.draw(glpp::DrawMode::Points);
+            particle_pass.draw(glpp::DrawMode::Points);
          }
          // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
          tex_fbo->bind(glpp::frame_buffer_t::Draw);
