@@ -666,9 +666,9 @@ namespace glpp {
       std::vector<frame_ref> frames_;
    };
 
-   class animation_t {
+   class sprite_animation_t {
    public:
-      animation_t(sprite_sheet const & frames, std::initializer_list<int> indices);
+      sprite_animation_t(sprite_sheet const & frames, std::initializer_list<int> indices);
 
       glpp::texture_t texture() const;
       std::size_t frame_count() const;
@@ -682,11 +682,11 @@ namespace glpp {
 
    class sprite_t {
    public:
-      sprite_t(std::initializer_list<animation_t> animations);
+      sprite_t(std::initializer_list<sprite_animation_t> animations);
       ~sprite_t();
 
       std::size_t animation_count() const;
-      animation_t const & animation(std::size_t idx) const;
+      sprite_animation_t const & animation(std::size_t idx) const;
 
    private:
       struct state;
@@ -700,7 +700,7 @@ namespace glpp {
       std::size_t current_animation_idx() const;
       void set_animation_idx(std::size_t state);
 
-      animation_t const & current_animation() const;
+      sprite_animation_t const & current_animation() const;
 
       std::size_t idx() const;
       void set_idx(std::size_t idx);
@@ -717,7 +717,7 @@ namespace glpp {
       double time_acc_;
       std::size_t current_animation_idx_;
       std::size_t current_frame_idx_;
-      animation_t const * current_animation_;
+      sprite_animation_t const * current_animation_;
    };
 }
 

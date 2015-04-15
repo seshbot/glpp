@@ -2050,23 +2050,23 @@ namespace glpp
 
 
    //
-   // class animation_t
+   // class sprite_animation_t
    //
 
-   animation_t::animation_t(sprite_sheet const & frames, std::initializer_list<int> indices)
+   sprite_animation_t::sprite_animation_t(sprite_sheet const & frames, std::initializer_list<int> indices)
       : frames_(frames)
       , indices_(std::begin(indices), std::end(indices))
    {}
 
-   glpp::texture_t animation_t::texture() const {
+   glpp::texture_t sprite_animation_t::texture() const {
       return frames_.texture();
    }
 
-   std::size_t animation_t::frame_count() const {
+   std::size_t sprite_animation_t::frame_count() const {
       return indices_.size();
    }
 
-   sprite_sheet::frame_ref const & animation_t::frame(std::size_t idx) const {
+   sprite_sheet::frame_ref const & sprite_animation_t::frame(std::size_t idx) const {
       return frames_.frame(indices_.at(idx));
    }
 
@@ -2076,14 +2076,14 @@ namespace glpp
    //
 
    struct sprite_t::state {
-      state(std::initializer_list<animation_t> & animations)
+      state(std::initializer_list<sprite_animation_t> & animations)
          : animations_(std::begin(animations), std::end(animations))
       {}
 
-      std::vector<animation_t> animations_;
+      std::vector<sprite_animation_t> animations_;
    };
 
-   sprite_t::sprite_t(std::initializer_list<animation_t> animations)
+   sprite_t::sprite_t(std::initializer_list<sprite_animation_t> animations)
       : state_(std::make_shared<state>(animations))
    {}
 
@@ -2094,7 +2094,7 @@ namespace glpp
       return state_->animations_.size();
    }
 
-   animation_t const & sprite_t::animation(std::size_t idx) const {
+   sprite_animation_t const & sprite_t::animation(std::size_t idx) const {
       return state_->animations_.at(idx);
    }
 
@@ -2131,7 +2131,7 @@ namespace glpp
       current_animation_ = &sprite_.animation(current_animation_idx_);
    }
 
-   animation_t const & sprite_cursor_t::current_animation() const {
+   sprite_animation_t const & sprite_cursor_t::current_animation() const {
       return *current_animation_;
    }
 
