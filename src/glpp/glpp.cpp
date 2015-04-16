@@ -846,6 +846,13 @@ namespace glpp
    template <> ValueType value_type<int32_t>() { return ValueType::Int; }
    template <> ValueType value_type<uint32_t>() { return ValueType::UInt; }
    template <> ValueType value_type<float>() { return ValueType::Float; }
+   template <> ValueType value_type<const int8_t>() { return ValueType::Byte; }
+   template <> ValueType value_type<const uint8_t>() { return ValueType::UByte; }
+   template <> ValueType value_type<const int16_t>() { return ValueType::Short; }
+   template <> ValueType value_type<const uint16_t>() { return ValueType::UShort; }
+   template <> ValueType value_type<const int32_t>() { return ValueType::Int; }
+   template <> ValueType value_type<const uint32_t>() { return ValueType::UInt; }
+   template <> ValueType value_type<const float>() { return ValueType::Float; }
    template <> ValueType value_type<glm::ivec2>() { return ValueType::IntVec2; }
    template <> ValueType value_type<glm::ivec3>() { return ValueType::IntVec3; }
    template <> ValueType value_type<glm::ivec4>() { return ValueType::IntVec4; }

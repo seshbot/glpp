@@ -25,7 +25,6 @@
 #include <glpp/scene.h>
 
 // TODO:
-// - animate imported meshes
 // - fire mesh
 // - grass texture
 // - pass lights in uniforms
@@ -272,34 +271,6 @@ int main()
 {
    utils::log(utils::LOG_INFO, "starting (cwd: %s)\n", utils::getcwd().c_str());
 
-   Assimp::Importer importer;
-   auto * scene = importer.ReadFile("../../res/dude-anim.fbx", aiProcessPreset_TargetRealtime_MaxQuality);
-   if (!scene) {
-      utils::log(utils::LOG_ERROR, "could not import scene: %s\n", importer.GetErrorString());
-      return 0;
-   }
-
-   utils::log(utils::LOG_INFO, "scene imported: %d meshes, %d materials, %d textures, %d animations\n", 
-      scene->mNumMeshes,
-      scene->mNumMaterials,
-      scene->mNumTextures,
-      scene->mNumAnimations
-   );
-
-   glpp::ai::log_scene_info(*scene);
-
-   std::vector<glpp::animation_t> animations;
-   animations.reserve(scene->mNumAnimations);
-
-   utils::log(utils::LOG_INFO, "== Animation Hierarchies ==\n");
-   for (auto idx = 0U; idx < scene->mNumAnimations; idx++) {
-      animations.emplace_back(*scene, *scene->mAnimations[idx]);
-      // to snapshot: animation_snapshot_t(animation_t const & animation, double time_secs)
-      auto & animation = animations.back();
-      utils::log(utils::LOG_INFO, " - animation %s (%d animated nodes)\n", animation.name().c_str(), animation.nodes.size());
-      glpp::log_animation_nodes(*animation.root_node, "   - ");
-   }
-
    try {
       glpp::init();
    }
@@ -308,6 +279,7 @@ int main()
       exit(EXIT_FAILURE);
    }
 
+   auto scene = glpp::scene_t::load_from_file("../../res/dude-anim.fbx");
 
    player_controls_t controls;
 
@@ -630,131 +602,6 @@ int main()
          .set_uniform("proj", glm::ortho<float>(0., 800., 0., 600., -1., 1.));
 
 
-
-
-      auto make_mesh_vert_buffer2 = [](aiMesh const & m) -> glpp::buffer_t {
-         auto get_mesh_indices = [](aiMesh const & m) {
-            std::vector<uint32_t> indices;
-            indices.reserve(m.mNumFaces * 3);
-            for (auto fidx = 0U; fidx < m.mNumFaces; fidx++) {
-               auto & f = m.mFaces[fidx];
-               for (auto i = 0U; i < f.mNumIndices; i++) {
-                  indices.push_back(f.mIndices[i]);
-               }
-            }
-            return indices;
-         };
-
-         auto * raw_vert_data = reinterpret_cast<float*>(m.mVertices);
-         auto elem_count = m.mNumVertices * 3;
-
-         auto indices = get_mesh_indices(m);
-
-         return{
-            { raw_vert_data, elem_count },
-            { indices.data(), indices.size() }
-         };
-      };
-
-      auto make_mesh_vert_buffer = [](aiMesh const & m, glm::mat4 const & xform) -> glpp::buffer_t {
-         auto get_mesh_indices = [](aiMesh const & m) {
-            std::vector<uint32_t> indices;
-            indices.reserve(m.mNumFaces * 3);
-            for (auto fidx = 0U; fidx < m.mNumFaces; fidx++) {
-               auto & f = m.mFaces[fidx];
-               for (auto i = 0U; i < f.mNumIndices; i++) {
-                  indices.push_back(f.mIndices[i]);
-               }
-            }
-            return indices;
-         };
-
-         auto xform_vert = [&xform](float * in, float * out) {
-            auto vert = xform * glm::vec4{ in[0], in[1], in[2], 1. };
-            out[0] = vert.x;
-            out[1] = vert.y;
-            out[2] = vert.z;
-         };
-
-         auto * raw_vert_data = reinterpret_cast<float*>(m.mVertices);
-         auto elem_count = m.mNumVertices * 3;
-
-         auto indices = get_mesh_indices(m);
-
-         //
-         // apply local transform to model
-         //
-
-         std::vector<float> vert_data;
-         vert_data.reserve(elem_count);
-         auto * xformed_vert_data = vert_data.data();
-
-         for (auto i = 0U; i < m.mNumVertices; i++) {
-            auto data_in = raw_vert_data + (i * 3);
-            auto data_out = xformed_vert_data + (i * 3);
-            xform_vert(data_in, data_out);
-         }
-
-#if 0
-         utils::log(utils::LOG_INFO, "\n == dumping %d verts == \n", m.mNumVertices);
-         for (auto idx = 0U; idx < m.mNumVertices; idx++) {
-            utils::log(utils::LOG_INFO, " %d - %.1f, %.1f, %.1f\n", idx, m.mVertices[idx].x, m.mVertices[idx].y, m.mVertices[idx].z);
-         }
-
-         auto idx = 0;
-         for (auto i : indices) utils::log(utils::LOG_INFO, " %d%s", i, idx++ % 3 == 2 ? "," : "");
-         utils::log(utils::LOG_INFO, "\n");
-#endif
-
-         return{
-            { xformed_vert_data, elem_count },
-            { indices.data(), indices.size() }
-         };
-      };
-
-      auto make_mesh_normal_buffer2 = [](aiMesh const & m) -> glpp::buffer_t {
-         assert(m.HasNormals());
-         auto * raw_data = reinterpret_cast<float*>(m.mNormals);
-         auto elem_count = m.mNumVertices * 3;
-
-         return{
-            { raw_data, elem_count }
-         };
-      };
-
-
-      auto make_mesh_normal_buffer = [](aiMesh const & m, glm::mat4 const & xform) -> glpp::buffer_t {
-         assert(m.HasNormals());
-         auto * raw_data = reinterpret_cast<float*>(m.mNormals);
-         auto elem_count = m.mNumVertices * 3;
-
-         //
-         // apply local transform to model
-         //
-
-         std::vector<float> vert_data;
-         vert_data.reserve(elem_count);
-         auto * xformed_data = vert_data.data();
-
-         auto xform_vert = [&xform](float * in, float * out) {
-            auto vert = xform * glm::vec4{ in[0], in[1], in[2], 0. };
-            out[0] = vert.x;
-            out[1] = vert.y;
-            out[2] = vert.z;
-         };
-
-         for (auto i = 0U; i < m.mNumVertices; i++) {
-            auto data_in = raw_data + (i * 3);
-            auto data_out = xformed_data + (i * 3);
-            xform_vert(data_in, data_out);
-         }
-
-         return{
-            { xformed_data, elem_count }
-         };
-      };
-
-
       //
       // state callbacks
       //
@@ -777,97 +624,44 @@ int main()
          u.set(get_view_cb());
       };
 
-      auto make_shadow_pass = [&](glpp::program & program, aiScene const & scene, glpp::mesh_bone_snapshot_t const & mesh_bone_snapshots) {
-         auto & mesh = mesh_bone_snapshots.ai_mesh;
-         auto verts = glpp::describe_buffer(make_mesh_vert_buffer2(mesh))
+
+      auto make_mesh_pass = [&](glpp::program & program, glpp::mesh_t const & mesh) {
+         utils::log(utils::LOG_INFO, " - Creating buffers for mesh '%s' \n", mesh.name().c_str());
+
+         auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count }, { mesh.indices().buffer, mesh.indices().count } })
             .attrib("p", 3);
-
-         auto num_vertices = mesh.mNumVertices;
-
-         std::vector<unsigned> vertex_bone_counts(num_vertices);
-         std::vector<std::array<float, 4>> vertex_bone_indices(num_vertices);
-         std::vector<std::array<float, 4>> vertex_bone_weights(num_vertices);
-
-         unsigned char bone_idx = 0;
-         for (auto bone_node : mesh_bone_snapshots.bones) {
-            for (auto weight_idx = 0U; weight_idx < bone_node->mNumWeights; weight_idx++) {
-               auto & weight = bone_node->mWeights[weight_idx];
-               auto array_idx = vertex_bone_counts[weight.mVertexId]++;
-               assert(array_idx < 4 && "vertex has more than 4 bones");
-               vertex_bone_indices[weight.mVertexId][array_idx] = bone_idx;
-               vertex_bone_weights[weight.mVertexId][array_idx] = weight.mWeight;
-            }
-            bone_idx++;
-         }
-
-         assert(vertex_bone_indices.size() == num_vertices);
-         assert(vertex_bone_weights.size() == num_vertices);
-
-         auto bone_indices = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_indices.data()->data(), num_vertices * 4 })
-            .attrib("bone_indices", 4);
-         auto bone_weights = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_weights.data()->data(), num_vertices * 4 })
-            .attrib("bone_weights", 4);
-
-         return program.pass()
-            .with(verts)
-            .with(bone_indices)
-            .with(bone_weights)
-            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh_bone_snapshots.bone_transforms); });
-      };
-
-      static std::vector<glm::vec4> cs = { glm::vec4{ 1., 0., 0., 1. }, glm::vec4{ 0., 1., 0., 1. }, glm::vec4{ 0., 0., 1., 1. } };
-      auto make_mesh_pass = [&](glpp::program & program, aiScene const & scene, glpp::mesh_bone_snapshot_t const & mesh_bone_snapshots) {
-         utils::log(utils::LOG_INFO, "== Creating buffers for mesh '%s' \n", mesh_bone_snapshots.mesh_node.name().c_str());
-         utils::log(utils::LOG_INFO, "   - %s\n", glpp::to_string(mesh_bone_snapshots).c_str());
-
-         auto & mesh = mesh_bone_snapshots.ai_mesh;
-         auto verts = glpp::describe_buffer(make_mesh_vert_buffer2(mesh))
-            .attrib("p", 3);
-
-         auto normals = glpp::describe_buffer(make_mesh_normal_buffer2(mesh))
+         auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
             .attrib("normal", 3);
-
-         auto num_vertices = mesh.mNumVertices;
-
-         std::vector<unsigned> vertex_bone_counts(num_vertices);
-         std::vector<std::array<float, 4>> vertex_bone_indices(num_vertices);
-         std::vector<std::array<float, 4>> vertex_bone_weights(num_vertices);
-          
-         unsigned char bone_idx = 0;
-         for (auto bone_node : mesh_bone_snapshots.bones) {
-            for (auto weight_idx = 0U; weight_idx < bone_node->mNumWeights; weight_idx++) {
-               auto & weight = bone_node->mWeights[weight_idx];
-               auto array_idx = vertex_bone_counts[weight.mVertexId]++;
-               assert(array_idx < 4 && "vertex has more than 4 bones");
-               vertex_bone_indices[weight.mVertexId][array_idx] = bone_idx;
-               vertex_bone_weights[weight.mVertexId][array_idx] = weight.mWeight;
-            }
-            bone_idx++;
-         }
-
-         assert(vertex_bone_indices.size() == num_vertices);
-         assert(vertex_bone_weights.size() == num_vertices);
-
-         // TODO: scene class should expose meshes[] and bones[] ??? 
-         //       doesnt need node hierarchy (in its public api)!
-
-         auto bone_indices = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_indices.data()->data(), num_vertices * 4 })
+         auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
             .attrib("bone_indices", 4);
-         auto bone_weights = glpp::describe_buffer(glpp::static_array_t{ vertex_bone_weights.data()->data(), num_vertices * 4 })
+         auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
             .attrib("bone_weights", 4);
-
-         aiColor4D color(1.f, 0.f, 1.f, 1.f);
-         aiGetMaterialColor(scene.mMaterials[mesh.mMaterialIndex], AI_MATKEY_COLOR_DIFFUSE, &color);
-
-         auto mesh_colour = glm::vec4(color.r, color.g, color.b, color.a);
 
          return program.pass()
             .with(verts)
             .with(normals)
             .with(bone_indices)
             .with(bone_weights)
-            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh_bone_snapshots.bone_transforms); })
-            .set_uniform("colour", mesh_colour)
+            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); })
+            .set_uniform("colour", mesh.material().diffuse_colour())
+            .set_uniform_action("t", set_time_cb);
+      };
+
+      auto make_shadow_pass = [&](glpp::program & program, glpp::mesh_t const & mesh) {
+         utils::log(utils::LOG_INFO, " - Creating buffers for mesh '%s' \n", mesh.name().c_str());
+
+         auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count }, { mesh.indices().buffer, mesh.indices().count } })
+            .attrib("p", 3);
+         auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
+            .attrib("bone_indices", 4);
+         auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
+            .attrib("bone_weights", 4);
+
+         return program.pass()
+            .with(verts)
+            .with(bone_indices)
+            .with(bone_weights)
+            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); })
             .set_uniform_action("t", set_time_cb);
       };
 
@@ -875,26 +669,20 @@ int main()
       std::vector<glpp::pass_t> d3_body_passes;
 
       // NOTE
-      auto animation_snapshot = glpp::animation_snapshot_t{ animations[0], 0. };
+      auto animation_snapshot = glpp::animation_snapshot_t{ scene.animation(scene.animation_names()[0]), 0. };
       utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_snapshot.animation->name().c_str());
 
-      animation_snapshot.for_each_mesh([](glpp::mesh_bone_snapshot_t const & mesh_bone_snapshots) {
-         auto & mesh = mesh_bone_snapshots.ai_mesh;
-         auto & bone_nodes = mesh_bone_snapshots.bone_nodes;
-         auto & bone_transforms = mesh_bone_snapshots.bone_transforms;
-
-         utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.mName.C_Str(), bone_nodes.size(), bone_transforms.size());
-      });
-
+      for (auto & mesh : animation_snapshot.meshes) {
+         utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
+      }
 
       std::vector<std::string> d3_body_mesh_names;
-      // void(aiMesh const & mesh, std::vector<node_animation_snapshot_t const *> const & bone_nodes, std::vector<glm::mat4> const & bone_transforms)
-      animation_snapshot.for_each_mesh([&](glpp::mesh_bone_snapshot_t const & mesh_bone_snapshots) {
-         d3_body_mesh_names.push_back(mesh_bone_snapshots.mesh_node.name());
+      for (auto & mesh : animation_snapshot.meshes) {
+         d3_body_mesh_names.push_back(mesh.name());
 
-         d3_body_passes.push_back(make_mesh_pass(prg_3d, *scene, mesh_bone_snapshots));
-         d3_shadow_passes.push_back(make_shadow_pass(prg_3d_shadow, *scene, mesh_bone_snapshots));
-      });
+         d3_body_passes.push_back(make_mesh_pass(prg_3d, mesh));
+         d3_shadow_passes.push_back(make_shadow_pass(prg_3d_shadow, mesh));
+      }
 
       static const float ground_verts[] = {
          0.,   0., -900.,   0., 1., 0.,
