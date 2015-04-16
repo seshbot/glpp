@@ -13,5 +13,5 @@ void main() {
 
 //    mediump vec4 colour = texture2D(texture, gl_PointCoord);
 
-    gl_FragColor = vec4(.2, .2, .2, .3);
+    gl_FragColor = vec4(.75, .40, .05, .1);
 }

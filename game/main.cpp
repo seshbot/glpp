@@ -286,43 +286,19 @@ int main()
       scene->mNumAnimations
    );
 
-   auto * node = scene->mRootNode;
-   if (node) {
-      utils::log(utils::LOG_INFO, "== Scene Node Hierarchy ==\n");
-      glpp::ai::print_node_info(*scene, *node);
-   }
+   glpp::ai::log_scene_info(*scene);
 
    std::vector<glpp::animation_t> animations;
    animations.reserve(scene->mNumAnimations);
 
-   std::function<void(glpp::node_animation_t const &, std::string)> print_rec = [&](glpp::node_animation_t const & n, std::string indent) {
-      if (n.has_animation())
-         utils::log(utils::LOG_INFO, "%s node %s (chan%d: %d rot %d pos %d scale keys)\n", indent.c_str(), n.name().c_str(), n.animation_idx(), n.ai_animation().mNumRotationKeys, n.ai_animation().mNumPositionKeys, n.ai_animation().mNumScalingKeys);
-      else
-         utils::log(utils::LOG_INFO, "%s node %s (no keys)\n", indent.c_str(), n.name().c_str());
-      for (auto & m : n.mesh_animations()) {
-         auto bones = std::string{};
-         for (auto & b : m->bones) {
-            if (bones.length() > 0) bones += ", ";
-            bones += std::string{ b.ai_bone.mName.C_Str() } +":" + b.node.name();
-         }
-         if (bones.length() > 0) bones = " (" + bones + ")";
-         utils::log(utils::LOG_INFO, "  %s mesh %s %d bones%s\n", indent.c_str(), m->ai_mesh.mName.C_Str(), m->bones.size(), bones.c_str());
-      }
-      for (auto & c : n.children) {
-         print_rec(*c, "  " + indent);
-      }
-   };
    utils::log(utils::LOG_INFO, "== Animation Hierarchies ==\n");
    for (auto idx = 0U; idx < scene->mNumAnimations; idx++) {
       animations.emplace_back(*scene, *scene->mAnimations[idx]);
       // to snapshot: animation_snapshot_t(animation_t const & animation, double time_secs)
       auto & animation = animations.back();
       utils::log(utils::LOG_INFO, " - animation %s (%d animated nodes)\n", animation.name().c_str(), animation.nodes.size());
-      print_rec(*animation.root_node, "   - ");
+      glpp::log_animation_nodes(*animation.root_node, "   - ");
    }
-
-   // glpp::ai::print_scene_info(*scene);
 
    try {
       glpp::init();
