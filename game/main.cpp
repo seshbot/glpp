@@ -624,9 +624,17 @@ int main()
          u.set(get_view_cb());
       };
 
+      std::vector<glpp::pass_t> d3_shadow_passes;
+      std::vector<glpp::pass_t> d3_body_passes;
 
-      auto make_mesh_pass = [&](glpp::program & program, glpp::mesh_t const & mesh) {
-         utils::log(utils::LOG_INFO, " - Creating buffers for mesh '%s' \n", mesh.name().c_str());
+      // NOTE
+      auto animation_name = scene.animation_names()[0];
+      auto animation_snapshot = scene.start_animation(animation_name);
+      std::vector<std::string> d3_body_mesh_names;
+
+      utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_name.c_str());
+      for (auto & mesh : animation_snapshot.meshes()) {
+         utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
 
          auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count }, { mesh.indices().buffer, mesh.indices().count } })
             .attrib("p", 3);
@@ -637,51 +645,23 @@ int main()
          auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
             .attrib("bone_weights", 4);
 
-         return program.pass()
-            .with(verts)
-            .with(normals)
-            .with(bone_indices)
-            .with(bone_weights)
-            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); })
-            .set_uniform("colour", mesh.material().diffuse_colour())
-            .set_uniform_action("t", set_time_cb);
-      };
-
-      auto make_shadow_pass = [&](glpp::program & program, glpp::mesh_t const & mesh) {
-         utils::log(utils::LOG_INFO, " - Creating buffers for mesh '%s' \n", mesh.name().c_str());
-
-         auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count }, { mesh.indices().buffer, mesh.indices().count } })
-            .attrib("p", 3);
-         auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
-            .attrib("bone_indices", 4);
-         auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
-            .attrib("bone_weights", 4);
-
-         return program.pass()
-            .with(verts)
-            .with(bone_indices)
-            .with(bone_weights)
-            .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); })
-            .set_uniform_action("t", set_time_cb);
-      };
-
-      std::vector<glpp::pass_t> d3_shadow_passes;
-      std::vector<glpp::pass_t> d3_body_passes;
-
-      // NOTE
-      auto animation_snapshot = glpp::animation_snapshot_t{ scene.animation(scene.animation_names()[0]), 0. };
-      utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_snapshot.animation->name().c_str());
-
-      for (auto & mesh : animation_snapshot.meshes) {
-         utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
-      }
-
-      std::vector<std::string> d3_body_mesh_names;
-      for (auto & mesh : animation_snapshot.meshes) {
          d3_body_mesh_names.push_back(mesh.name());
 
-         d3_body_passes.push_back(make_mesh_pass(prg_3d, mesh));
-         d3_shadow_passes.push_back(make_shadow_pass(prg_3d_shadow, mesh));
+         d3_body_passes.push_back(
+            prg_3d.pass()
+               .with(verts)
+               .with(normals)
+               .with(bone_indices)
+               .with(bone_weights)
+               .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); })
+               .set_uniform("colour", mesh.material().diffuse_colour));
+
+         d3_shadow_passes.push_back(
+            prg_3d_shadow.pass()
+               .with(verts)
+               .with(bone_indices)
+               .with(bone_weights)
+               .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); }));
       }
 
       static const float ground_verts[] = {
