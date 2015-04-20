@@ -187,13 +187,13 @@ namespace ai {
       }
    }
 
-   frame_info_t calculate_animation_frame(aiNodeAnim const & ai_anim, double time_ticks, double time_ticks_total) {
+   frame_info_t calculate_animation_frame(aiNodeAnim const & ai_anim, double time_ticks, double time_ticks_total, frame_info_t const & prev_frame) {
       frame_info_t result;
 
       // interpolate key frame from pos, rot and scale keys
-      auto rot_frame = make_frame<aiQuaternion>(ai_anim.mNumRotationKeys, ai_anim.mRotationKeys, time_ticks, time_ticks_total);
-      auto pos_frame = make_frame<aiVector3D>(ai_anim.mNumPositionKeys, ai_anim.mPositionKeys, time_ticks, time_ticks_total);
-      auto scale_frame = make_frame<aiVector3D>(ai_anim.mNumScalingKeys, ai_anim.mScalingKeys, time_ticks, time_ticks_total);
+      auto rot_frame = make_frame<aiQuaternion>(ai_anim.mNumRotationKeys, ai_anim.mRotationKeys, time_ticks, time_ticks_total, prev_frame.rotation_key_idx);
+      auto pos_frame = make_frame<aiVector3D>(ai_anim.mNumPositionKeys, ai_anim.mPositionKeys, time_ticks, time_ticks_total, prev_frame.position_key_idx);
+      auto scale_frame = make_frame<aiVector3D>(ai_anim.mNumScalingKeys, ai_anim.mScalingKeys, time_ticks, time_ticks_total, prev_frame.scale_key_idx);
 
       result.rotation_key_idx = rot_frame.key_index;
       result.position_key_idx = pos_frame.key_index;

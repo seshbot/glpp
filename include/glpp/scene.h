@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 #include <array>
-#include <map>
 #include <functional>
 #include <memory>
 
@@ -18,11 +17,17 @@ struct aiMesh;
 
 namespace glpp
 {
+   //
+   // forward declarations
+   //
    namespace ai {
       struct animation_t;
    }
    class mesh_t;
 
+   /**
+    * calculates all mesh states for a loaded animation baseond on a point in time
+    */
    class animation_snapshot_t {
    public:
       ~animation_snapshot_t();
@@ -46,6 +51,10 @@ namespace glpp
       std::unique_ptr<impl> impl_;
    };
 
+
+   /**
+    * a handle to a loaded scene, from which animations may be created
+    */
    class scene_t {
    public:
       ~scene_t();
@@ -62,6 +71,10 @@ namespace glpp
       std::unique_ptr<const impl> impl_;
    };
 
+
+   /**
+    * Captures the state of a single mesh at a point in time (created by animation_snapshot_t)
+    */
    class mesh_t {
    public:
       struct material_t {

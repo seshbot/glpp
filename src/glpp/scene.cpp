@@ -15,6 +15,8 @@
 #include "detail/ai_helpers.h"
 #include "detail/ai_structures.h"
 
+#include <map>
+
 
 namespace glpp {
    //

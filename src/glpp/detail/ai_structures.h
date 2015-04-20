@@ -104,7 +104,7 @@ namespace ai
       std::vector<mesh_animation_t> mesh_animations;
    };
 
-
+   // encapsulates all information required to recalculate bone transforms for a mesh
    struct mesh_bone_snapshot_t {
       aiMesh const & ai_mesh;
       node_animation_snapshot_t const & mesh_node;
@@ -115,15 +115,17 @@ namespace ai
       std::vector<glm::mat4> bone_transforms; // recalculated every frame update
    };
 
-
+   // encapsulates both node animation info (for calculating node transforms over time) and bone hierarchy (for calculating final mesh node positions)
+   // TODO: separate above structures out and create 'calculated result' structure, maybe to get rid of this struct
    struct node_animation_snapshot_t {
       node_animation_snapshot_t(node_animation_t const & node_animation_in, node_animation_snapshot_t const * parent_in, glm::mat4 const & global_inverse_transform_in, double time_ticks, double time_ticks_total);
 
+      // uses node hierarchy to calculate 'global_transform'
       void advance_transforms_to(double time_ticks);
+      // turn newly-transformed bone nodes into an array of bone transforms
       void recalc_bones();
 
       std::string name() const { return node_animation.name(); }
-
       aiNode const & node() const { return node_animation.ai_node(); }
 
       node_animation_t const & node_animation;
@@ -133,9 +135,9 @@ namespace ai
       double time_ticks;
       double time_ticks_total;
 
-      int rot_key_idx;
-      int pos_key_idx;
-      int scale_key_idx;
+      int rot_key_idx = 0;
+      int pos_key_idx = 0;
+      int scale_key_idx = 0;
       glm::mat4 local_transform;
       glm::mat4 global_transform;
 

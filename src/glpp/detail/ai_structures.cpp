@@ -241,7 +241,8 @@ namespace ai {
       }
       else {
          auto & ai_anim = node_animation.ai_animation();
-         auto frame_info = ai::calculate_animation_frame(ai_anim, time_ticks, time_ticks_total);
+         auto prev_frame_info = ai::frame_info_t{ {},  rot_key_idx, scale_key_idx, pos_key_idx };
+         auto frame_info = ai::calculate_animation_frame(ai_anim, time_ticks, time_ticks_total, prev_frame_info);
 
          rot_key_idx = frame_info.rotation_key_idx;
          pos_key_idx = frame_info.position_key_idx;
@@ -270,9 +271,6 @@ namespace ai {
             auto & bone_offset = mesh_bones.bone_offsets[idx];
             auto bone_transform = global_inverse_transform * bone_node->global_transform * bone_offset;
             bone_transforms.push_back(bone_transform);
-         }
-         for (auto idx = bone_count; idx < 4; idx++) {
-            bone_transforms.push_back(glm::mat4{});
          }
       }
    }

@@ -36,7 +36,7 @@ namespace ai
    std::string get_name(aiMesh const & mesh);
 
    struct frame_info_t { glm::mat4 transform; int rotation_key_idx; int scale_key_idx; int position_key_idx; };
-   frame_info_t calculate_animation_frame(aiNodeAnim const & node_anim, double time_ticks, double time_ticks_total);
+   frame_info_t calculate_animation_frame(aiNodeAnim const & node_anim, double time_ticks, double time_ticks_total, frame_info_t const & prev_frame);
 
    void for_each_mesh(
       aiScene const & scene,
