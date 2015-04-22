@@ -1846,6 +1846,8 @@ namespace glpp
 
    window::window(context & ctx)
       : ctx_(ctx) {
+      //, windowed_dims_(window_dims())
+      //, windowed_pos_(window_pos()){
    }
 
    void window::set_should_close(bool close) {
@@ -1867,10 +1869,26 @@ namespace glpp
       return{ width, height };
    }
 
+   dim_t window::window_pos() const {
+      int x, y;
+      glfwGetWindowPos(ctx_.impl_->window_, &x, &y);
+      return{ x, y };
+   }
+
    dim_t window::frame_buffer_dims() const {
       int width, height;
       glfwGetFramebufferSize(ctx_.impl_->window_, &width, &height);
       return{ width, height };
+   }
+
+   void window::set_fullscreen(bool enable) {
+      if (enable == is_fullscreen()) return;
+
+      ctx_.recreate_window(enable);
+   }
+
+   bool window::is_fullscreen() const {
+      return ctx_.fullscreen_;
    }
 
 
@@ -1883,7 +1901,15 @@ namespace glpp
       static std::atomic<bool> initialized_ { false };
 
       struct window_key_callbacks_t {
-         struct callback_info_t { GLFWwindow* window; context & context; context::key_callback_t callback; };
+         struct callback_info_t {
+            callback_info_t(GLFWwindow* window_in, context * context_in, context::key_callback_t callback_in) : window(window_in), context(context_in), callback(std::move(callback_in)) {}
+            callback_info_t(callback_info_t const & other) = default;
+            callback_info_t & operator=(callback_info_t const & other) = default;
+            callback_info_t(callback_info_t && other) : window(other.window), context(other.context), callback(std::move(other.callback)) {}
+            callback_info_t & operator=(callback_info_t && other) { window = other.window; context = other.context; callback = std::move(other.callback); return *this; }
+
+            GLFWwindow* window; context * context; context::key_callback_t callback;
+         };
 
          void set(GLFWwindow* window, context & context, context::key_callback_t callback) {
             std::unique_lock<std::mutex> l(m_);
@@ -1892,7 +1918,18 @@ namespace glpp
                if (p.window == window) throw error("cannot set window key callback - key handler already registered for window");
             }
 
-            callbacks_.push_back({ window, context, callback });
+            callbacks_.push_back({ window, &context, callback });
+         }
+
+         void remove(GLFWwindow* window) {
+            std::unique_lock<std::mutex> l(m_);
+
+            for (auto it = std::cbegin(callbacks_); it != std::cend(callbacks_); ++it) {
+               if (it->window == window) {
+                  callbacks_.erase(it);
+                  return;
+               }
+            }
          }
 
          void invoke(GLFWwindow* window, Key key, int scancode, KeyAction action, int mods) {
@@ -1906,7 +1943,7 @@ namespace glpp
                throw error("cannot get window key callback - no key callback registered for window");
             }();
 
-            info.callback(info.context, key, scancode, action, mods);
+            info.callback(*info.context, key, scancode, action, mods);
          }
 
          std::mutex m_;
@@ -1926,10 +1963,29 @@ namespace glpp
    }
 
    context::context(key_callback_t key_handler)
-   : win_(*this), impl_(nullptr)
+   : key_handler_(key_handler)
+   , fullscreen_(false)
+   , impl_(nullptr)
    {
       if (!initialized_) { throw error("runtime not initialised - call glpp::init() first"); }
 
+      recreate_window(false);
+
+      gl_::init();
+
+#ifdef WIN32
+      assert(extensionEnabled("GL_ANGLE_framebuffer_multisample"));
+#endif
+
+      win_.reset(new window{ *this });
+   }
+
+   context::~context() {
+      destroy();
+   }
+
+   void context::recreate_window(bool fullscreen) {
+      fullscreen_ = fullscreen;
       // some more info on extensions: http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-12-opengl-extensions/
       // glfwOpenWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1); 
       // glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
@@ -1943,27 +1999,32 @@ namespace glpp
       glfwWindowHint(GLFW_SAMPLES, 8);
       glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-      GLFWwindow* window = glfwCreateWindow(640, 480, "Game", NULL, NULL);
-      if (!window) {
+      auto * monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
+      auto res = [&] {
+         if (fullscreen) {
+            auto * vid_mode = glfwGetVideoMode(monitor);
+            return dim_t{ vid_mode->width, vid_mode->height };
+         }
+         return dim_t{ 640, 480 };
+      }();
+
+      auto* prev_win = impl_ ? impl_->window_ : nullptr;
+      auto* win = glfwCreateWindow(res.x, res.y, "Game", monitor, prev_win);
+      if (!win) {
          throw error("could not create GLFW window or context");
       }
 
-      glfwMakeContextCurrent(window);
+      if (prev_win) {
+         glfwDestroyWindow(prev_win);
+      }
 
-      gl_::init();
+      glfwMakeContextCurrent(win);
 
-      window_key_callbacks_.set(window, *this, key_handler);
-      glfwSetKeyCallback(window, key_callback);
+      if (impl_) window_key_callbacks_.remove(impl_->window_);
+      window_key_callbacks_.set(win, *this, key_handler_);
+      glfwSetKeyCallback(win, key_callback);
 
-#ifdef WIN32
-      assert(extensionEnabled("GL_ANGLE_framebuffer_multisample"));
-#endif
-
-      impl_.reset(new impl{ window });
-   }
-
-   context::~context() {
-      destroy();
+      impl_.reset(new impl{ win });
    }
 
    std::vector<std::string> context::extensions() const {

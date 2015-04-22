@@ -27,8 +27,8 @@
 #endif
 
 #ifdef GLPP_DEBUG_OPENGL
-#  define GL_VERIFY(stmt) do { stmt; checkOpenGLError(#stmt, __FUNCTION__, __FILE__, __LINE__); } while (0)
-#  define GL_CHECK() do { checkOpenGLError(__FUNCTION__, __FILE__, __LINE__); } while (0)
+#  define GL_VERIFY(stmt) do { stmt; glpp::checkOpenGLError(#stmt, __FUNCTION__, __FILE__, __LINE__); } while (0)
+#  define GL_CHECK() do { glpp::checkOpenGLError(__FUNCTION__, __FILE__, __LINE__); } while (0)
 #  define GL_IGNORE(stmt) do { GL_CHECK(); stmt; glGetError(); } while (0)
 #else
 #  define GL_VERIFY(stmt) stmt
@@ -160,6 +160,8 @@ namespace glpp {
 
       void blit_to_draw_buffer() const;
       void blit_to_screen() const;
+
+      void validate() const { check_fbo(); }
 
    private:
       void bind_(BindTarget target = ReadDraw) const;
@@ -582,7 +584,11 @@ namespace glpp {
       void swap();
 
       dim_t window_dims() const;
+      dim_t window_pos() const;
       dim_t frame_buffer_dims() const;
+
+      void set_fullscreen(bool enable);
+      bool is_fullscreen() const;
 
    private:
       friend class context;
@@ -611,12 +617,17 @@ namespace glpp {
 
       void destroy(); // optional, will be invoked by dtor
 
-      window const & win() const { return win_; }
-      window & win() { return win_; }
+      window const & win() const { return *win_; }
+      window & win() { return *win_; }
 
    private:
+      void recreate_window(bool fullscreen);
+
+      key_callback_t key_handler_;
+      bool fullscreen_;
+
       friend class window;
-      window win_;
+      std::unique_ptr<window> win_;
 
       struct impl;
       std::unique_ptr<impl> impl_;

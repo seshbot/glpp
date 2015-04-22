@@ -2,7 +2,10 @@
 #  include <windows.h>
 #endif
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <map>
+
 #include "game.h"
 #include <glpp/glpp.h>
 #include <glpp/utils.h>
@@ -12,12 +15,6 @@
 #   include <glpp/gl2.h>
 #endif
 
-// TODO: remove this
-#define GLM_FORCE_RADIANS
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -136,30 +133,26 @@ namespace {
    // TODO: lifetime (create/delete), movement (update), render (vertices, buffer) policies
    template <typename CreatePolicy, typename UpdatePolicy, typename DeletePolicy>
    class particle_emitter_buffer_t
-      : public CreatePolicy   // CreatePolicy provides create_particles(emitter, t)
-      , public UpdatePolicy   // UpdatePolicy provides update_particle(emitter, idx, t)
-      , public DeletePolicy { // DeletePolicy provides should_delete(emitter, idx)
+      : public CreatePolicy   // provides create_particles(emitter, t)
+      , public UpdatePolicy   // provides particle_created(emitter, idx, t), update_particle(emitter, idx, t)
+      , public DeletePolicy { // provides should_delete(emitter, idx)
    public:
       using cont_t = std::vector < glm::vec3 >;
       using idx_t = std::size_t;
 
-      glm::vec3 vel_{0., -1000., 0.};
-
-      // see http://research.microsoft.com/pubs/70320/RealTimeRain_MSTR.pdf for rain simulation
-      void create_particle() {
-         auto pos = glm::vec3{
-            (float)(std::rand() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
-            400.,
-            400.f -(float)(std::rand() % 1200) };// (float)(std::rand() % 350) - 250. };
-
-         add(pos, vel_);
-      }
-
       void update(double time_since_last) {
          current_time_ += time_since_last;
+
+         auto prev_top = count();
          CreatePolicy::create_particles(*this, time_since_last);
+
          // glm likes floats
          auto t = static_cast<float>(time_since_last);
+         auto new_top = count();
+
+         for (auto idx = prev_top; idx < new_top; idx++) {
+            UpdatePolicy::particle_created(*this, idx);
+         }
 
          auto idx = idx_t(0);
          while (idx < count()) {
@@ -182,7 +175,7 @@ namespace {
 
       double time() const { return current_time_; }
       idx_t count() const { return particle_velocities_.size(); }
-      idx_t add(glm::vec3 pos, glm::vec3 vel) { particle_create_times_.push_back(current_time_);  particle_positions_.push_back(pos); particle_velocities_.push_back(vel); return count() - 1; }
+      idx_t add(glm::vec3 pos, glm::vec3 vel = {}) { particle_create_times_.push_back(current_time_);  particle_positions_.push_back(pos); particle_velocities_.push_back(vel); return count() - 1; }
       void del_at(idx_t idx) { del_at_(particle_create_times_, idx);  del_at_(particle_positions_, idx); del_at_(particle_velocities_, idx); }
       double create_time_at(idx_t idx) { return particle_create_times_[idx]; }
       glm::vec3 & pos_at(idx_t idx) { return particle_positions_[idx]; }
@@ -206,10 +199,20 @@ namespace {
       double next_create_time_ = 0.;
 
       template <typename T>
+      void create_particle(T & emitter) {
+         auto pos = glm::vec3{
+            (float)(std::rand() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
+            800.,
+            800.f - (float)(std::rand() % 1200) };// (float)(std::rand() % 350) - 250. };
+
+         emitter.add(pos);
+      }
+
+      template <typename T>
       void create_particles(T & emitter, double time_since_last) {
          auto now = emitter.time();
          while (next_create_time_ < now) {
-            emitter.create_particle();
+            create_particle(emitter);
             next_create_time_ += TIME_BETWEEN_CREATE;
          }
       }
@@ -218,6 +221,13 @@ namespace {
    class constant_update_policy_t {
    protected:
       using idx_t = std::size_t;
+
+      const glm::vec3 PARTICLE_VEL = { 0., -1000., 0. };
+
+      template <typename T>
+      void particle_created(T & emitter, idx_t idx) {
+         emitter.vel_at(idx) = PARTICLE_VEL;
+      }
 
       template <typename T>
       void update_particle(T & emitter, idx_t idx, float time_since_last) {
@@ -295,6 +305,22 @@ int main()
       };
 
       glpp::context context{ key_handler };
+      auto init_context = [&] {
+         gl::enable(gl::enable_cap_t::depth_test);
+         gl::enable(gl::enable_cap_t::dither);
+         gl::enable(gl::enable_cap_t::cull_face);
+         //gl::enable(gl::enable_cap_t::multisample);
+         gl::enable(gl::enable_cap_t::blend);
+
+#ifndef WIN32
+         gl::point_size(3.);
+         gl::enable(gl::enable_cap_t::point_smooth);
+#endif
+
+         gl::blend_func(gl::blending_factor_src_t::src_alpha, gl::blending_factor_dest_t::one_minus_src_alpha);
+
+         gl::cull_face(gl::cull_face_mode_t::back);
+      };
 
 #ifdef USE_GLEW
       GLenum err = glewInit();
@@ -317,20 +343,8 @@ int main()
       for (auto e : extensions)
          utils::log(utils::LOG_INFO, " - %s\n", e.c_str());
 
-      gl::enable(gl::enable_cap_t::depth_test);
-      gl::enable(gl::enable_cap_t::cull_face);
-      //gl::enable(gl::enable_cap_t::multisample);
-      gl::enable(gl::enable_cap_t::blend);
+      init_context();
 
-#ifndef WIN32
-      gl::point_size(3.);
-      gl::enable(gl::enable_cap_t::point_smooth);
-#endif
-
-      gl::blend_func(gl::blending_factor_src_t::src_alpha, gl::blending_factor_dest_t::one_minus_src_alpha);
-
-      gl::cull_face(gl::cull_face_mode_t::back);
-      
       //
       // load game data
       //
@@ -483,6 +497,10 @@ int main()
       };
 
 
+      //
+      // set up key bindings
+      //
+
       controls.register_action_handler(glpp::Key::KEY_SPACE, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          auto & player = creature_db.moment(world.player_id());
          auto bullet_pos = player.pos() + glm::vec2(0., 30.f) + player.dir() * 40.f;
@@ -493,7 +511,7 @@ int main()
 
          return true;
       });
-
+      
       bool do_special_thing = false;
       controls.register_action_handler(glpp::Key::KEY_X, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          do_special_thing = true;
@@ -575,6 +593,19 @@ int main()
       auto tex_fbo = std::unique_ptr<glpp::frame_buffer_t>();
       auto msaa_fbo = std::unique_ptr<glpp::frame_buffer_t>();
 
+      controls.register_action_handler(glpp::Key::KEY_F, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
+         context.win().set_fullscreen(!context.win().is_fullscreen());
+         init_context();
+
+         // force deallocation of all FBOs after context reinit to get around this ANGLE bug:
+         // https://code.google.com/p/angleproject/issues/detail?id=979
+         // ideally we would let the resize-handling code re-allocate the FBOs
+         shadow_fbo.reset();
+         tex_fbo.reset();
+         msaa_fbo.reset();
+         return true;
+      });
+
       auto set_post_tex_cb = [&post_tex](glpp::uniform & u) { glpp::texture_unit_t tu{ 2 }; tu.activate(); post_tex->bind();  u.set(tu); };
       auto post_pass = prg_post.pass()
          .with(screen_vertices_spec)
@@ -606,17 +637,24 @@ int main()
       // state callbacks
       //
 
+      auto get_camera_pos_cb = [&] {
+         auto center_2d = game::center_world_location();
+         auto center = glm::vec3{ center_2d.x, 0.f, -center_2d.y };
+         auto eye = center + glm::vec3{ 0.f, 800.f * view_height, 800.f };
+         return eye;
+      };
+
       auto get_view_cb = [&] {
          auto center_2d = game::center_world_location();
          auto center = glm::vec3{ center_2d.x, 0.f, -center_2d.y };
-         auto eye = center + glm::vec3{ 0.f, 400.f * view_height, 400.f };
+         auto eye = get_camera_pos_cb();
          auto result = glm::lookAt(eye, center, glm::vec3{ 0., 1., 0. });
          return result;
       };
 
       auto get_proj_cb = [] {
          // 0, 0 is the bottom left of the lookAt target!
-         return glm::ortho<float>(-400., 400., -300., 300., -1000., 1000.);
+         return glm::ortho<float>(-400., 400., -300., 300., 100., 2000.);
          //return glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f);
       };
 
@@ -941,10 +979,12 @@ int main()
          for (auto face_idx = 0; face_idx < 6; face_idx++) {
            auto & face = faces[face_idx];
            const auto view = glm::lookAt(light_pos, light_pos + face.view_direction, face.up_direction);
+
            shadow_fbo->bind(face.face);
-           gl::clear(
+
+           GL_VERIFY(gl::clear(
               gl::clear_buffer_flags_t::color_buffer_bit |
-              gl::clear_buffer_flags_t::depth_buffer_bit);
+              gl::clear_buffer_flags_t::depth_buffer_bit));
 
            for (auto & pass : d3_shadow_passes) {
               pass.draw_batch(

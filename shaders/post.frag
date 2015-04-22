@@ -49,11 +49,12 @@ lowp vec3 post_adjust(lowp vec3 rgb, mediump vec2 xy) {
     // from http://glsl.heroku.com/e#12543.1
 
     // Gamma first...
-    rgb = pow(rgb, vec3(0.45));
+	rgb = sqrt(rgb);
+    //rgb = pow(rgb, vec3(0.45));
 
-    lowp float CONTRAST = 1.9;
+    lowp float CONTRAST = 1.2;
     lowp float SATURATION = 1.;
-    lowp float BRIGHTNESS = 0.8;
+    lowp float BRIGHTNESS = .6;
     rgb = mix(vec3(.5), mix(vec3(dot(vec3(.2125, .7154, .0721), rgb*BRIGHTNESS)), rgb*BRIGHTNESS, SATURATION), CONTRAST);
     // Vignette...
     rgb *= .4+0.5*pow(40.0*xy.x*xy.y*(1.0-xy.x)*(1.0-xy.y), 0.1 );

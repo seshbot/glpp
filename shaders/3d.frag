@@ -17,9 +17,8 @@ struct PositionalLight {
 	mediump float attenuation;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .05, COLOUR_FIRE_LOW, .2);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .15, COLOUR_FIRE_LOW, .00004);
 
-uniform mediump mat4 model;
 uniform mediump vec4 colour;
 uniform samplerCube shadow_texture;
 
@@ -27,9 +26,9 @@ varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
 
 const mediump vec3 c_sky_light_dir = vec3(-1., -1., -1.);
-const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .1;
+const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .05;
 
-const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .01;
+const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .09;
 
 mediump float random(mediump vec4 seed4) {
    mediump float dot_product = dot(seed4, vec4(12.9898,78.233,45.164,94.673));
@@ -84,7 +83,7 @@ lowp vec4 gamma(lowp vec4 c) {
 
 mediump vec3 light(PositionalLight light) {
    // calculate attenuation (light strengtht based on inverse square law)
-   mediump float dist = distance(frag_position, light.world_position) / 50.;
+   mediump float dist = distance(frag_position, light.world_position);
    mediump float att = 1. / (1. + light.attenuation * dist + light.attenuation * dist * dist);
 
    // from http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
@@ -107,6 +106,19 @@ mediump vec3 light(PositionalLight light) {
     return att * (light.ambient + light.diffuse * diffuse_intensity * shadow_factor);
 }
 
+const mediump float LOG2 = 1.442695;
+const mediump float c_fog_density = 0.0008;
+const mediump vec4 c_fog_colour = vec4(1., 1., 1., 1.);
+mediump float fog_factor() {
+   // various fog calcs: https://code.google.com/p/gles2-bc/source/browse/trunk/Sources/OpenGLES/OpenGLES20/shaders/fog.glsl?r=4
+   // for ortho
+   return clamp(.95 + .0002 * frag_position.y, 0., 1.);
+
+   // for perspective
+   //mediump float z = frag_position4.z / frag_position4.w;
+   //return clamp(exp2(-c_fog_density * c_fog_density * z * z * LOG2), 0., 1.);
+}
+
 void main() {
    mediump vec3 n = normalize(frag_normal);
    mediump vec3 l = normalize(-c_sky_light_dir);
@@ -115,6 +127,6 @@ void main() {
    mediump vec3 diffuse = colour.rgb * diffuse_intensity * c_sky_light_intensity;
    mediump vec3 ambient = colour.rgb * c_ambient_intensity;
    
-   gl_FragColor = gamma(vec4(ambient + diffuse + colour.rgb * light(c_light), colour.a));
-   //gl_FragColor = gamma(vec4(ambient + diffuse, 1.));
+   gl_FragColor = vec4(ambient + diffuse + colour.rgb * light(c_light), colour.a);
+   //gl_FragColor = mix(c_fog_colour, gl_FragColor, fog_factor());
 }

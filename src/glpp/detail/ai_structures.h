@@ -40,6 +40,7 @@ namespace ai
       std::vector<bone_t> bones;
    };
 
+   // encapsulates a node in relation to its animation information and parent/children in the hierarchy
    struct node_animation_t {
       node_animation_t(aiNode const & node_in);
 
@@ -63,7 +64,7 @@ namespace ai
       std::vector<mesh_animation_t const *> mesh_animations_;
    };
 
-
+   // owns all high-level state for a single animation, including node hierarchy and mesh bone structure
    struct animation_t {
    public:
       animation_t(animation_t const &) = delete;
@@ -117,6 +118,7 @@ namespace ai
 
    // encapsulates both node animation info (for calculating node transforms over time) and bone hierarchy (for calculating final mesh node positions)
    // TODO: separate above structures out and create 'calculated result' structure, maybe to get rid of this struct
+   // NOTE: this owns snapshot information only - all static node information is owned by animation_t
    struct node_animation_snapshot_t {
       node_animation_snapshot_t(node_animation_t const & node_animation_in, node_animation_snapshot_t const * parent_in, glm::mat4 const & global_inverse_transform_in, double time_ticks, double time_ticks_total);
 
