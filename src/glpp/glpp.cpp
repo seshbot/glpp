@@ -1901,15 +1901,7 @@ namespace glpp
       static std::atomic<bool> initialized_ { false };
 
       struct window_key_callbacks_t {
-         struct callback_info_t {
-            callback_info_t(GLFWwindow* window_in, context * context_in, context::key_callback_t callback_in) : window(window_in), context(context_in), callback(std::move(callback_in)) {}
-            callback_info_t(callback_info_t const & other) = default;
-            callback_info_t & operator=(callback_info_t const & other) = default;
-            callback_info_t(callback_info_t && other) : window(other.window), context(other.context), callback(std::move(other.callback)) {}
-            callback_info_t & operator=(callback_info_t && other) { window = other.window; context = other.context; callback = std::move(other.callback); return *this; }
-
-            GLFWwindow* window; context * context; context::key_callback_t callback;
-         };
+         struct callback_info_t { GLFWwindow* window; context * context; context::key_callback_t callback; };
 
          void set(GLFWwindow* window, context & context, context::key_callback_t callback) {
             std::unique_lock<std::mutex> l(m_);

@@ -69,6 +69,9 @@ namespace glpp
 
       static scene_t load_from_file(std::string const & filename);
 
+      // unanimated meshes
+      std::vector<mesh_t> const & meshes() const;
+
       std::vector<std::string> animation_names() const;
       animation_snapshot_t start_animation(std::string const & name) const;
 
@@ -94,9 +97,9 @@ namespace glpp
       struct buffer_desc_t { DataT const * buffer; unsigned count; };
 
       std::string name() const;
+      bool is_animated() const { return is_animated_; }
 
-      glm::mat4 const & default_transform() const { return default_transform_; }
-      std::vector<glm::mat4> const & bone_transforms() const { return bone_transforms_; }
+      std::vector<glm::mat4> const & bone_transforms() const;
       material_t const & material() const { return material_; }
 
       unsigned bone_count() const;
@@ -110,12 +113,17 @@ namespace glpp
       buffer_desc_t<float> bone_weights() const;
 
    private:
+      friend class scene_t;
       friend class animation_snapshot_t;
-      mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform, std::vector<glm::mat4> const & bone_transforms);
+      // for creating unanimated mesh
+      mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform);
+      // for creating animated mesh
+      mesh_t(aiScene const & scene, aiMesh const & mesh, std::vector<glm::mat4> const & bone_transforms);
 
       aiMesh const * ai_mesh_;
-      glm::mat4 default_transform_;
-      std::vector<glm::mat4> const & bone_transforms_;
+      bool is_animated_;
+      std::vector<glm::mat4> default_transforms_;
+      std::vector<glm::mat4> const * bone_transforms_;
       material_t material_;
       std::vector<uint32_t> indices_;
       std::vector<std::array<float, 4>> bone_indices_;

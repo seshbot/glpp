@@ -289,7 +289,8 @@ int main()
       exit(EXIT_FAILURE);
    }
 
-   auto scene = glpp::scene_t::load_from_file("../../res/dude-anim.fbx");
+   auto model_dude = glpp::scene_t::load_from_file("../../res/dude-anim.fbx");
+   auto model_campfire = glpp::scene_t::load_from_file("../../res/campfire.fbx");
 
    player_controls_t controls;
 
@@ -662,18 +663,7 @@ int main()
          u.set(get_view_cb());
       };
 
-      std::vector<glpp::pass_t> d3_shadow_passes;
-      std::vector<glpp::pass_t> d3_body_passes;
-
-      // NOTE
-      auto animation_name = scene.animation_names()[0];
-      auto animation_snapshot = scene.start_animation(animation_name);
-      std::vector<std::string> d3_body_mesh_names;
-
-      utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_name.c_str());
-      for (auto & mesh : animation_snapshot.meshes()) {
-         utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
-
+      auto add_3d_mesh = [&prg_3d, &prg_3d_shadow](glpp::mesh_t const & mesh, std::vector<glpp::pass_t> & passes_3d, std::vector<glpp::pass_t> & passes_3d_shadow) {
          auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count }, { mesh.indices().buffer, mesh.indices().count } })
             .attrib("p", 3);
          auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
@@ -683,24 +673,69 @@ int main()
          auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
             .attrib("bone_weights", 4);
 
-         d3_body_mesh_names.push_back(mesh.name());
 
-         d3_body_passes.push_back(
+         passes_3d.push_back(
             prg_3d.pass()
-               .with(verts)
-               .with(normals)
-               .with(bone_indices)
-               .with(bone_weights)
-               .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); })
-               .set_uniform("colour", mesh.material().diffuse_colour));
+            .with(verts)
+            .with(normals)
+            .with(bone_indices)
+            .with(bone_weights)
+            .set_uniform("colour", mesh.material().diffuse_colour));
 
-         d3_shadow_passes.push_back(
+         passes_3d_shadow.push_back(
             prg_3d_shadow.pass()
-               .with(verts)
-               .with(bone_indices)
-               .with(bone_weights)
-               .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); }));
+            .with(verts)
+            .with(bone_indices)
+            .with(bone_weights));
+
+         auto & pass_3d = passes_3d.back();
+         auto & pass_3d_shadow = passes_3d_shadow.back();
+
+         if (mesh.is_animated()) {
+            pass_3d
+               .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); });
+            pass_3d_shadow
+               .set_uniform_action("bones[0]", [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); });
+         }
+         else {
+            pass_3d
+               .set_uniform("bones[0]", mesh.bone_transforms());
+            pass_3d_shadow
+               .set_uniform("bones[0]", mesh.bone_transforms());
+         }
+      };
+
+      //
+      // create dude animation meshes
+      //
+
+      std::vector<glpp::pass_t> d3_body_passes;
+      std::vector<glpp::pass_t> d3_body_shadow_passes;
+
+      // NOTE
+      auto animation_name = model_dude.animation_names()[0];
+      auto animation_snapshot = model_dude.start_animation(animation_name);
+      std::vector<std::string> d3_body_mesh_names;
+
+      utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_name.c_str());
+      for (auto & mesh : animation_snapshot.meshes()) {
+         utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
+         d3_body_mesh_names.push_back(mesh.name());
+         add_3d_mesh(mesh, d3_body_passes, d3_body_shadow_passes);
       }
+
+      //
+      // create campfire static meshes
+      //
+
+      std::vector<glpp::pass_t> d3_campfire_passes;
+      std::vector<glpp::pass_t> d3_campfire_shadow_passes;
+
+      for (auto & mesh : model_campfire.meshes()) {
+         d3_body_mesh_names.push_back(mesh.name());
+         add_3d_mesh(mesh, d3_campfire_passes, d3_campfire_shadow_passes);
+      }
+
 
       static const float ground_verts[] = {
          0.,   0., -900.,   0., 1., 0.,
@@ -986,7 +1021,7 @@ int main()
               gl::clear_buffer_flags_t::color_buffer_bit |
               gl::clear_buffer_flags_t::depth_buffer_bit));
 
-           for (auto & pass : d3_shadow_passes) {
+           for (auto & pass : d3_body_shadow_passes) {
               pass.draw_batch(
                  shadow_render_callback_t{
                  world_view.creatures_begin(),

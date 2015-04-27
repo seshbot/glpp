@@ -64,10 +64,11 @@ namespace glpp {
       }
    }
 
-   mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform, std::vector<glm::mat4> const & bone_transforms)
+   mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, std::vector<glm::mat4> const & bone_transforms)
       : ai_mesh_{ &mesh }
-      , default_transform_(default_transform)
-      , bone_transforms_(bone_transforms)
+      , is_animated_{ true }
+      , default_transforms_()
+      , bone_transforms_(&bone_transforms)
       , material_(get_mesh_material(scene, mesh))
       , indices_(get_mesh_indices(mesh))
       , bone_indices_(mesh.mNumVertices)
@@ -84,6 +85,38 @@ namespace glpp {
             bone_indices_[weight.mVertexId][array_idx] = (float)bone_idx;
             bone_weights_[weight.mVertexId][array_idx] = weight.mWeight;
          }
+      }
+   }
+
+   namespace {
+      // to get around MSdev error C2797 'list initialization inside member initializer list or non-static data member initializer is not implemented'
+      template <typename T>
+      auto to_vector(T const & val) -> std::vector<T> { return{ val }; }
+   }
+
+   mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform)
+      : ai_mesh_{ &mesh }
+      , is_animated_{ false }
+      , default_transforms_(to_vector(default_transform))
+      , bone_transforms_(nullptr)
+      , material_(get_mesh_material(scene, mesh))
+      , indices_(get_mesh_indices(mesh))
+      , bone_indices_(mesh.mNumVertices)
+      , bone_weights_(mesh.mNumVertices)
+   {
+      // all vertices point to a single bone transform - the default transform for this mesh
+      for (auto idx = 0U; idx < mesh.mNumVertices; idx++) {
+         bone_indices_[idx][0] = 0.;
+         bone_weights_[idx][0] = 1.;
+      }
+   }
+
+   std::vector<glm::mat4> const & mesh_t::bone_transforms() const {
+      if (is_animated_) {
+         return *bone_transforms_;
+      }
+      else {
+         return default_transforms_;
       }
    }
 
@@ -160,7 +193,7 @@ namespace glpp {
             // aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform, std::vector<glm::mat4> const & bone_transforms
             auto & mesh = mesh_bone_snapshots.ai_mesh;
             auto & bone_transforms = mesh_bone_snapshots.bone_transforms;
-            meshes.push_back({ scene, mesh, glm::mat4{}, bone_transforms });
+            meshes.push_back({ scene, mesh, bone_transforms });
          });
 
          advance_to(time_secs);
@@ -293,6 +326,11 @@ namespace glpp {
          //   utils::log(utils::LOG_INFO, " - animation %s (%d animated nodes)\n", animation.name().c_str(), animation.nodes.size());
          //   glpp::log_animation_nodes(*animation.root_node, "   - ");
          //}
+
+         // TODO: incorporate global inverse transform here? (third parameter)
+         ai::for_each_mesh(*ai_scene, *ai_scene->mRootNode, {}, [&](aiMesh const & mesh, glm::mat4 const & transform) {
+            meshes_.push_back({*ai_scene, mesh, transform});
+         });
       }
       
       std::vector<std::string> animation_names() const {
@@ -312,6 +350,7 @@ namespace glpp {
 
       std::unique_ptr<const aiScene> ai_scene_;
       std::vector<ai::animation_t> animations_;
+      std::vector<mesh_t> meshes_;
    };
 
    scene_t::scene_t(scene_t && other) : impl_(std::move(other.impl_)) {}
@@ -342,6 +381,10 @@ namespace glpp {
          );
 
       return{ scene };
+   }
+
+   std::vector<mesh_t> const & scene_t::meshes() const {
+      return impl_->meshes_;
    }
 
    std::vector<std::string> scene_t::animation_names() const {
