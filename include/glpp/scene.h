@@ -30,6 +30,10 @@ namespace glpp
     */
    class animation_snapshot_t {
    public:
+      animation_snapshot_t(animation_snapshot_t const &) = delete;
+      animation_snapshot_t & operator=(animation_snapshot_t const &) = delete;
+      animation_snapshot_t(animation_snapshot_t&&);
+      animation_snapshot_t & operator=(animation_snapshot_t&&);
       ~animation_snapshot_t();
 
       void advance_to(double time_secs);
@@ -57,6 +61,10 @@ namespace glpp
     */
    class scene_t {
    public:
+      scene_t(scene_t const &) = delete;
+      scene_t & operator=(scene_t const &) = delete;
+      scene_t(scene_t &&);
+      scene_t & operator=(scene_t &&);
       ~scene_t();
 
       static scene_t load_from_file(std::string const & filename);

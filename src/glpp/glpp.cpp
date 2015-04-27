@@ -1924,7 +1924,7 @@ namespace glpp
          void remove(GLFWwindow* window) {
             std::unique_lock<std::mutex> l(m_);
 
-            for (auto it = std::cbegin(callbacks_); it != std::cend(callbacks_); ++it) {
+            for (auto it = callbacks_.cbegin(); it != callbacks_.cend(); ++it) {
                if (it->window == window) {
                   callbacks_.erase(it);
                   return;

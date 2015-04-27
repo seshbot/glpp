@@ -46,14 +46,14 @@ namespace glpp {
          return{ result.r, result.g, result.b, result.a };
       }
 
-      float get_mesh_material_shininess(aiScene const & scene, aiMesh const & mesh, float default = 0.f) {
+      float get_mesh_material_shininess(aiScene const & scene, aiMesh const & mesh, float default_value = 0.f) {
          float shininess = 0.f;
          float shininess_strength = 0.f;
          if ( aiGetMaterialFloat(scene.mMaterials[mesh.mMaterialIndex], AI_MATKEY_SHININESS, &shininess) &&
               aiGetMaterialFloat(scene.mMaterials[mesh.mMaterialIndex], AI_MATKEY_SHININESS_STRENGTH, &shininess_strength)) {
             return shininess * shininess_strength;
          }
-         return default;
+         return default_value;
       }
 
       mesh_t::material_t get_mesh_material(aiScene const & scene, aiMesh const & mesh) {
@@ -91,13 +91,13 @@ namespace glpp {
    unsigned mesh_t::bone_count() const { return ai_mesh_->mNumBones; }
 
    mesh_t::buffer_desc_t<float> mesh_t::vertices() const { return{ reinterpret_cast<float*>(ai_mesh_->mVertices), ai_mesh_->mNumVertices * 3 }; }
-   mesh_t::buffer_desc_t<uint32_t> mesh_t::indices() const { return{ indices_.data(), indices_.size() }; }
+   mesh_t::buffer_desc_t<uint32_t> mesh_t::indices() const { return{ indices_.data(), static_cast<uint32_t>(indices_.size()) }; }
    mesh_t::buffer_desc_t<float> mesh_t::normals() const {
       assert(ai_mesh_->HasNormals());
       return{ reinterpret_cast<float*>(ai_mesh_->mNormals), ai_mesh_->mNumVertices * 3 };
    }
-   mesh_t::buffer_desc_t<float> mesh_t::bone_indices() const { return{ bone_indices_.data()->data(), bone_indices_.size() * 4 }; }
-   mesh_t::buffer_desc_t<float> mesh_t::bone_weights() const { return{ bone_weights_.data()->data(), bone_weights_.size() * 4 }; }
+   mesh_t::buffer_desc_t<float> mesh_t::bone_indices() const { return{ bone_indices_.data()->data(), static_cast<uint32_t>(bone_indices_.size() * 4) }; }
+   mesh_t::buffer_desc_t<float> mesh_t::bone_weights() const { return{ bone_weights_.data()->data(), static_cast<uint32_t>(bone_weights_.size() * 4) }; }
 
 
    //
@@ -255,8 +255,11 @@ namespace glpp {
       std::map<std::string, std::vector<std::string>> node_bone_names_;
    };
 
+   animation_snapshot_t::animation_snapshot_t(animation_snapshot_t && other) : impl_(std::move(other.impl_)) { }
+   animation_snapshot_t & animation_snapshot_t::operator=(animation_snapshot_t && other) { impl_ = std::move(other.impl_); return *this; }
+
    animation_snapshot_t::animation_snapshot_t(ai::animation_t const & animation, double time_secs)
-      : impl_(std::make_unique<impl>(animation, time_secs)) {
+      : impl_{ new impl{animation, time_secs} } {
    }
 
    animation_snapshot_t::~animation_snapshot_t() = default;
@@ -311,8 +314,11 @@ namespace glpp {
       std::vector<ai::animation_t> animations_;
    };
 
+   scene_t::scene_t(scene_t && other) : impl_(std::move(other.impl_)) {}
+   scene_t & scene_t::operator=(scene_t && other) { impl_ = std::move(other.impl_); return *this; }
+
    scene_t::scene_t(aiScene const * ai_scene)
-      : impl_(std::make_unique<impl>(ai_scene)) {
+      : impl_{new impl {ai_scene} } {
    }
 
    scene_t::~scene_t() = default;

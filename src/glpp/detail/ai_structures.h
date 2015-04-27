@@ -78,24 +78,6 @@ namespace ai
 
       std::string name() const;
 
-      template <typename CallbackT>
-      void for_each_mesh_impl(node_animation_snapshot_t const & node_snapshot, CallbackT callback) {
-         for (auto & mesh_bones : node_snapshot.mesh_bone_snapshots) {
-            callback(mesh_bones);
-         }
-
-         for (auto * child : node_snapshot.children) {
-            for_each_mesh_impl(*child, callback);
-         }
-      }
-
-      // callback void(mesh_bone_snapshot_t const & mesh_bone_snapshots)
-      // elements of bone_transforms match bone_node elements (transforms given separately so they can be used as-is for shader)
-      template <typename CallbackT>
-      void for_each_mesh(CallbackT callback) {
-         for_each_mesh_impl(*root_node_snapshot, callback);
-      }
-
       aiAnimation const * ai_animation;
       aiScene const * ai_scene;
 
@@ -150,6 +132,5 @@ namespace ai
 } // namespace ai
 
 } // namespace glpp
-
 
 #endif // #ifndef GLPP_AI_STRUCTURES__H
