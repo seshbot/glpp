@@ -67,6 +67,9 @@ namespace ai
    // owns all high-level state for a single animation, including node hierarchy and mesh bone structure
    struct animation_t {
    public:
+      animation_t(animation_t && other) = default;
+      animation_t & operator=(animation_t && other) = default;
+
       animation_t(aiScene const & scene, aiAnimation const & animation);
       ~animation_t();
 
