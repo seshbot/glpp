@@ -86,25 +86,6 @@ namespace ai {
    // animation_t implementation
    //
 
-   animation_t::animation_t(animation_t && other)
-      : ai_animation(other.ai_animation)
-      , ai_scene(other.ai_scene)
-      , root_node(other.root_node)
-      , global_inverse_transform(std::move(other.global_inverse_transform))
-      , nodes(std::move(other.nodes))
-      , mesh_animations(std::move(other.mesh_animations)) {
-   }
-
-   animation_t & animation_t::operator=(animation_t && other) {
-      ai_animation = other.ai_animation;
-      ai_scene = other.ai_scene;
-      root_node = other.root_node;
-      global_inverse_transform = std::move(other.global_inverse_transform);
-      nodes = std::move(other.nodes);
-      mesh_animations = std::move(other.mesh_animations);
-      return *this;
-   }
-
    animation_t::~animation_t() = default;
 
    animation_t::animation_t(aiScene const & scene, aiAnimation const & animation)
@@ -220,10 +201,10 @@ namespace ai {
 
 
    //
-   // node_animation_snapshot_t implementation
+   // node_animation_timeline_t implementation
    //
 
-   node_animation_snapshot_t::node_animation_snapshot_t(node_animation_t const & node_animation_in, node_animation_snapshot_t const * parent_in, glm::mat4 const & global_inverse_transform_in, double time_ticks_in, double time_ticks_total_in)
+   node_animation_timeline_t::node_animation_timeline_t(node_animation_t const & node_animation_in, node_animation_timeline_t const * parent_in, glm::mat4 const & global_inverse_transform_in, double time_ticks_in, double time_ticks_total_in)
       : node_animation(node_animation_in)
       , parent(parent_in)
       , global_inverse_transform(global_inverse_transform_in)
@@ -233,7 +214,7 @@ namespace ai {
       advance_transforms_to(time_ticks);
    }
 
-   void node_animation_snapshot_t::advance_transforms_to(double time_ticks_in) {
+   void node_animation_timeline_t::advance_transforms_to(double time_ticks_in) {
       bool restart = !(time_ticks_in > time_ticks);
       time_ticks = time_ticks_in;
       if (!node_animation.has_animation()) {
@@ -261,7 +242,7 @@ namespace ai {
       }
    }
 
-   void node_animation_snapshot_t::recalc_bones() {
+   void node_animation_timeline_t::recalc_bones() {
       for (auto & mesh_bones : mesh_bone_snapshots) {
          auto bone_count = mesh_bones.bone_nodes.size();
          auto & bone_transforms = mesh_bones.bone_transforms;

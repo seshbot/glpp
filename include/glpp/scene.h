@@ -28,13 +28,11 @@ namespace glpp
    /**
     * calculates all mesh states for a loaded animation baseond on a point in time
     */
-   class animation_snapshot_t {
+   class animation_timeline_t {
    public:
-      animation_snapshot_t(animation_snapshot_t const &) = delete;
-      animation_snapshot_t & operator=(animation_snapshot_t const &) = delete;
-      animation_snapshot_t(animation_snapshot_t&&);
-      animation_snapshot_t & operator=(animation_snapshot_t&&);
-      ~animation_snapshot_t();
+	   animation_timeline_t(animation_timeline_t &&) = default;
+      animation_timeline_t & operator=(animation_timeline_t &&) = default;
+      ~animation_timeline_t();
 
       void advance_to(double time_secs);
 
@@ -49,7 +47,7 @@ namespace glpp
 
    private:
       friend class scene_t;
-      animation_snapshot_t(ai::animation_t const & animation, double time_secs = 0);
+      animation_timeline_t(ai::animation_t const & animation, double time_secs = 0);
 
       struct impl;
       std::unique_ptr<impl> impl_;
@@ -61,10 +59,8 @@ namespace glpp
     */
    class scene_t {
    public:
-      scene_t(scene_t const &) = delete;
-      scene_t & operator=(scene_t const &) = delete;
-      scene_t(scene_t &&);
-      scene_t & operator=(scene_t &&);
+	  scene_t(scene_t &&) = default;
+	  scene_t & operator=(scene_t&&) = default;
       ~scene_t();
 
       static scene_t load_from_file(std::string const & filename);
@@ -73,7 +69,7 @@ namespace glpp
       std::vector<mesh_t> const & meshes() const;
 
       std::vector<std::string> animation_names() const;
-      animation_snapshot_t start_animation(std::string const & name) const;
+      animation_timeline_t create_timeline(std::string const & name) const;
 
    private:
       scene_t(aiScene const * ai_scene);
@@ -84,7 +80,7 @@ namespace glpp
 
 
    /**
-    * Captures the state of a single mesh at a point in time (created by animation_snapshot_t)
+    * Captures the state of a single mesh at a point in time (created by animation_timeline_t)
     */
    class mesh_t {
    public:
@@ -114,7 +110,7 @@ namespace glpp
 
    private:
       friend class scene_t;
-      friend class animation_snapshot_t;
+      friend class animation_timeline_t;
       // for creating unanimated mesh
       mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform);
       // for creating animated mesh

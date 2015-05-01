@@ -88,16 +88,10 @@ namespace glpp {
       }
    }
 
-   namespace {
-      // to get around MSdev error C2797 'list initialization inside member initializer list or non-static data member initializer is not implemented'
-      template <typename T>
-      auto to_vector(T const & val) -> std::vector<T> { return{ val }; }
-   }
-
    mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform)
       : ai_mesh_{ &mesh }
       , is_animated_{ false }
-      , default_transforms_(to_vector(default_transform))
+      , default_transforms_{ default_transform }
       , bone_transforms_(nullptr)
       , material_(get_mesh_material(scene, mesh))
       , indices_(get_mesh_indices(mesh))
@@ -134,11 +128,11 @@ namespace glpp {
 
 
    //
-   // animation_snapshot_t implementation
+   // animation_timeline_t implementation
    //
 
 
-   struct animation_snapshot_t::impl {
+   struct animation_timeline_t::impl {
       impl(ai::animation_t const & animation_in, double time_secs) : animation(animation_in)
       {
          auto animation_time_ticks = ai::animation_secs_to_ticks(*animation.ai_animation, time_secs);
@@ -148,9 +142,9 @@ namespace glpp {
          //
 
          node_snapshots.reserve(animation.nodes.size());
-         std::map<std::string, ai::node_animation_snapshot_t const *> node_snapshots_by_name;
+         std::map<std::string, ai::node_animation_timeline_t const *> node_snapshots_by_name;
 
-         std::function<ai::node_animation_snapshot_t const *(ai::node_animation_t const &, ai::node_animation_snapshot_t const *)> create_and_add_snapshot_recursive = [&](ai::node_animation_t const & n, ai::node_animation_snapshot_t const * parent) {
+         std::function<ai::node_animation_timeline_t const *(ai::node_animation_t const &, ai::node_animation_timeline_t const *)> create_and_add_snapshot_recursive = [&](ai::node_animation_t const & n, ai::node_animation_timeline_t const * parent) {
             node_snapshots.emplace_back(n, parent, animation.global_inverse_transform, animation_time_ticks, animation.ai_animation->mDuration);
             auto * new_snapshot = &node_snapshots.back();
 
@@ -174,7 +168,7 @@ namespace glpp {
          for (auto & node : node_snapshots) {
             for (auto & m : node.node_animation.mesh_animations()) {
                std::vector<aiBone const *> bones;
-               std::vector<ai::node_animation_snapshot_t const *> bone_nodes;
+               std::vector<ai::node_animation_timeline_t const *> bone_nodes;
                std::vector<glm::mat4> bone_offsets;
                for (auto & b : m->bones) {
                   auto it = node_snapshots_by_name.find(b.node.name());
@@ -246,7 +240,7 @@ namespace glpp {
       }
 
       template <typename CallbackT>
-      void for_each_mesh_impl(ai::node_animation_snapshot_t const & node_snapshot, CallbackT callback) {
+      void for_each_mesh_impl(ai::node_animation_timeline_t const & node_snapshot, CallbackT callback) {
          for (auto & mesh_bones : node_snapshot.mesh_bone_snapshots) {
             callback(mesh_bones);
          }
@@ -264,8 +258,8 @@ namespace glpp {
       }
 
       ai::animation_t const & animation;
-      ai::node_animation_snapshot_t const * root_node_snapshot;
-      std::vector<ai::node_animation_snapshot_t> node_snapshots;
+      ai::node_animation_timeline_t const * root_node_snapshot;
+      std::vector<ai::node_animation_timeline_t> node_snapshots;
       std::vector<mesh_t> meshes;
 
       // 
@@ -288,20 +282,17 @@ namespace glpp {
       std::map<std::string, std::vector<std::string>> node_bone_names_;
    };
 
-   animation_snapshot_t::animation_snapshot_t(animation_snapshot_t && other) : impl_(std::move(other.impl_)) { }
-   animation_snapshot_t & animation_snapshot_t::operator=(animation_snapshot_t && other) { impl_ = std::move(other.impl_); return *this; }
-
-   animation_snapshot_t::animation_snapshot_t(ai::animation_t const & animation, double time_secs)
+   animation_timeline_t::animation_timeline_t(ai::animation_t const & animation, double time_secs)
       : impl_{ new impl{animation, time_secs} } {
    }
 
-   animation_snapshot_t::~animation_snapshot_t() = default;
+   animation_timeline_t::~animation_timeline_t() = default;
 
-   void animation_snapshot_t::advance_to(double time_secs) {
+   void animation_timeline_t::advance_to(double time_secs) {
       impl_->advance_to(time_secs);
    }
 
-   std::vector<mesh_t> const & animation_snapshot_t::meshes() const {
+   std::vector<mesh_t> const & animation_timeline_t::meshes() const {
       return impl_->meshes;
    }
 
@@ -316,7 +307,7 @@ namespace glpp {
 
          for (auto idx = 0U; idx < ai_scene->mNumAnimations; idx++) {
             animations_.push_back({ *ai_scene, *ai_scene->mAnimations[idx] });
-            // to snapshot: animation_snapshot_t(animation_t const & animation, double time_secs)
+            // to snapshot: animation_timeline_t(animation_t const & animation, double time_secs)
          }
 
          ai::log_scene_info(*ai_scene);
@@ -353,9 +344,6 @@ namespace glpp {
       std::vector<mesh_t> meshes_;
    };
 
-   scene_t::scene_t(scene_t && other) : impl_(std::move(other.impl_)) {}
-   scene_t & scene_t::operator=(scene_t && other) { impl_ = std::move(other.impl_); return *this; }
-
    scene_t::scene_t(aiScene const * ai_scene)
       : impl_{new impl {ai_scene} } {
    }
@@ -380,7 +368,7 @@ namespace glpp {
          scene->mNumAnimations
          );
 
-      return{ scene };
+      return { scene };
    }
 
    std::vector<mesh_t> const & scene_t::meshes() const {
@@ -391,8 +379,8 @@ namespace glpp {
       return impl_->animation_names();
    }
 
-   animation_snapshot_t scene_t::start_animation(std::string const & name) const {
-      return animation_snapshot_t(impl_->animation(name), 0.);
+   animation_timeline_t scene_t::create_timeline(std::string const & name) const {
+      return{ impl_->animation(name), 0. };
    }
 
 } // namespace glpp

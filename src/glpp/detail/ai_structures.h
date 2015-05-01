@@ -22,7 +22,7 @@ namespace ai
 {
    struct animation_t;
    struct node_animation_t;
-   struct node_animation_snapshot_t;
+   struct node_animation_timeline_t;
    struct mesh_animation_t;
    struct mesh_bone_snapshot_t;
 
@@ -67,12 +67,6 @@ namespace ai
    // owns all high-level state for a single animation, including node hierarchy and mesh bone structure
    struct animation_t {
    public:
-      animation_t(animation_t const &) = delete;
-      animation_t & operator=(animation_t const &) = delete;
-
-      animation_t(animation_t && other);
-      animation_t & operator=(animation_t && other);
-
       animation_t(aiScene const & scene, aiAnimation const & animation);
       ~animation_t();
 
@@ -90,10 +84,10 @@ namespace ai
    // encapsulates all information required to recalculate bone transforms for a mesh
    struct mesh_bone_snapshot_t {
       aiMesh const & ai_mesh;
-      node_animation_snapshot_t const & mesh_node;
+      node_animation_timeline_t const & mesh_node;
       // the following structures correlate with each other but are kept separate to make it easier to pass data to shaders
       std::vector<aiBone const *> bones;
-      std::vector<node_animation_snapshot_t const *> bone_nodes;
+      std::vector<node_animation_timeline_t const *> bone_nodes;
       std::vector<glm::mat4> bone_offsets;
       std::vector<glm::mat4> bone_transforms; // recalculated every frame update
    };
@@ -101,8 +95,8 @@ namespace ai
    // encapsulates both node animation info (for calculating node transforms over time) and bone hierarchy (for calculating final mesh node positions)
    // TODO: separate above structures out and create 'calculated result' structure, maybe to get rid of this struct
    // NOTE: this owns snapshot information only - all static node information is owned by animation_t
-   struct node_animation_snapshot_t {
-      node_animation_snapshot_t(node_animation_t const & node_animation_in, node_animation_snapshot_t const * parent_in, glm::mat4 const & global_inverse_transform_in, double time_ticks, double time_ticks_total);
+   struct node_animation_timeline_t {
+      node_animation_timeline_t(node_animation_t const & node_animation_in, node_animation_timeline_t const * parent_in, glm::mat4 const & global_inverse_transform_in, double time_ticks, double time_ticks_total);
 
       // uses node hierarchy to calculate 'global_transform'
       void advance_transforms_to(double time_ticks);
@@ -113,8 +107,8 @@ namespace ai
       aiNode const & node() const { return node_animation.ai_node(); }
 
       node_animation_t const & node_animation;
-      node_animation_snapshot_t const * parent;
-      std::vector<node_animation_snapshot_t const *> children;
+      node_animation_timeline_t const * parent;
+      std::vector<node_animation_timeline_t const *> children;
       glm::mat4 const & global_inverse_transform;
       double time_ticks;
       double time_ticks_total;

@@ -323,21 +323,6 @@ int main()
          gl::cull_face(gl::cull_face_mode_t::back);
       };
 
-#ifdef USE_GLEW
-      GLenum err = glewInit();
-      if (err != GLEW_OK)
-      {
-         utils::log(utils::LOG_ERROR, "GLEW init error\n");
-         exit(EXIT_FAILURE);
-      }
-
-      if (!GLEW_VERSION_2_1)
-      {
-         utils::log(utils::LOG_ERROR, "GLEW v2.1 not available!\n");
-         exit(EXIT_FAILURE);
-      }
-#endif
-
       auto extensions = context.extensions();
       utils::log(utils::LOG_INFO, "%s\n", context.info(false).c_str());
       utils::log(utils::LOG_INFO, "GL EXTENSIONS [%s]:\n", std::to_string(extensions.size()).c_str());
@@ -492,9 +477,6 @@ int main()
          game::world_view_t::iterator itEnd_;
          mutable game::world_view_t::iterator it_;
          mutable glpp::texture_t::id_type current_tex_id_ = 0;
-
-         sprite_render_callback_t(sprite_render_callback_t const &) {}
-         sprite_render_callback_t & operator=(sprite_render_callback_t const &) { return *this; }
       };
 
 
@@ -714,11 +696,11 @@ int main()
 
       // NOTE
       auto animation_name = model_dude.animation_names()[0];
-      auto animation_snapshot = model_dude.start_animation(animation_name);
+      auto walk_animation = model_dude.create_timeline(animation_name);
       std::vector<std::string> d3_body_mesh_names;
 
       utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_name.c_str());
-      for (auto & mesh : animation_snapshot.meshes()) {
+      for (auto & mesh : walk_animation.meshes()) {
          utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
          d3_body_mesh_names.push_back(mesh.name());
          add_3d_mesh(mesh, d3_body_passes, d3_body_shadow_passes);
@@ -965,7 +947,7 @@ int main()
          emitter.update(time_since_last_tick);
 
          // TODO: we should have one of these for each visible entity
-         animation_snapshot.advance_to(glpp::get_time());
+         walk_animation.advance_to(glpp::get_time());
 
 
          //
