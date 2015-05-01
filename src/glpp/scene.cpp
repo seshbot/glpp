@@ -282,6 +282,10 @@ namespace glpp {
       std::map<std::string, std::vector<std::string>> node_bone_names_;
    };
 
+
+   animation_timeline_t::animation_timeline_t(animation_timeline_t &&) = default;
+   animation_timeline_t & animation_timeline_t::operator=(animation_timeline_t &&) = default;
+   
    animation_timeline_t::animation_timeline_t(ai::animation_t const & animation, double time_secs)
       : impl_{ new impl{animation, time_secs} } {
    }
@@ -343,6 +347,9 @@ namespace glpp {
       std::vector<ai::animation_t> animations_;
       std::vector<mesh_t> meshes_;
    };
+
+   scene_t::scene_t(scene_t &&) = default;
+   scene_t & scene_t::operator=(scene_t&&) = default;
 
    scene_t::scene_t(aiScene const * ai_scene)
       : impl_{new impl {ai_scene} } {
