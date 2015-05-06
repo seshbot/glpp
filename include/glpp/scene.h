@@ -67,7 +67,7 @@ namespace glpp
 	   scene_t & operator=(scene_t&&);
       ~scene_t();
 
-      static scene_t load_from_file(std::string const & filename);
+      static scene_t create_from_file(std::string const & filename);
 
       // unanimated meshes
       std::vector<mesh_t> const & meshes() const;

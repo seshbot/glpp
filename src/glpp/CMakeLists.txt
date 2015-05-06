@@ -5,7 +5,8 @@ set(SOURCE
   utils.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/utils.h
   input.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/input.h
   glpp.cpp    ${PROJECT_SOURCE_DIR}/include/glpp/glpp.h
-  scene.cpp    ${PROJECT_SOURCE_DIR}/include/glpp/scene.h
+  scene.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/scene.h
+  assets.cpp  ${PROJECT_SOURCE_DIR}/include/glpp/assets.h
   detail/ai_helpers.cpp detail/ai_helpers.h
   detail/ai_structures.cpp detail/ai_structures.h)
 

@@ -357,7 +357,7 @@ namespace glpp {
 
    scene_t::~scene_t() = default;
 
-   scene_t scene_t::load_from_file(std::string const & filename) {
+   scene_t scene_t::create_from_file(std::string const & filename) {
       Assimp::Importer importer;
       auto * scene = importer.ReadFile(filename.c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
       if (!scene) {

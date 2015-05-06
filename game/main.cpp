@@ -8,7 +8,10 @@
 
 #include "game.h"
 #include <glpp/glpp.h>
+#include <glpp/assets.h>
 #include <glpp/utils.h>
+#include <glpp/scene.h>
+
 #ifdef _MSC_VER
 #   include <glpp/gles2.h>
 #else
@@ -18,8 +21,6 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
-
-#include <glpp/scene.h>
 
 // TODO:
 // - fire mesh
@@ -38,13 +39,13 @@ namespace gl {
 }
 
 namespace {
-   glpp::shader vert_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../../shaders/%s.vert", name.c_str()), glpp::shader::Vertex); }
-   glpp::shader frag_shader(std::string name) { return glpp::shader::create_from_file(utils::fmt("../../shaders/%s.frag", name.c_str()), glpp::shader::Fragment); }
+   glpp::shader vert_shader(glpp::archive_t const & assets, std::string name) { return assets.load_shader(utils::fmt("shaders/%s.vert", name.c_str())); }
+   glpp::shader frag_shader(glpp::archive_t const & assets, std::string name) { return assets.load_shader(utils::fmt("shaders/%s.frag", name.c_str())); }
 
-   glpp::program create_program(std::string name) {
+   glpp::program create_program(glpp::archive_t const & assets, std::string name) {
       utils::log(utils::LOG_INFO, "compiling '%s' shader programs... ", name.c_str());
 
-      auto program = glpp::program{ vert_shader(name), frag_shader(name) };
+      auto program = glpp::program{ vert_shader(assets, name), frag_shader(assets, name) };
 
       utils::log(utils::LOG_INFO, "success\n");
 
@@ -56,10 +57,10 @@ namespace {
       return program;
    };
 
-   void reload_program(glpp::program & program, std::string name) {
+   void reload_program(glpp::archive_t const & assets, glpp::program & program, std::string name) {
       utils::log(utils::LOG_INFO, "reloading '%s' shader programs... ", name.c_str());
 
-      program.reload(vert_shader(name), frag_shader(name));
+      program.reload(vert_shader(assets, name), frag_shader(assets, name));
 
       utils::log(utils::LOG_INFO, "success\n");
 
@@ -289,8 +290,10 @@ int main()
       exit(EXIT_FAILURE);
    }
 
-   auto model_dude = glpp::scene_t::load_from_file("../../res/dude-anim.fbx");
-   auto model_campfire = glpp::scene_t::load_from_file("../../res/campfire.fbx");
+   auto assets = glpp::archive_t::load_from_directory({"../../res/"});
+
+   auto model_dude = assets.load_scene("dude-anim.fbx");
+   auto model_campfire = assets.load_scene("campfire.fbx");
 
    player_controls_t controls;
 
@@ -528,11 +531,11 @@ int main()
       // load shaders
       //
 
-      auto prg_3d = create_program("3d");
-      auto prg_3d_particle = create_program("3d_particle");
-      auto prg_3d_shadow = create_program("3d_shadow");
-      auto prg_sprite = create_program("sprite");
-      auto prg_post = create_program("post");
+      auto prg_3d = create_program(assets, "3d");
+      auto prg_3d_particle = create_program(assets, "3d_particle");
+      auto prg_3d_shadow = create_program(assets, "3d_shadow");
+      auto prg_sprite = create_program(assets, "sprite");
+      auto prg_post = create_program(assets, "post");
 
 
       //
@@ -897,11 +900,11 @@ int main()
       {
          if (should_reload_program) {
             try {
-               ::reload_program(prg_3d, "3d");
-               ::reload_program(prg_3d_particle, "3d_particle");
-               ::reload_program(prg_3d_shadow, "3d_shadow");
-               ::reload_program(prg_post, "post");
-               ::reload_program(prg_sprite, "sprite");
+               ::reload_program(assets, prg_3d, "3d");
+               ::reload_program(assets, prg_3d_particle, "3d_particle");
+               ::reload_program(assets, prg_3d_shadow, "3d_shadow");
+               ::reload_program(assets, prg_post, "post");
+               ::reload_program(assets, prg_sprite, "sprite");
             }
             catch (glpp::shader_compile_error const & ex) {
                utils::log(utils::LOG_ERROR, "%s\n", ex.what());
