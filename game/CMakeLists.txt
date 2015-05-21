@@ -3,7 +3,9 @@ set(ASSET_DIR ${PROJECT_SOURCE_DIR}/res)
 
 set(SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/game.cpp ${CMAKE_CURRENT_SOURCE_DIR}/game.h)
+  ${CMAKE_CURRENT_SOURCE_DIR}/game.cpp ${CMAKE_CURRENT_SOURCE_DIR}/game.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/particles_3d.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/view_3d.cpp ${CMAKE_CURRENT_SOURCE_DIR}/view_3d.h)
 
 set(SHADERS
   ${ASSET_DIR}/shaders/2d.vert ${ASSET_DIR}/shaders/2d.frag

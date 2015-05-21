@@ -1,6 +1,6 @@
 #include <glpp/glpp.h>
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #  include <glpp/gles2.h>
    namespace gl_ = gles2;
 #else
@@ -396,7 +396,7 @@ namespace glpp
          = format == texture_format_t::RGBA ? gl_::texture_component_count_t::rgba
          : format == texture_format_t::RGB ? gl_::texture_component_count_t::rgb
          : format == texture_format_t::DEPTH ? gl_::texture_component_count_t::depth_component
-#ifdef WIN32
+#ifdef _MSC_VER
          : format == texture_format_t::BGRA ? gl_::texture_component_count_t::bgra_ext
 #endif
          : throw error("unrecognised image format");
@@ -405,7 +405,7 @@ namespace glpp
          = format == texture_format_t::RGBA ? gl_::pixel_format_t::rgba
          : format == texture_format_t::RGB ? gl_::pixel_format_t::rgb
          : format == texture_format_t::DEPTH ? gl_::pixel_format_t::depth_component
-#ifdef WIN32
+#ifdef _MSC_VER
          : format == texture_format_t::BGRA ? gl_::pixel_format_t::bgra_ext
 #endif
          : throw error("unrecognised image format");
@@ -484,7 +484,7 @@ namespace glpp
          = format == texture_format_t::RGBA ? GL_RGBA
          : format == texture_format_t::RGB ? GL_RGB
          : format == texture_format_t::DEPTH ? GL_DEPTH_COMPONENT
-#ifdef WIN32
+#ifdef _MSC_VER
          : format == texture_format_t::BGRA ? GL_BGRA_EXT
 #endif
          : throw error("unrecognised image format");
@@ -625,7 +625,7 @@ namespace glpp
       // must use GL_BGRA8_EXT because thats what the default buffer format is in ANGLE (must match for blitting)
       GL_VERIFY(gl_::gen_renderbuffers(1, &colour_rbo_id_));
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, colour_rbo_id_));
-#ifdef WIN32
+#ifdef _MSC_VER
       if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::bgra8_ext, dims_.x, dims_.y));
       else GL_VERIFY(gl_::renderbuffer_storage_multisample_angle(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::bgra8_ext, dims_.x, dims_.y));
 #else
@@ -636,7 +636,7 @@ namespace glpp
 
       GL_VERIFY(gl_::gen_renderbuffers(1, &depth_rbo_id_));
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, depth_rbo_id_));
-#ifdef WIN32
+#ifdef _MSC_VER
       if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
       else GL_VERIFY(gl_::renderbuffer_storage_multisample_angle(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
 #else
@@ -715,7 +715,7 @@ namespace glpp
 
       //GL_VERIFY(glBindFramebuffer(GL_DRAW_FRAMEBUFFER_ANGLE, 0));   // Make sure no FBO is set as the draw framebuffer
       GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::read_framebuffer, fbo_id_)); // Make sure your multisampled FBO is the read framebuffer
-#ifdef WIN32
+#ifdef _MSC_VER
       gl::int_t TMP_GL_NEAREST = 0x2600;
       GL_VERIFY(gl_::blit_framebuffer_angle(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
 #else
@@ -742,7 +742,7 @@ namespace glpp
                //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
                //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
             case gl_::framebuffer_status_t::framebuffer_unsupported: return "GL_FRAMEBUFFER_UNSUPPORTED";
-#ifdef WIN32
+#ifdef _MSC_VER
             case gl_::framebuffer_status_t::framebuffer_incomplete_dimensions: return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
 #else
             case gl_::framebuffer_status_t::framebuffer_incomplete_draw_buffer: return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
@@ -1965,7 +1965,7 @@ namespace glpp
 
       gl_::init();
 
-#ifdef WIN32
+#ifdef _MSC_VER
       assert(extensionEnabled("GL_ANGLE_framebuffer_multisample"));
 #endif
 

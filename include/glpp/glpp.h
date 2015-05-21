@@ -64,7 +64,7 @@ namespace glpp {
    enum class texture_format_t {
       RGB,
       RGBA,
-#ifdef WIN32
+#ifdef _MSC_VER
       BGRA,
 #endif
       DEPTH,

@@ -321,12 +321,19 @@ namespace game {
       void update(double time_since_last);
 
       using iterator = std::vector<render_info_t>::iterator;
+      using const_iterator = std::vector<render_info_t>::const_iterator;
 
       iterator creatures_begin() { return creature_render_info_.begin(); }
       iterator creatures_end() { return creature_render_info_.end(); }
 
+      const_iterator creatures_begin() const { return creature_render_info_.begin(); }
+      const_iterator creatures_end() const { return creature_render_info_.end(); }
+
       iterator particles_begin() { return particle_render_info_.begin(); }
       iterator particles_end() { return particle_render_info_.end(); }
+
+      const_iterator particles_begin() const { return particle_render_info_.begin(); }
+      const_iterator particles_end() const { return particle_render_info_.end(); }
 
    private:
       void update_creatures(double time_since_last);
