@@ -1211,10 +1211,12 @@ namespace glpp
       for (auto & attrib_info : packed.attribs) {
          auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
 
+         // TODO: HOLY CRAP get rid of this! we shouldnt need to do this every time!
          GL_VERIFY(gl_::vertex_attrib_pointer(
             attrib_info.attrib.location(), attrib_info.count, gl_type,
             false, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
 
+         // TODO: What about disabling?
          GL_VERIFY(gl_::enable_vertex_attrib_array(attrib_info.attrib.location()));
       }
    }

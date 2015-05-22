@@ -15,52 +15,7 @@
 // TODO: this should be sprite.h
 #include <glpp/glpp.h>
 
-
-
-
-using table_row_id_type = int;
-
-// creates unique ids for data and keeps in efficient order so lookups are constant time
-// NOTE: never shrinks!
-// NOTE: assumes table works according to table_column_t (all data is compressed)
-// row_id
-// row_index
-class table_index_t {
-public:
-   std::size_t size() const;
-   std::size_t index_of(table_row_id_type row_id) const;
-
-   table_row_id_type alloc_row();
-   void delete_row(table_row_id_type row_id);
-
-private:
-   std::vector<table_row_id_type> row_id_to_row_idx;
-   std::vector<table_row_id_type> row_idx_to_row_id;
-};
-
-
-template <typename T>
-class table_column_t {
-public:
-   using collection_type = std::vector < T > ;
-
-   table_column_t(table_index_t const & index);
-
-   T & select(table_row_id_type id);
-   T const & select(table_row_id_type id) const;
-   void delete_by_id(table_row_id_type id);
-   void set_by_id(table_row_id_type id, T & val);
-
-   void alloc_row();
-   void alloc_row(T const & val);
-
-   collection_type & values() { return values_; }
-   collection_type const & values() const { return values_; }
-
-private:
-   table_index_t const & index_;
-   collection_type values_;
-};
+#include "db.h"
 
 
 namespace game {

@@ -4,9 +4,6 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include <map>
-
-#include "game.h"
 #include <glpp/glpp.h>
 #include <glpp/assets.h>
 #include <glpp/utils.h>
@@ -21,6 +18,11 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <map>
+
+#include "game.h"
+#include "render_3d.h"
+
 
 // TODO:
 // - fire mesh
@@ -101,8 +103,6 @@ namespace {
 }
 
 
-#include "view_3d.h"
-
 
 #ifdef _MSC_VER
 int CALLBACK WinMain(
@@ -131,7 +131,8 @@ int main()
          controls.handle_key_action(key, action);
       };
       
-      view_3d view { key_handler };
+      context_3d context{ key_handler };
+      view_3d view { context };
 
       //
       // load game data
@@ -238,50 +239,6 @@ int main()
 
       // world.create_creature(game::creature_t::types::person, { {0., 0.}, {} });
 
-      struct sprite_render_callback_t : public glpp::pass_t::render_callback {
-         sprite_render_callback_t(game::world_view_t::iterator itBegin, game::world_view_t::iterator itEnd)
-         : itBegin_(itBegin)
-         , itEnd_(itEnd)
-         , it_(itBegin_) {
-         }
-
-         virtual bool prepare_next(glpp::program & p) const override {
-            if (it_ == itEnd_) return false;
-
-            auto & current_render_info = *it_;
-            auto tex_id = current_render_info.tex_id;
-
-            bool should_set_texture = (it_ == itBegin_) || (tex_id != current_tex_id_);
-            current_tex_id_ = tex_id;
-
-            auto & sprite = *current_render_info.sprite;
-            auto & moment = *current_render_info.moment;
-
-            p.uniform("model").set(moment.sprite_transform());
-
-            if (should_set_texture) {
-               auto sprite_tex = sprite.current_animation().texture();
-               p.uniform("texture_wh").set(glm::vec2(sprite_tex.dims().x, sprite_tex.dims().y));
-               glpp::texture_unit_t tex_unit{ 1 };
-               tex_unit.activate();
-               sprite_tex.bind();
-               p.uniform("texture").set(tex_unit);
-            }
-            p.uniform("sprite_xy").set(sprite.current_frame().position);
-            p.uniform("sprite_wh").set(sprite.current_frame().dimensions);
-
-            it_++;
-            return true;
-         }
-
-      private:
-         game::world_view_t::iterator itBegin_;
-         game::world_view_t::iterator itEnd_;
-         mutable game::world_view_t::iterator it_;
-         mutable glpp::texture_t::id_type current_tex_id_ = 0;
-      };
-
-
       //
       // set up key bindings
       //
@@ -323,14 +280,6 @@ int main()
       });
 
 
-      //
-      // load vertex data
-      //
-
-      // TODO: get rid of this
-      auto & context = view.context;
-
-
       // get a GL name for our texture
       // load data into texture
       // bind texture id to texture unit
@@ -341,7 +290,7 @@ int main()
       // https://github.com/adobe/angle adobe wrapper??
 
       controls.register_action_handler(glpp::Key::KEY_F, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
-         view.toggle_fullscreen();
+         context.toggle_fullscreen();
          return true;
       });
 
@@ -354,10 +303,10 @@ int main()
 
       double last_tick = glpp::get_time();
 
-      while (!context.win().closing())
+      while (!context.closing())
       {
          if (should_reload_program) {
-            view.reload_shaders();
+            context.reload_shaders();
             should_reload_program = false;
          }
 
@@ -383,7 +332,7 @@ int main()
 
          last_tick = this_tick;
 
-         context.win().swap();
+         context.swap();
       }
    }
    catch (glpp::shader_compile_error const & ex) {

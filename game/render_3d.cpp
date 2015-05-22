@@ -1,4 +1,4 @@
-#include "view_3d.h"
+#include "render_3d.h"
 
 #include <glpp/utils.h>
 
@@ -32,10 +32,12 @@ ensure_gl_init::ensure_gl_init() {
 
 
 //
-// view_3d
+// context_3d
 //
 
 namespace {
+   const int shadow_texture_width = 100;
+
    glpp::shader vert_shader(glpp::archive_t const & assets, std::string name) { return assets.load_shader(utils::fmt("shaders/%s.vert", name.c_str())); }
    glpp::shader frag_shader(glpp::archive_t const & assets, std::string name) { return assets.load_shader(utils::fmt("shaders/%s.frag", name.c_str())); }
 
@@ -338,12 +340,16 @@ namespace {
    }
 }
 
-view_3d::view_3d(glpp::context::key_callback_t key_callback)
+
+//
+// context_3d implementation
+//
+
+context_3d::context_3d(glpp::context::key_callback_t key_callback)
    : context(key_callback)
    , assets{ glpp::archive_t::load_from_directory({ "../../res/" }) }
    , model_dude{ assets.load_scene("dude-anim.fbx") }
    , model_campfire{ assets.load_scene("campfire.fbx") }
-   , dude_walk_animation{ first_animation(model_dude) }
    , prg_3d{ create_program(assets, "3d") }
    , prg_3d_shadow{ create_program(assets, "3d_shadow") }
    , prg_3d_particle{ create_program(assets, "3d_particle") }
@@ -361,18 +367,93 @@ view_3d::view_3d(glpp::context::key_callback_t key_callback)
       utils::log(utils::LOG_INFO, " - %s\n", e.c_str());
 
    init_context();
+}
+
+void context_3d::reload_shaders() {
+   try {
+      ::reload_program(assets, prg_3d, "3d");
+      ::reload_program(assets, prg_3d_particle, "3d_particle");
+      ::reload_program(assets, prg_3d_shadow, "3d_shadow");
+      ::reload_program(assets, prg_post, "post");
+   }
+   catch (glpp::shader_compile_error const & ex) {
+      utils::log(utils::LOG_ERROR, "%s\n", ex.what());
+      utils::log(utils::LOG_ERROR, "%s\n", ex.log().c_str());
+   }
+}
+
+void context_3d::reload_framebuffers() {
+   auto dims = context.win().frame_buffer_dims();
+
+   auto shadow_texture_dims = glpp::dim_t{ shadow_texture_width, shadow_texture_width };
+
+#ifdef WIN32 
+   const glpp::texture_format_t tex_fmt = glpp::texture_format_t::BGRA;
+#else
+   const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
+#endif
+   if (!shadow_fbo || shadow_fbo->dims() != shadow_texture_dims) {
+      shadow_tex.reset(new glpp::cube_map_texture_t(shadow_texture_width, tex_fmt));
+      shadow_fbo.reset(new glpp::frame_buffer_t(*shadow_tex));
+   }
+   if (!tex_fbo || tex_fbo->dims() != dims) {
+      post_tex.reset(new glpp::texture_t(dims, tex_fmt));
+      tex_fbo.reset(new glpp::frame_buffer_t(*post_tex));
+   }
+   if (!msaa_fbo || msaa_fbo->dims() != dims) {
+      msaa_fbo.reset(new glpp::frame_buffer_t(dims, 8));
+   }
+}
+
+void context_3d::toggle_fullscreen() {
+   context.win().set_fullscreen(!context.win().is_fullscreen());
+
+   init_context();
+
+   // force deallocation of all FBOs after context reinit to get around this ANGLE bug:
+   // https://code.google.com/p/angleproject/issues/detail?id=979
+   // ideally we would let the resize-handling code re-allocate the FBOs
+   shadow_fbo.reset();
+   tex_fbo.reset();
+   msaa_fbo.reset();
+}
+
+void context_3d::init_context() {
+   gl::enable(gl::enable_cap_t::depth_test);
+   gl::enable(gl::enable_cap_t::dither);
+   gl::enable(gl::enable_cap_t::cull_face);
+   //gl::enable(gl::enable_cap_t::multisample);
+   gl::enable(gl::enable_cap_t::blend);
+
+#ifndef WIN32
+   gl::point_size(3.);
+   gl::enable(gl::enable_cap_t::point_smooth);
+#endif
+
+   gl::blend_func(gl::blending_factor_src_t::src_alpha, gl::blending_factor_dest_t::one_minus_src_alpha);
+
+   gl::cull_face(gl::cull_face_mode_t::back);
+}
 
 
+//
+// view_3d implementation
+//
+
+view_3d::view_3d(context_3d & ctx)
+   : context(ctx)
+   , dude_walk_animation{ first_animation(context.model_dude) }
+{
    //
    // body passes
    //
 
-   auto animation_name = model_dude.animation_names()[0];
+   auto animation_name = context.model_dude.animation_names()[0];
    utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_name.c_str());
    for (auto & mesh : dude_walk_animation.meshes()) {
       utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
       mesh_names.push_back(mesh.name());
-      accumulate_mesh(mesh, prg_3d, d3_body_passes, prg_3d_shadow, d3_body_shadow_passes);
+      accumulate_mesh(mesh, context.prg_3d, d3_body_passes, context.prg_3d_shadow, d3_body_shadow_passes);
    }
 
 
@@ -380,9 +461,9 @@ view_3d::view_3d(glpp::context::key_callback_t key_callback)
    // campfire passes
    //
 
-   for (auto & mesh : model_campfire.meshes()) {
+   for (auto & mesh : context.model_campfire.meshes()) {
       mesh_names.push_back(mesh.name());
-      accumulate_mesh(mesh, prg_3d, d3_campfire_passes, prg_3d_shadow, d3_campfire_shadow_passes);
+      accumulate_mesh(mesh, context.prg_3d, d3_campfire_passes, context.prg_3d_shadow, d3_campfire_shadow_passes);
    }
 
 
@@ -390,7 +471,7 @@ view_3d::view_3d(glpp::context::key_callback_t key_callback)
    // debug diamond pass
    //
 
-   debug_diamond_pass.push_back(prg_3d.pass()
+   debug_diamond_pass.push_back(context.prg_3d.pass()
       .with(diamond_vert_buffer())
       .with(diamond_normal_buffer())
       .set_uniform("colour", glm::vec4(.1f, .8f, .2f, 1.f))
@@ -412,7 +493,7 @@ view_3d::view_3d(glpp::context::key_callback_t key_callback)
    auto ground_bone_weights_buffer_desc = glpp::describe_buffer(glpp::static_array_t{ default_bone_weights })
       .attrib("bone_weights", 4);
 
-   ground_pass.push_back(prg_3d.pass()
+   ground_pass.push_back(context.prg_3d.pass()
       .with(ground_buffer_desc)
       .with(ground_bone_indices_buffer_desc)
       .with(ground_bone_weights_buffer_desc)
@@ -430,9 +511,9 @@ view_3d::view_3d(glpp::context::key_callback_t key_callback)
 
    auto emitter_buffer_desc = glpp::describe_buffer(emitter.buffer())
       .attrib("position", 3);
-   particle_pass.push_back(prg_3d_particle.pass()
+   particle_pass.push_back(context.prg_3d_particle.pass()
       .with(emitter_buffer_desc)
-      .set_uniform_action("screen_size", callbacks::set_screensize(context))
+      .set_uniform_action("screen_size", callbacks::set_screensize(context.context))
       .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f))
       .set_uniform_action("view", callbacks::set_view(*this)));
 
@@ -441,82 +522,17 @@ view_3d::view_3d(glpp::context::key_callback_t key_callback)
    // post-processing pass
    //
 
-   auto set_post_tex_cb = [this](glpp::uniform & u) { glpp::texture_unit_t tu{ 2 }; tu.activate(); post_tex->bind();  u.set(tu); };
-   post_pass.push_back(prg_post.pass()
+   // TODO: dont hard-code the texture unit
+   auto set_post_tex_cb = [this](glpp::uniform & u) { glpp::texture_unit_t tu{ 2 }; tu.activate(); context.post_tex->bind();  u.set(tu); };
+   post_pass.push_back(context.prg_post.pass()
       .with(screen_vertices_spec())
       .set_uniform_action("texture", set_post_tex_cb)
       .set_uniform_action("t", callbacks::set_time()));
 
 }
 
-void view_3d::reload_shaders() {
-   try {
-      ::reload_program(assets, prg_3d, "3d");
-      ::reload_program(assets, prg_3d_particle, "3d_particle");
-      ::reload_program(assets, prg_3d_shadow, "3d_shadow");
-      ::reload_program(assets, prg_post, "post");
-   }
-   catch (glpp::shader_compile_error const & ex) {
-      utils::log(utils::LOG_ERROR, "%s\n", ex.what());
-      utils::log(utils::LOG_ERROR, "%s\n", ex.log().c_str());
-   }
-}
-
-void view_3d::toggle_fullscreen() {
-   context.win().set_fullscreen(!context.win().is_fullscreen());
-
-   init_context();
-
-   // force deallocation of all FBOs after context reinit to get around this ANGLE bug:
-   // https://code.google.com/p/angleproject/issues/detail?id=979
-   // ideally we would let the resize-handling code re-allocate the FBOs
-   shadow_fbo.reset();
-   tex_fbo.reset();
-   msaa_fbo.reset();
-}
-
-void view_3d::init_context() {
-   gl::enable(gl::enable_cap_t::depth_test);
-   gl::enable(gl::enable_cap_t::dither);
-   gl::enable(gl::enable_cap_t::cull_face);
-   //gl::enable(gl::enable_cap_t::multisample);
-   gl::enable(gl::enable_cap_t::blend);
-
-#ifndef WIN32
-   gl::point_size(3.);
-   gl::enable(gl::enable_cap_t::point_smooth);
-#endif
-
-   gl::blend_func(gl::blending_factor_src_t::src_alpha, gl::blending_factor_dest_t::one_minus_src_alpha);
-
-   gl::cull_face(gl::cull_face_mode_t::back);
-}
-
 void view_3d::update_and_render(double time_since_last_tick, game::world_view_t const & world_view) {
-   //
-   // reload frame buffers
-   //
-   auto dims = context.win().frame_buffer_dims();
-
-   const int shadow_texture_width = 100;
-   auto shadow_texture_dims = glpp::dim_t{ shadow_texture_width, shadow_texture_width };
-
-#ifdef WIN32 
-   const glpp::texture_format_t tex_fmt = glpp::texture_format_t::BGRA;
-#else
-   const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
-#endif
-   if (!shadow_fbo || shadow_fbo->dims() != shadow_texture_dims) {
-      shadow_tex.reset(new glpp::cube_map_texture_t(shadow_texture_width, tex_fmt));
-      shadow_fbo.reset(new glpp::frame_buffer_t(*shadow_tex));
-   }
-   if (!tex_fbo || tex_fbo->dims() != dims) {
-      post_tex.reset(new glpp::texture_t(dims, tex_fmt));
-      tex_fbo.reset(new glpp::frame_buffer_t(*post_tex));
-   }
-   if (!msaa_fbo || msaa_fbo->dims() != dims) {
-      msaa_fbo.reset(new glpp::frame_buffer_t(dims, 8));
-   }
+   context.reload_framebuffers();
 
    //
    // update animations
@@ -572,7 +588,7 @@ void view_3d::update_and_render(double time_since_last_tick, game::world_view_t 
       auto & face = faces[face_idx];
       const auto view = glm::lookAt(light_pos, light_pos + face.view_direction, face.up_direction);
 
-      shadow_fbo->bind(face.face);
+      context.shadow_fbo->bind(face.face);
 
       GL_VERIFY(gl::clear(
          gl::clear_buffer_flags_t::color_buffer_bit |
@@ -587,22 +603,23 @@ void view_3d::update_and_render(double time_since_last_tick, game::world_view_t 
             glpp::DrawMode::Triangles);
       }
    }
-   shadow_fbo->unbind();
+   context.shadow_fbo->unbind();
    gl::cull_face(gl::cull_face_mode_t::back);
    gl::enable(gl::enable_cap_t::blend);
 
-   prg_3d.use();
+   context.prg_3d.use();
    glpp::texture_unit_t tu{ 3 };
    tu.activate();
-   shadow_tex->bind();
-   prg_3d.uniform("shadow_texture").set(tu);
+   context.shadow_tex->bind();
+   context.prg_3d.uniform("shadow_texture").set(tu);
 
    //
    // draw to anti-aliasing frame buffer
    //
 
+   auto dims = context.context.win().frame_buffer_dims();
    gl::viewport(0, 0, dims.x, dims.y);
-   msaa_fbo->bind();
+   context.msaa_fbo->bind();
    {
       gl::clear_color(1., 1., 1., 1.);
       gl::clear(
@@ -637,17 +654,17 @@ void view_3d::update_and_render(double time_since_last_tick, game::world_view_t 
       particle_pass.back().draw(glpp::DrawMode::Points);
    }
    // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
-   tex_fbo->bind(glpp::frame_buffer_t::Draw);
-   msaa_fbo->bind(glpp::frame_buffer_t::Read);
+   context.tex_fbo->bind(glpp::frame_buffer_t::Draw);
+   context.msaa_fbo->bind(glpp::frame_buffer_t::Read);
    {
       gl::clear(
          gl::clear_buffer_flags_t::color_buffer_bit |
          gl::clear_buffer_flags_t::depth_buffer_bit);
 
-      msaa_fbo->blit_to_draw_buffer();
+      context.msaa_fbo->blit_to_draw_buffer();
    }
-   tex_fbo->unbind();
-   msaa_fbo->unbind();
+   context.tex_fbo->unbind();
+   context.msaa_fbo->unbind();
 
    post_pass.back().draw(glpp::DrawMode::Triangles);
 }

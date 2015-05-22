@@ -15,38 +15,25 @@ protected:
    ensure_gl_init();
 };
 
-struct view_3d : ensure_gl_init {
-   view_3d(glpp::context::key_callback_t key_callback);
+struct context_3d : ensure_gl_init {
+   context_3d(glpp::context::key_callback_t key_callback);
+
+   bool closing() const { return context.win().closing(); }
+   void swap() { context.win().swap(); }
 
    void reload_shaders();
+   void reload_framebuffers();
    void toggle_fullscreen();
 
    void init_context();
-
-   float view_height = 1.;
-   float get_view_height() const { return view_height; }
-   void set_view_height(float view_height_in) { view_height = std::max(0.f, std::min(1.f, view_height_in)); }
-
-   bool debug_do_special_thing_ = false;
-   bool debug_special_mode_enabled_ = false;
-   int debug_selected_item_ = 0;
-   void debug_do_special_thing() { debug_do_special_thing_ = true; }
-   void debug_show_mesh(int id) { debug_selected_item_ = id; }
-   void debug_enable_special_mode(bool enabled) { debug_special_mode_enabled_ = enabled; }
-
-   void update_and_render(double time_since_last_tick, game::world_view_t const & world_view);
 
    glpp::context context;
 
    glpp::archive_t assets;
 
-   constant_particle_emitter_buffer_t emitter;
-
+   // TODO: this stuff should go in some kind of repository
    glpp::scene_t model_dude;
    glpp::scene_t model_campfire;
-
-   // TODO: we should have one of these for each visible entity
-   glpp::animation_timeline_t dude_walk_animation;
    
    glpp::program prg_3d;
    glpp::program prg_3d_shadow;
@@ -58,6 +45,21 @@ struct view_3d : ensure_gl_init {
    std::unique_ptr<glpp::frame_buffer_t> shadow_fbo;
    std::unique_ptr<glpp::frame_buffer_t> tex_fbo;
    std::unique_ptr<glpp::frame_buffer_t> msaa_fbo;
+};
+
+struct view_3d {
+   view_3d(context_3d & ctx);
+   
+   void update_and_render(double time_since_last_tick, game::world_view_t const & world_view);
+
+   float get_view_height() const { return view_height; }
+   void set_view_height(float view_height_in) { view_height = std::max(0.f, std::min(1.f, view_height_in)); }
+
+   void debug_do_special_thing() { debug_do_special_thing_ = true; }
+   void debug_show_mesh(int id) { debug_selected_item_ = id; }
+   void debug_enable_special_mode(bool enabled) { debug_special_mode_enabled_ = enabled; }
+
+   context_3d & context;
 
    // actual render passes that are executed
    std::vector<glpp::pass_t> d3_body_passes;
@@ -72,5 +74,16 @@ struct view_3d : ensure_gl_init {
 
    // debugging
    std::vector<std::string> mesh_names;
+
+   constant_particle_emitter_buffer_t emitter;
+
+   // TODO: we should have one of these for each visible entity
+   glpp::animation_timeline_t dude_walk_animation;
+
+   float view_height = 1.;
+   bool debug_do_special_thing_ = false;
+   bool debug_special_mode_enabled_ = false;
+   int debug_selected_item_ = 0;
 };
+
 #endif // #ifndef GAME_VIEW_3D__H
