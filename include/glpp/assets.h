@@ -47,7 +47,7 @@ namespace glpp {
       
    private:
       template <typename T>
-      archive_t(T x) : self_(std::make_shared<model<T>>(std::move(x))) {}
+      archive_t(T impl) : self_(std::make_shared<model<T>>(std::move(impl))) {}
 
       struct concept_t {
          virtual ~concept_t() = default;
@@ -57,7 +57,7 @@ namespace glpp {
 
       template <typename T>
       struct model : concept_t {
-         model(T x) : data_(std::move(x)) {}
+         model(T data) : data_(std::move(data)) {}
          shader load_shader_(std::string const & id) const override { return data_.load_shader(id); }
          scene_t load_scene_(std::string const & id) const override { return data_.load_scene(id); }
 

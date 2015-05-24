@@ -215,7 +215,6 @@ namespace ai {
    }
 
    void node_animation_timeline_t::advance_transforms_to(double time_ticks_in) {
-      bool restart = !(time_ticks_in > time_ticks);
       time_ticks = time_ticks_in;
       if (!node_animation.has_animation()) {
          local_transform = ai::to_mat4(node_animation.ai_node().mTransformation);

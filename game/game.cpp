@@ -242,29 +242,6 @@ namespace game {
 
 
    //
-   // class world_view_t::render_info_t
-   //
-
-   world_view_t::render_info_t::render_info_t(glpp::sprite_cursor_t const & sprite, moment_t const & moment)
-      : tex_id(sprite.current_animation().texture().id()), sprite(&sprite), moment(&moment)
-   { }
-
-   world_view_t::render_info_t::render_info_t(render_info_t const & other)
-      : tex_id(other.tex_id), sprite(other.sprite), moment(other.moment)
-   { }
-
-   world_view_t::render_info_t & world_view_t::render_info_t::operator=(render_info_t const & other) {
-      if (&other == this) return *this;
-
-      tex_id = other.tex_id;
-      sprite = other.sprite;
-      moment = other.moment;
-
-      return *this;
-   }
-
-
-   //
    // class world_view_t
    //
 
@@ -275,9 +252,16 @@ namespace game {
    { }
 
    namespace {
-      bool cmp_by_tex_id(world_view_t::render_info_t const & a, world_view_t::render_info_t const & b) {
-         if (a.tex_id != b.tex_id) return a.tex_id < b.tex_id;
-         return a.moment->pos().y > b.moment->pos().y;
+      //bool cmp_by_tex_id(world_view_t::render_info_t const & a, world_view_t::render_info_t const & b) {
+      //   if (a.tex_id != b.tex_id) return a.tex_id < b.tex_id;
+      //   return a.moment->pos().y > b.moment->pos().y;
+      //}
+
+      bool cmp_by_animation(world_view_t::render_info_t const & a, world_view_t::render_info_t const & b) {
+         auto a_scene_id = a.sprite->scene().id();
+         auto b_scene_id = b.sprite->scene().id();
+         if (a_scene_id != b_scene_id) return a_scene_id < b_scene_id;
+         return a.sprite->scene_idx() < b.sprite->scene_idx();
       }
    }
 
@@ -290,26 +274,29 @@ namespace game {
       auto & sprites = entity_db_.sprites();
       auto & creatures = entity_db_.creature_infos();
       auto & moments = entity_db_.moments();
+      auto & plans = entity_db_.plans();
 
       std::vector<render_info_t> creature_render_info;
 
       for (std::size_t idx = 0; idx < entity_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
          auto & creature = creatures[idx];
+         auto & plan = plans[idx];
 
          // create and track sprites if no sprite associated with entity
          if (!sprite_ptr) {
-            sprite_ptr = create_sprite(creature);
+            sprite_ptr = create_sprite(creature, plan);
          }
 
+         auto & sprite = *sprite_ptr;
          auto & moment = moments[idx];
-         auto animation_speed = sprite_repository_.creature_sprite_updating(idx, creature, *sprite_ptr, moment);
-         sprite_ptr->advance(animation_speed * time_since_last);
+         sprite_repository_.creature_updated(idx, creature, sprite, moment, plan);
+         sprite.advance_by(time_since_last);
 
          creature_render_info.push_back({ {*sprite_ptr}, moment });
       }
 
-      std::sort(std::begin(creature_render_info), std::end(creature_render_info), cmp_by_tex_id);
+      std::sort(std::begin(creature_render_info), std::end(creature_render_info), cmp_by_animation);
 
       creature_render_info_.swap(creature_render_info);
    }
@@ -323,33 +310,36 @@ namespace game {
 
       for (std::size_t idx = 0; idx < particle_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
+         auto & particle = particles[idx];
 
          // create and track sprites if no sprite associated with entity
          if (!sprite_ptr) {
-            sprite_ptr = create_sprite(particles[idx]);
+            sprite_ptr = create_sprite(particle);
          }
 
+         auto & sprite = *sprite_ptr;
          auto & moment = moments[idx];
-         sprite_ptr->advance(time_since_last);
+         sprite_repository_.particle_updated(idx, particle, sprite, moment);
+         sprite.advance_by(time_since_last);
 
          particle_render_info.push_back({ {*sprite_ptr}, moment });
       }
 
-      std::sort(std::begin(particle_render_info), std::end(particle_render_info), cmp_by_tex_id);
+      //std::sort(std::begin(particle_render_info), std::end(particle_render_info), cmp_by_tex_id);
 
       particle_render_info_.swap(particle_render_info);
    }
 
-   std::unique_ptr<glpp::sprite_cursor_t> world_view_t::create_sprite(creature_t const & creature) {
-      return std::unique_ptr<glpp::sprite_cursor_t>(
-         new glpp::sprite_cursor_t(
-            sprite_repository_.find_creature_sprite(creature)));
+   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(creature_t const & creature, plan_t const & plan) {
+      return std::unique_ptr<glpp::animation_timeline_t>(
+         new glpp::animation_timeline_t(
+            sprite_repository_.find_sprite(creature, plan)));
    }
 
-   std::unique_ptr<glpp::sprite_cursor_t> world_view_t::create_sprite(particle_t const & particle) {
-      return std::unique_ptr<glpp::sprite_cursor_t>(
-         new glpp::sprite_cursor_t(
-         sprite_repository_.find_particle_sprite(particle)));
+   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(particle_t const & particle) {
+      return std::unique_ptr<glpp::animation_timeline_t>(
+         new glpp::animation_timeline_t(
+         sprite_repository_.find_sprite(particle)));
    }
 
 }

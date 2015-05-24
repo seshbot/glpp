@@ -23,6 +23,7 @@ namespace glpp
    namespace ai {
       struct animation_t;
    }
+   class scene_t;
    class mesh_t;
 
    /**
@@ -37,8 +38,12 @@ namespace glpp
       ~animation_timeline_t();
 
       void advance_to(double time_secs);
+      void advance_by(double time_secs);
 
+      scene_t const & scene() const;
+      unsigned scene_idx() const;
       std::vector<mesh_t> const & meshes() const;
+      double current_time_secs() const;
 
       // 
       // for rendering bones to screen (debugging)
@@ -49,7 +54,7 @@ namespace glpp
 
    private:
       friend class scene_t;
-      animation_timeline_t(ai::animation_t const & animation, double time_secs = 0);
+      animation_timeline_t(ai::animation_t const & animation, scene_t const & scene, unsigned scene_idx, double time_secs = 0);
 
       struct impl;
       std::unique_ptr<impl> impl_;
@@ -69,10 +74,13 @@ namespace glpp
 
       static scene_t create_from_file(std::string const & filename);
 
+      unsigned id() const { return id_; }
+
       // unanimated meshes
       std::vector<mesh_t> const & meshes() const;
 
       std::vector<std::string> animation_names() const;
+      animation_timeline_t create_timeline(unsigned idx) const;
       animation_timeline_t create_timeline(std::string const & name) const;
 
    private:
@@ -80,6 +88,7 @@ namespace glpp
 
       struct impl;
       std::unique_ptr<const impl> impl_;
+      unsigned id_;
    };
 
 

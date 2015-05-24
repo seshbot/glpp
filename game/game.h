@@ -13,7 +13,8 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 // TODO: this should be sprite.h
-#include <glpp/glpp.h>
+//#include <glpp/glpp.h>
+#include <glpp/scene.h>
 
 #include "db.h"
 
@@ -108,7 +109,7 @@ namespace game {
       using id_column_type = table_column_t < table_row_id_type >;
       using moment_column_type = table_column_t < moment_t >;
       using particle_column_type = table_column_t < particle_t >;
-      using sprite_column_type = table_column_t < std::unique_ptr<glpp::sprite_cursor_t> >;
+      using sprite_column_type = table_column_t < std::unique_ptr<glpp::animation_timeline_t> >;
 
       id_column_type ids_;
       moment_column_type moments_;
@@ -153,7 +154,7 @@ namespace game {
       particle_t & particle_info(table_row_id_type id) { return particle_info_.select(id); }
       particle_column_type::collection_type & particle_infos() { return particle_info_.values(); }
 
-      glpp::sprite_cursor_t & sprite(table_row_id_type id) { return *sprites_.select(id); }
+      glpp::animation_timeline_t & sprite(table_row_id_type id) { return *sprites_.select(id); }
       sprite_column_type::collection_type & sprites() { return sprites_.values(); }
    };
 
@@ -165,7 +166,7 @@ namespace game {
       using moment_column_type = table_column_t < moment_t >;
       using creature_column_type = table_column_t < creature_t >;
       using plan_column_type = table_column_t < plan_t >;
-      using sprite_column_type = table_column_t < std::unique_ptr<glpp::sprite_cursor_t> >;
+      using sprite_column_type = table_column_t < std::unique_ptr<glpp::animation_timeline_t> >;
 
       entity_id_column_type entity_ids_;
       moment_column_type moments_;
@@ -218,7 +219,7 @@ namespace game {
       plan_t const & plan(table_row_id_type id) const { return plan_.select(id); }
       plan_column_type::collection_type & plans() { return plan_.values(); }
 
-      glpp::sprite_cursor_t & sprite(table_row_id_type id) { return *sprites_.select(id); }
+      glpp::animation_timeline_t & sprite(table_row_id_type id) { return *sprites_.select(id); }
       sprite_column_type::collection_type & sprites() { return sprites_.values(); }
    };
 
@@ -255,19 +256,18 @@ namespace game {
    struct world_view_t {
       struct sprite_repository_t {
          virtual ~sprite_repository_t() { }
-         virtual glpp::sprite_t const & find_creature_sprite(creature_t const & creature) const = 0;
-         virtual float creature_sprite_updating(std::size_t db_idx, creature_t const & creature, glpp::sprite_cursor_t & cursor, moment_t & moment) const = 0;
-         virtual glpp::sprite_t const & find_particle_sprite(particle_t const & particle) const = 0;
-         virtual float particle_sprite_updating(std::size_t db_idx, particle_t const & particle, glpp::sprite_cursor_t & cursor, moment_t & moment) const = 0;
+         virtual glpp::animation_timeline_t find_sprite(creature_t const & creature, plan_t const & plan) const = 0;
+         virtual void creature_updated(std::size_t db_idx, creature_t const & creature, glpp::animation_timeline_t & cursor, moment_t & moment, plan_t & plan) const = 0;
+         virtual glpp::animation_timeline_t find_sprite(particle_t const & particle) const = 0;
+         virtual void particle_updated(std::size_t db_idx, particle_t const & particle, glpp::animation_timeline_t & cursor, moment_t & moment) const = 0;
       };
 
       struct render_info_t {
-         render_info_t(glpp::sprite_cursor_t const & sprite, moment_t const & moment);
-         render_info_t(render_info_t const & other);
-         render_info_t & operator=(render_info_t const & other);
+         render_info_t(glpp::animation_timeline_t const & sprite, moment_t const & moment) : sprite(&sprite), moment(&moment) {}
+         render_info_t(render_info_t const & other) = default;
+         render_info_t & operator=(render_info_t const & other) = default;
 
-         glpp::texture_t::id_type tex_id;
-         glpp::sprite_cursor_t const * sprite;
+         glpp::animation_timeline_t const * sprite;
          moment_t const * moment;
       };
 
@@ -294,8 +294,8 @@ namespace game {
       void update_creatures(double time_since_last);
       void update_particles(double time_since_last);
 
-      std::unique_ptr<glpp::sprite_cursor_t> create_sprite(creature_t const & creature);
-      std::unique_ptr<glpp::sprite_cursor_t> create_sprite(particle_t const & particle);
+      std::unique_ptr<glpp::animation_timeline_t> create_sprite(creature_t const & creature, plan_t const & plan);
+      std::unique_ptr<glpp::animation_timeline_t> create_sprite(particle_t const & particle);
 
       creature_info_table & entity_db_;
       particle_info_table & particle_db_;

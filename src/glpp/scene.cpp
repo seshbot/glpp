@@ -133,7 +133,11 @@ namespace glpp {
 
 
    struct animation_timeline_t::impl {
-      impl(ai::animation_t const & animation_in, double time_secs) : animation(animation_in)
+      impl(ai::animation_t const & animation_in, scene_t const & scene, unsigned scene_idx, double time_secs)
+         : animation(animation_in)
+         , scene(scene)
+         , scene_idx(scene_idx)
+         , current_time_secs(time_secs)
       {
          auto animation_time_ticks = ai::animation_secs_to_ticks(*animation.ai_animation, time_secs);
 
@@ -182,18 +186,19 @@ namespace glpp {
             }
          }
 
-         auto & scene = *animation.ai_scene;
+         auto & ai_scene = *animation.ai_scene;
          for_each_mesh([&](ai::mesh_bone_snapshot_t const & mesh_bone_snapshots){
             // aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform, std::vector<glm::mat4> const & bone_transforms
             auto & mesh = mesh_bone_snapshots.ai_mesh;
             auto & bone_transforms = mesh_bone_snapshots.bone_transforms;
-            meshes.push_back({ scene, mesh, bone_transforms });
+            meshes.push_back({ ai_scene, mesh, bone_transforms });
          });
 
          advance_to(time_secs);
       }
 
       void advance_to(double time_secs) {
+         current_time_secs = time_secs;
          auto animation_time_ticks = ai::animation_secs_to_ticks(*animation.ai_animation, time_secs);
 
          // advance all nodes first
@@ -239,6 +244,10 @@ namespace glpp {
          }
       }
 
+      void advance_by(double time_secs) {
+         advance_to(current_time_secs + time_secs);
+      }
+
       template <typename CallbackT>
       void for_each_mesh_impl(ai::node_animation_timeline_t const & node_snapshot, CallbackT callback) {
          for (auto & mesh_bones : node_snapshot.mesh_bone_snapshots) {
@@ -257,7 +266,10 @@ namespace glpp {
          for_each_mesh_impl(*root_node_snapshot, callback);
       }
 
+      scene_t const & scene;
+      unsigned scene_idx;
       ai::animation_t const & animation;
+      double current_time_secs;
       ai::node_animation_timeline_t const * root_node_snapshot;
       std::vector<ai::node_animation_timeline_t> node_snapshots;
       std::vector<mesh_t> meshes;
@@ -286,8 +298,8 @@ namespace glpp {
    animation_timeline_t::animation_timeline_t(animation_timeline_t &&) = default;
    animation_timeline_t & animation_timeline_t::operator=(animation_timeline_t &&) = default;
    
-   animation_timeline_t::animation_timeline_t(ai::animation_t const & animation, double time_secs)
-      : impl_{ new impl{animation, time_secs} } {
+   animation_timeline_t::animation_timeline_t(ai::animation_t const & animation, scene_t const & scene, unsigned scene_idx, double time_secs)
+      : impl_{ new impl{animation, scene, scene_idx, time_secs} } {
    }
 
    animation_timeline_t::~animation_timeline_t() = default;
@@ -296,9 +308,26 @@ namespace glpp {
       impl_->advance_to(time_secs);
    }
 
+   void animation_timeline_t::advance_by(double time_secs) {
+      impl_->advance_by(time_secs);
+   }
+
+   scene_t const & animation_timeline_t::scene() const {
+      return impl_->scene;
+   }
+
+   unsigned animation_timeline_t::scene_idx() const {
+      return impl_->scene_idx;
+   }
+
    std::vector<mesh_t> const & animation_timeline_t::meshes() const {
       return impl_->meshes;
    }
+
+   double animation_timeline_t::current_time_secs() const {
+      return impl_->current_time_secs;
+   }
+
 
    //
    // scene_t implementation
@@ -336,11 +365,15 @@ namespace glpp {
          return result;
       }
 
-      ai::animation_t const & animation(std::string const & name) const {
-         for (auto & a : animations_) {
-            if (a.name() == name) return a;
+      unsigned animation_idx(std::string const & name) const {
+         for (auto idx = 0U; idx < animations_.size(); idx++) {
+            if (animations_[idx].name() == name) return idx;
          }
          throw std::runtime_error("animation '" + name + "' not found in scene");
+      }
+
+      ai::animation_t const & animation(unsigned idx) const {
+         return animations_[idx];
       }
 
       std::unique_ptr<const aiScene> ai_scene_;
@@ -351,8 +384,15 @@ namespace glpp {
    scene_t::scene_t(scene_t &&) = default;
    scene_t & scene_t::operator=(scene_t&&) = default;
 
+   namespace {
+      template <typename T>
+      unsigned make_hash(T t) {
+         return std::hash<T>()(t);
+      }
+   }
    scene_t::scene_t(aiScene const * ai_scene)
-      : impl_{new impl {ai_scene} } {
+      : impl_{new impl {ai_scene} }
+      , id_{make_hash(ai_scene) } {
    }
 
    scene_t::~scene_t() = default;
@@ -386,8 +426,12 @@ namespace glpp {
       return impl_->animation_names();
    }
 
+   animation_timeline_t scene_t::create_timeline(unsigned idx) const {
+      return{ impl_->animation(idx), *this, idx, 0. };
+   }
+
    animation_timeline_t scene_t::create_timeline(std::string const & name) const {
-      return{ impl_->animation(name), 0. };
+      return create_timeline(impl_->animation_idx(name));
    }
 
 } // namespace glpp
