@@ -281,15 +281,15 @@ namespace game {
       for (std::size_t idx = 0; idx < entity_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
          auto & creature = creatures[idx];
+         auto & moment = moments[idx];
          auto & plan = plans[idx];
 
          // create and track sprites if no sprite associated with entity
          if (!sprite_ptr) {
-            sprite_ptr = create_sprite(creature, plan);
+            sprite_ptr = create_sprite(creature, moment, plan);
          }
 
          auto & sprite = *sprite_ptr;
-         auto & moment = moments[idx];
          sprite_repository_.creature_updated(idx, creature, sprite, moment, plan);
          sprite.advance_by(time_since_last);
 
@@ -311,14 +311,14 @@ namespace game {
       for (std::size_t idx = 0; idx < particle_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
          auto & particle = particles[idx];
+         auto & moment = moments[idx];
 
          // create and track sprites if no sprite associated with entity
          if (!sprite_ptr) {
-            sprite_ptr = create_sprite(particle);
+            sprite_ptr = create_sprite(particle, moment);
          }
 
          auto & sprite = *sprite_ptr;
-         auto & moment = moments[idx];
          sprite_repository_.particle_updated(idx, particle, sprite, moment);
          sprite.advance_by(time_since_last);
 
@@ -330,16 +330,16 @@ namespace game {
       particle_render_info_.swap(particle_render_info);
    }
 
-   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(creature_t const & creature, plan_t const & plan) {
+   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(creature_t const & creature, moment_t & moment, plan_t const & plan) {
       return std::unique_ptr<glpp::animation_timeline_t>(
          new glpp::animation_timeline_t(
-            sprite_repository_.find_sprite(creature, plan)));
+            sprite_repository_.find_sprite(creature, moment, plan)));
    }
 
-   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(particle_t const & particle) {
+   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(particle_t const & particle, moment_t & moment) {
       return std::unique_ptr<glpp::animation_timeline_t>(
          new glpp::animation_timeline_t(
-         sprite_repository_.find_sprite(particle)));
+         sprite_repository_.find_sprite(particle, moment)));
    }
 
 }

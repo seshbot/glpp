@@ -13,7 +13,7 @@ struct PositionalLight {
 
 const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
 
-varying mediump vec4 frag_position;
+varying mediump vec3 frag_position;
 
 // see https://github.com/fabiensanglard/dEngine/blob/master/data/shaders/f_shadowMapGenerator.glsl
 mediump vec4 pack(mediump float val) {
@@ -30,7 +30,7 @@ void main() {
    //normalizedDistance = (normalizedDistance + 1.0) / 2.0;
    //normalizedDistance += 0.0005;
 
-   mediump float dist = distance(frag_position.xyz, c_light.world_position);
+   mediump float dist = distance(frag_position, c_light.world_position);
 
    mediump vec4 packed_ = pack(dist / 800.);
    gl_FragColor = packed_;

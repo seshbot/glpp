@@ -197,6 +197,10 @@ namespace glpp {
          advance_to(time_secs);
       }
 
+      std::string name() const {
+         return animation.name();
+      }
+
       void advance_to(double time_secs) {
          current_time_secs = time_secs;
          auto animation_time_ticks = ai::animation_secs_to_ticks(*animation.ai_animation, time_secs);
@@ -303,6 +307,10 @@ namespace glpp {
    }
 
    animation_timeline_t::~animation_timeline_t() = default;
+
+   std::string animation_timeline_t::name() const {
+      return impl_->name();
+   }
 
    void animation_timeline_t::advance_to(double time_secs) {
       impl_->advance_to(time_secs);

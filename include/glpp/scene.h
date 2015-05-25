@@ -37,6 +37,8 @@ namespace glpp
       animation_timeline_t & operator=(animation_timeline_t &&);
       ~animation_timeline_t();
 
+      std::string name() const;
+
       void advance_to(double time_secs);
       void advance_by(double time_secs);
 

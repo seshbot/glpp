@@ -168,42 +168,6 @@ namespace {
    // render callbacks
    //
 
-
-
-   struct shadow_render_callback_t : public glpp::pass_t::render_callback {
-      shadow_render_callback_t(
-         game::world_view_t::const_iterator itBegin,
-         game::world_view_t::const_iterator itEnd,
-         glm::mat4 const & view_matrix,
-         glm::mat4 const & proj_matrix)
-         : itEnd_(itEnd)
-         , it_(itBegin)
-         , proj_view_matrix_(proj_matrix * view_matrix) {
-      }
-
-      bool prepare_next(glpp::program & p) const override {
-         if (it_ == itEnd_) return false;
-
-         auto & current_render_info = *it_;
-         auto & moment = *current_render_info.moment;
-
-         auto model_transform = moment.mesh_transform();
-         p.uniform("model").set(model_transform);
-         p.uniform("mvp").set(proj_view_matrix_ * model_transform);
-
-         it_++;
-         return true;
-      }
-
-   private:
-      shadow_render_callback_t(shadow_render_callback_t const &) {}
-      shadow_render_callback_t & operator=(shadow_render_callback_t const &) { return *this; }
-
-      game::world_view_t::const_iterator itEnd_;
-      mutable game::world_view_t::const_iterator it_;
-      glm::mat4 proj_view_matrix_;
-   };
-
    struct mesh_render_callback_t : public glpp::pass_t::render_callback {
       mesh_render_callback_t(
          unsigned mesh_idx,
@@ -615,13 +579,16 @@ namespace game {
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit));
 
+         auto mesh_idx = 0U;
          for (auto & pass : d3_body_shadow_passes) {
             pass.draw_batch(
-               shadow_render_callback_t{
+               mesh_render_callback_t{
+                  mesh_idx,
                   world_view.creatures_begin(),
                   world_view.creatures_end(),
                   view, light_proj },
                glpp::DrawMode::Triangles);
+            mesh_idx++;
          }
       }
       context.shadow_fbo->unbind();

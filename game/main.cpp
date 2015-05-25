@@ -149,28 +149,50 @@ int main()
       };
 
       class sprite_repository : public game::world_view_t::sprite_repository_t {
+         struct anim_indices {
+            unsigned standing;
+            unsigned walking;
+
+            static anim_indices find_indices(glpp::scene_t const & scene) {
+               anim_indices result{ 0, 0 };
+               auto names = scene.animation_names();
+               for (auto idx = 0U; idx < names.size(); idx++) {
+                  auto & name = names[idx];
+                  if (name.find("Armature|Dude.stand") != std::string::npos) { result.standing = idx; continue; }
+                  if (name.find("Armature|Dude.walk") != std::string::npos) { result.walking = idx; continue; }
+               }
+               return result;
+            }
+         };
+         struct scene_info {
+            scene_info(glpp::scene_t scene_in) : scene{ std::move(scene_in) }, animations(anim_indices::find_indices(scene)) {}
+            glpp::scene_t scene;
+            anim_indices animations;
+         };
       public:
          sprite_repository(glpp::archive_t const & assets, game::creature_info_table const & creature_db)
             : creature_db_(creature_db)
-            , player_scene_(assets.load_scene("dude-anim.fbx"))
-         { }
-
-         static unsigned animation_idx_of(game::plan_t const & plan) {
-            return 0;
+         {
+            scenes_.push_back(scene_info{ assets.load_scene("dude-anim.fbx") });
          }
 
-         glpp::animation_timeline_t find_sprite(game::creature_t const & creature, game::plan_t const & plan) const override {
-            return player_scene_.create_timeline(player_scene_.animation_names()[0]);
+         glpp::animation_timeline_t find_sprite(game::creature_t const & creature, game::moment_t & moment, game::plan_t const & plan) const override {
+            auto & scene_info = scene_info_of(creature);
+            auto scene_idx = animation_idx_of(scene_info, moment, plan);
+            auto sprite = scene_info.scene.create_timeline(scene_idx);
+            sprite.advance_by(std::rand() / 60.);
+            return sprite;
          }
 
          void creature_updated(std::size_t db_idx, game::creature_t const & creature, glpp::animation_timeline_t & cursor, game::moment_t & moment, game::plan_t & plan) const override {
-            auto scene_idx = animation_idx_of(plan);
+            auto scene_idx = animation_idx_of(creature, moment, plan);
+            if (cursor.scene_idx() == scene_idx) return;
 
             // creature doing something new - start a new animation
-            if (cursor.scene_idx() != scene_idx) cursor = find_sprite(creature, plan);
+            cursor = scene_of(creature).create_timeline(scene_idx);
          }
 
-         glpp::animation_timeline_t find_sprite(game::particle_t const & particle) const override {
+         glpp::animation_timeline_t find_sprite(game::particle_t const & particle, game::moment_t & moment) const override {
             throw std::runtime_error("unimplemented");
          }
 
@@ -179,9 +201,28 @@ int main()
          }
 
       private:
+         scene_info const & scene_info_of(game::creature_t const & creature) const {
+            switch (creature.type) {
+            case game::creature_t::person:
+            case game::creature_t::monster:
+            default:
+               return scenes_[0];
+            }
+         }
+         glpp::scene_t const & scene_of(game::creature_t const & creature) const {
+            return scene_info_of(creature).scene;
+         }
+         unsigned animation_idx_of(scene_info const & scene, game::moment_t & moment, game::plan_t const & plan) const {
+            if (moment.is_moving()) return scene.animations.walking;
+            return scene.animations.standing;
+         }
+         unsigned animation_idx_of(game::creature_t const & creature, game::moment_t & moment, game::plan_t const & plan) const {
+            return animation_idx_of(scene_info_of(creature), moment, plan);
+         }
+
          game::creature_info_table const & creature_db_;
 
-         glpp::scene_t player_scene_;
+         std::vector<scene_info> scenes_;
       };
 
       //
@@ -213,7 +254,7 @@ int main()
          auto bullet_vel = player.vel() + player.dir() * 400.f;
          auto bullet_moment = game::moment_t{ bullet_pos, bullet_vel };
 
-         auto bullet_id = world.create_particle(game::particle_t::bullet, bullet_moment, 2.f);
+         //auto bullet_id = world.create_particle(game::particle_t::bullet, bullet_moment, 2.f);
 
          return true;
       });
@@ -258,6 +299,9 @@ int main()
          return true;
       });
 
+
+      // TODO: create 'config' files for controls, game creatures and repository models
+      // TODO: remove 'renderer::dude_walk_animation' and use world_view for model info
 
 
 

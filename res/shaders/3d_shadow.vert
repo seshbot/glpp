@@ -12,7 +12,7 @@ attribute mediump vec3 p;
 attribute lowp vec4 bone_indices;
 attribute lowp vec4 bone_weights;
 
-varying mediump vec4 frag_position;
+varying mediump vec3 frag_position;
 
 
 void main() {
@@ -24,5 +24,5 @@ void main() {
    BoneTransform     += bones[int(bone_indices.w)] * norm_bone_weights.w;
 
    gl_Position = mvp * BoneTransform * vec4(p, 1.);
-   frag_position = model * BoneTransform * vec4(p, 1.);
+   frag_position = vec4(model * BoneTransform * vec4(p, 1.)).xyz;
 }
