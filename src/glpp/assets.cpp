@@ -1,4 +1,10 @@
-#include <windows.h>
+#ifdef _MSC_VER
+#  include <windows.h>
+#else
+// #  include <dirent.h> // to access ::opendir() ::readdir() and ::closedir()
+#  include <errno.h>
+#  include <sys/stat.h>
+#endif
 
 #include <glpp/assets.h>
 
@@ -52,6 +58,42 @@ namespace glpp {
             throw std::runtime_error(get_last_error_message().c_str());
          }
          return 0 != (attr & FILE_ATTRIBUTE_DIRECTORY);
+      }
+#else
+      std::string get_last_error_message() {
+         switch (errno) {
+         case EACCES: return "Search permission is denied for a component of the path prefix.";
+         case EIO: return "An error occurred while reading from the file system.";
+         case ELOOP: return "A loop exists in symbolic links encountered during resolution of the path argument.";
+         case ENAMETOOLONG: return "The length of the path argument exceeds{ PATH_MAX } or a pathname component is longer than{ NAME_MAX }.";
+         case ENOENT: return "A component of path does not name an existing file or path is an empty string.";
+         case ENOTDIR: return "A component of the path prefix is not a directory.";
+         case EOVERFLOW: return "The file size in bytes or the number of blocks allocated to the file or the file serial number cannot be represented correctly in the structure pointed to by buf.";
+         default: return "unrecognised error";
+         }
+      }
+
+      bool is_path_valid(std::string const & path) {
+         struct ::stat st_buf;
+
+         int status = ::stat(argv[1], &st_buf);
+         if (status == 0)
+            return true;
+         if (errno == ENOENT)
+            return false;
+         throw std::runtime_error(get_last_error_message().c_str());
+      }
+
+      bool is_path_a_directory(std::string const & path) {
+         struct ::stat st_buf;
+
+         int status = ::stat(argv[1], &st_buf);
+         if (status != 0) {
+            throw std::runtime_error(get_last_error_message().c_str());
+         }
+
+         // also S_ISREG() and S_ISLNK()
+         return S_ISDIR(st_buf.st_mode);
       }
 #endif
 
