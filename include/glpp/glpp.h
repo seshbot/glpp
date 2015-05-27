@@ -15,6 +15,7 @@
 #include <memory>
 
 #include <glpp/input.h>
+#include <glpp/types.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -38,7 +39,7 @@
 
 
 namespace glpp {
-	using id_t = unsigned int;
+	using id_t = gl::uint_t;
 
    struct dim_t { int x; int y; };
    inline bool operator==(dim_t const & d1, dim_t const & d2) { return d1.x == d2.x && d1.y == d2.y; }
@@ -601,7 +602,6 @@ namespace glpp {
 
       context & ctx_;
    };
-
 
 	class context {
    public:

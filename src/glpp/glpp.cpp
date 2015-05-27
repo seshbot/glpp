@@ -310,6 +310,189 @@ namespace {
 namespace glpp
 {
    /**
+    * class context_state
+    *
+    */
+
+   class context_state {
+   public:
+      void set_optimistic(bool value) { optimistic_ = value; }
+
+      void use_program(gl::uint_t id);
+
+      void bind_framebuffer(gl_::framebuffer_target_t target, gl::uint_t framebuffer);
+
+      void active_texture(gl_::texture_unit_t id);
+      void bind_texture(gl_::texture_target_t target, gl::uint_t id);
+
+      void bind_buffer(gl_::buffer_target_arb_t target, gl::uint_t id);
+
+      void debug_verify_state_COSTLY() const;
+
+   private:
+      static context_state from_current_context();
+
+      static const unsigned NUM_TEXTURE_UNITS = 80; // min value, from the spec. can call GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
+
+      bool optimistic_ = true;
+      gl::uint_t bound_program_ = 0;
+      gl::uint_t bound_read_framebuffer_ = 0;
+      gl::uint_t bound_draw_framebuffer_ = 0;
+      gl::uint_t bound_vertex_buffer_ = 0;
+      gl::uint_t bound_index_buffer_ = 0;
+      unsigned active_texture_unit_idx_ = 0;
+      gl_::texture_target_t texture_unit_texture_targets_[NUM_TEXTURE_UNITS] = {};
+      gl::uint_t texture_unit_texture_ids_[NUM_TEXTURE_UNITS] = {};
+
+      struct invoke_info {
+         unsigned calls = 0;
+         unsigned calls_avoided = 0;
+      };
+      invoke_info bound_program_info_;
+      invoke_info bound_framebuffer_info_;
+      invoke_info bound_vertex_buffer_info_;
+      invoke_info bound_index_buffer_info_;
+      invoke_info active_texture_unit_info_;
+      invoke_info bound_texture_info_;
+   };
+
+   thread_local context_state gl_ctx_;
+
+   void context_state::use_program(gl::uint_t id) {
+      bound_program_info_.calls++;
+      if (optimistic_ && bound_program_ == id) { bound_program_info_.calls_avoided++; return; }
+
+      GL_VERIFY(gl_::use_program(id));
+      bound_program_ = id;
+   }
+
+   void context_state::bind_framebuffer(gl_::framebuffer_target_t target, gl::uint_t id) {
+      bound_framebuffer_info_.calls++;
+      if (target == gl_::framebuffer_target_t::framebuffer) {
+         if (optimistic_ && bound_read_framebuffer_ == id && bound_draw_framebuffer_ == id) { bound_framebuffer_info_.calls_avoided++; return; }
+         bound_read_framebuffer_ = id;
+         bound_draw_framebuffer_ = id;
+      }
+      else if (target == gl_::framebuffer_target_t::draw_framebuffer) {
+         if (optimistic_ && bound_draw_framebuffer_ == id) { bound_framebuffer_info_.calls_avoided++; return; }
+         bound_draw_framebuffer_ = id;
+      }
+      else if (target == gl_::framebuffer_target_t::read_framebuffer) {
+         if (optimistic_ && bound_read_framebuffer_ == id) { bound_framebuffer_info_.calls_avoided++; return; }
+         bound_read_framebuffer_ = id;
+      }
+      
+      GL_VERIFY(gl_::bind_framebuffer(target, id));
+   }
+
+   static const unsigned TEXTURE0 = static_cast<unsigned>(gl_::texture_unit_t::texture0);
+   void context_state::active_texture(gl_::texture_unit_t id) {
+      active_texture_unit_info_.calls++;
+      auto idx = static_cast<unsigned>(id) - TEXTURE0;
+
+      if (optimistic_ && active_texture_unit_idx_ == idx) { active_texture_unit_info_.calls_avoided++; return; }
+
+      GL_VERIFY(gl_::active_texture(id));
+      active_texture_unit_idx_ = idx;
+   }
+
+   void context_state::bind_texture(gl_::texture_target_t target, gl::uint_t id) {
+      bound_texture_info_.calls++;
+
+      if (optimistic_ &&
+         texture_unit_texture_targets_[active_texture_unit_idx_] == target &&
+         texture_unit_texture_ids_[active_texture_unit_idx_] == id)
+      {
+         bound_texture_info_.calls_avoided++; return;
+      }
+
+      // TODO: what if the texture is updated? should we not do this?
+      GL_VERIFY(gl_::bind_texture(target, id));
+      texture_unit_texture_targets_[active_texture_unit_idx_] = target;
+      texture_unit_texture_ids_[active_texture_unit_idx_] = id;
+   }
+
+   void context_state::bind_buffer(gl_::buffer_target_arb_t target, gl::uint_t id) {
+      if (target == gl_::buffer_target_arb_t::element_array_buffer) {
+         bound_index_buffer_info_.calls++;
+         if (optimistic_ && bound_index_buffer_ == id) { bound_index_buffer_info_.calls_avoided++; return; }
+         bound_index_buffer_ = id;
+      }
+      else if (target == gl_::buffer_target_arb_t::array_buffer) {
+         bound_vertex_buffer_info_.calls++;
+         if (optimistic_ && bound_vertex_buffer_ == id) { bound_vertex_buffer_info_.calls_avoided++; return; }
+         bound_vertex_buffer_ = id;
+      }
+      
+      GL_VERIFY(gl_::bind_buffer(target, id));
+   }
+
+   namespace {
+      gl::float_t get_gl_version() {
+         static auto result = std::stof(std::string((char*)gl_::get_string(gl_::string_name_t::version)));
+         return result;
+      }
+   }
+
+   context_state context_state::from_current_context() {
+#ifndef GL_CURRENT_PROGRAM
+#     define GL_CURRENT_PROGRAM                0x8B8D
+#endif
+#ifndef GL_DRAW_FRAMEBUFFER_BINDING
+#     define GL_DRAW_FRAMEBUFFER_BINDING       0x8CA6
+#endif
+#ifndef GL_READ_FRAMEBUFFER_BINDING
+#     define GL_READ_FRAMEBUFFER_BINDING       0x8CAA
+#endif
+#ifndef GL_ARRAY_BUFFER_BINDING
+#     define GL_ARRAY_BUFFER_BINDING           0x8894
+#endif
+#ifndef GL_ELEMENT_ARRAY_BUFFER_BINDING
+#     define GL_ELEMENT_ARRAY_BUFFER_BINDING   0x8895
+#endif
+#ifndef GL_ACTIVE_TEXTURE
+#     define GL_ACTIVE_TEXTURE                0x84E0
+#endif
+
+      // TODO: GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS ?
+      // TODO: GL_TEXTURE_BINDING_2D / GL_TEXTURE_BINDING_2D_MULTISAMPLE for each texture unit?
+      //       id_t texture_unit_textures_[NUM_TEXTURE_UNITS] = {};
+
+      context_state result;
+      gl::int_t id;
+      ::glGetIntegerv(GL_CURRENT_PROGRAM, &id); result.bound_program_ = id;
+      ::glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &id); result.bound_draw_framebuffer_ = id;
+      if (get_gl_version() >= 3.) {
+         ::glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &id); result.bound_read_framebuffer_ = id;
+      }
+      ::glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &id); result.bound_vertex_buffer_ = id;
+      ::glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &id); result.bound_index_buffer_ = id;
+      ::glGetIntegerv(GL_ACTIVE_TEXTURE, &id); result.active_texture_unit_idx_ = id - TEXTURE0;
+
+      return result;
+   }
+
+   void context_state::debug_verify_state_COSTLY() const {
+      auto current_state = from_current_context();
+
+      assert(!bound_program_ || bound_program_ == current_state.bound_program_ &&
+         "currently bound to unexpected program!");
+      assert(!bound_draw_framebuffer_ || bound_draw_framebuffer_ == current_state.bound_draw_framebuffer_ &&
+         "currently bound to unexpected draw framebuffer!");
+      if (get_gl_version() >= 3.) {
+         assert(!bound_read_framebuffer_ || bound_read_framebuffer_ == current_state.bound_read_framebuffer_ &&
+            "currently bound to unexpected read framebuffer!");
+      }
+      assert(!bound_vertex_buffer_ || bound_vertex_buffer_ == current_state.bound_vertex_buffer_ &&
+         "currently bound to unexpected vertex buffer!");
+      assert(!bound_index_buffer_ || bound_index_buffer_ == current_state.bound_index_buffer_ &&
+         "currently bound to unexpected index buffer!");
+      // TODO: verify textures, not current texture unit
+      // assert(active_texture_unit_ == current_state.active_texture_unit_ && "currently bound to unexpected texture unit!");
+   }
+
+
+   /**
     * utils
     */
 
@@ -365,7 +548,7 @@ namespace glpp
       dims_.x = width;
       dims_.y = height;
 
-      GL_VERIFY(gl_::bind_texture(tgt, id_));
+      GL_VERIFY(gl_ctx_.bind_texture(tgt, id_));
 
       // TODO: these should come from the gles2 API
       gl::int_t TMP_GL_CLAMP_TO_EDGE = 0x812F;
@@ -382,7 +565,7 @@ namespace glpp
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-      GL_VERIFY(gl_::bind_texture(tgt, 0));
+      GL_VERIFY(gl_ctx_.bind_texture(tgt, 0));
    }
 
    texture_t::state::state(dim_t const & dims, Target target, texture_format_t format)
@@ -390,7 +573,7 @@ namespace glpp
       auto tgt = static_cast<gl_::texture_target_t>(to_gl(target));
 
       GL_VERIFY(gl_::gen_textures(1, &id_));
-      GL_VERIFY(gl_::bind_texture(tgt, id_));
+      GL_VERIFY(gl_ctx_.bind_texture(tgt, id_));
 
       auto internal_format
          = format == texture_format_t::RGBA ? gl_::texture_component_count_t::rgba
@@ -460,7 +643,7 @@ namespace glpp
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-      gl_::bind_texture(tgt, 0);
+      gl_ctx_.bind_texture(tgt, 0);
    }
 
    texture_t::state::~state() {
@@ -564,7 +747,7 @@ namespace glpp
 
    void texture_unit_t::activate() const {
       auto texture_unit = static_cast<gl_::texture_unit_t>(static_cast<unsigned int>(gl_::texture_unit_t::texture0) + id);
-      GL_VERIFY(gl_::active_texture(texture_unit));
+      GL_VERIFY(gl_ctx_.active_texture(texture_unit));
    }
 
   /**
@@ -575,7 +758,7 @@ namespace glpp
    frame_buffer_t::frame_buffer_t(cube_map_texture_t const & tex)
       : cube_map_texture_id_(tex.id()), dims_(tex.face_dims()), samples_(0) {
       GL_VERIFY(gl_::gen_framebuffers(1, &fbo_id_));
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, fbo_id_));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::framebuffer, fbo_id_));
 
       // attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
 
@@ -590,13 +773,13 @@ namespace glpp
 
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, 0));
 
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
    }
 
    frame_buffer_t::frame_buffer_t(texture_t const & tex)
    : dims_(tex.dims()), samples_(0) {
       GL_VERIFY(gl_::gen_framebuffers(1, &fbo_id_));
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, fbo_id_));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::framebuffer, fbo_id_));
 
       // attach images (texture objects and renderbuffer objects) for each buffer (color, depth, stencil or a combination of depth and stencil)
       GL_VERIFY(gl_::framebuffer_texture_2d(gl_::framebuffer_target_t::framebuffer, gl_::framebuffer_attachment_t::color_attachment0, gl_::framebuffer_texture_target_t::texture_2d, tex.id(), 0));
@@ -611,7 +794,7 @@ namespace glpp
 
       check_fbo();
 
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
    }
 
    frame_buffer_t::frame_buffer_t(dim_t dims, unsigned samples)
@@ -619,7 +802,7 @@ namespace glpp
       // NOTE: ANGLE doesn't support glTexImage2DMultisample (for MSAA), only glRenderbufferStorageMultisampleANGLE
 
       GL_VERIFY(gl_::gen_framebuffers(1, &fbo_id_));
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, fbo_id_));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::framebuffer, fbo_id_));
 
       // TODO: verify samples_ is valid
       // must use GL_BGRA8_EXT because thats what the default buffer format is in ANGLE (must match for blitting)
@@ -649,7 +832,7 @@ namespace glpp
 
       check_fbo();
 
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::framebuffer, 0));
    }
 
    frame_buffer_t::~frame_buffer_t() {
@@ -695,15 +878,12 @@ namespace glpp
    void frame_buffer_t::bind_(BindTarget target) const {
       check_fbo();
       auto t = to_gl(target);
-
-      // TODO: this was GL_READ_FRAMEBUFFER_ANGLE for some reason???
-      if (target == ReadDraw) gl_::bind_framebuffer(gl_::framebuffer_target_t::read_framebuffer, 0);
-      GL_VERIFY(gl_::bind_framebuffer(t, fbo_id_));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(t, fbo_id_));
    }
 
    void frame_buffer_t::unbind(BindTarget target) const {
       auto t = to_gl(target);
-      GL_VERIFY(gl_::bind_framebuffer(t, 0));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(t, 0));
    }
 
    void frame_buffer_t::blit_to_draw_buffer() const {
@@ -714,7 +894,7 @@ namespace glpp
       // see BlitFramebufferANGLE on entry_points_gles_2_0_ext.cpp : 667
 
       //GL_VERIFY(glBindFramebuffer(GL_DRAW_FRAMEBUFFER_ANGLE, 0));   // Make sure no FBO is set as the draw framebuffer
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::read_framebuffer, fbo_id_)); // Make sure your multisampled FBO is the read framebuffer
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::read_framebuffer, fbo_id_)); // Make sure your multisampled FBO is the read framebuffer
 #ifdef _MSC_VER
       gl::int_t TMP_GL_NEAREST = 0x2600;
       GL_VERIFY(gl_::blit_framebuffer_angle(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
@@ -726,7 +906,7 @@ namespace glpp
 
    void frame_buffer_t::blit_to_screen() const {
       // TODO: this was GL_READ_FRAMEBUFFER_ANGLE for some reason
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::draw_framebuffer, 0));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::draw_framebuffer, 0));
       blit_to_draw_buffer();
    }
 
@@ -766,7 +946,7 @@ namespace glpp
    }
 
    void bind_frame_buffer(id_t new_fbo) {
-      GL_VERIFY(gl_::bind_framebuffer(gl_::framebuffer_target_t::framebuffer, new_fbo));
+      GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::framebuffer, new_fbo));
    }
 
 
@@ -1100,7 +1280,7 @@ namespace glpp
          = usage_ == Usage::Static ? gl_::buffer_usage_arb_t::static_draw
          : usage_ == Usage::Dynamic ? gl_::buffer_usage_arb_t::dynamic_draw
          : gl_::buffer_usage_arb_t::stream_draw;
-      gl_::bind_buffer(gl_::buffer_target_arb_t::array_buffer, vertex_id_);
+      gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::array_buffer, vertex_id_);
       gl_::buffer_data(gl_::buffer_target_arb_t::array_buffer, vertex_byte_size, vertex_data, usage);
    }
 
@@ -1119,7 +1299,7 @@ namespace glpp
       // TODO: infer byte size?
       assert(index_byte_size == index_count * attrib_atomic_val_bytes(index_data_type));
       if (!index_id_) gl_::gen_buffers(1, &index_id_);
-      gl_::bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, index_id_);
+      gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, index_id_);
       gl_::buffer_data(gl_::buffer_target_arb_t::element_array_buffer, index_byte_size, index_data, gl_::buffer_usage_arb_t::static_draw);
    }
 
@@ -1172,10 +1352,10 @@ namespace glpp
 
    void buffer_t::bind() const {
       if (0 != state_->vertex_id_) {
-         gl_::bind_buffer(gl_::buffer_target_arb_t::array_buffer, state_->vertex_id_);
+         gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::array_buffer, state_->vertex_id_);
       }
       if (0 != state_->index_id_) {
-         gl_::bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, state_->index_id_);
+         gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, state_->index_id_);
       }
    }
 
@@ -1796,7 +1976,7 @@ namespace glpp
    }
 
    void program::use() const {
-      GL_VERIFY(gl_::use_program(state_->id_));
+      GL_VERIFY(gl_ctx_.use_program(state_->id_));
    }
 
    void program::destroy() {
@@ -1969,6 +2149,7 @@ namespace glpp
 
 #ifdef _MSC_VER
       assert(extensionEnabled("GL_ANGLE_framebuffer_multisample"));
+      // TODO: sRGB? instancing?
 #endif
 
       win_.reset(new window{ *this });
