@@ -356,7 +356,7 @@ namespace glpp
       invoke_info bound_texture_info_;
    };
 
-   thread_local context_state gl_ctx_;
+   context_state gl_ctx_;
 
    void context_state::use_program(gl::uint_t id) {
       bound_program_info_.calls++;

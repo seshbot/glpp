@@ -70,18 +70,22 @@ private:
    static void del_at_(std::vector<T> & vec, idx_t idx) { auto last = vec.size() - 1; if (idx != last) std::swap(vec[idx], vec[last]); vec.erase(vec.begin() + last); }
 };
 
+#include <random>
+
 template <unsigned CREATE_PER_SEC>
 class constant_create_policy_t {
 protected:
+   std::mt19937 rnd;
+
    const double TIME_BETWEEN_CREATE = (double)1. / CREATE_PER_SEC;
    double next_create_time_ = 0.;
 
    template <typename T>
    void create_particle(T & emitter) {
       auto pos = glm::vec3{
-         (float)(std::rand() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
+         (float)(rnd() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
          800.,
-         800.f - (float)(std::rand() % 1200) };// (float)(std::rand() % 350) - 250. };
+         800.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
 
       emitter.add(pos);
    }

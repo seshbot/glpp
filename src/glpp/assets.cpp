@@ -76,7 +76,7 @@ namespace glpp {
       bool is_path_valid(std::string const & path) {
          struct ::stat st_buf;
 
-         int status = ::stat(argv[1], &st_buf);
+         int status = ::stat(path.c_str(), &st_buf);
          if (status == 0)
             return true;
          if (errno == ENOENT)
@@ -87,7 +87,7 @@ namespace glpp {
       bool is_path_a_directory(std::string const & path) {
          struct ::stat st_buf;
 
-         int status = ::stat(argv[1], &st_buf);
+         int status = ::stat(path.c_str(), &st_buf);
          if (status != 0) {
             throw std::runtime_error(get_last_error_message().c_str());
          }
