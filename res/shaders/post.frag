@@ -66,5 +66,6 @@ void main() {
 
    //colour = hsv_adjust(colour, sin(2. * t));
    lowp vec3 post_colour = post_adjust(colour.rgb, v_tex_coords);
-   gl_FragColor = vec4(post_colour.rgb, colour.a);
+   //gl_FragColor = vec4(post_colour.rgb, colour.a);
+   gl_FragColor = vec4(sqrt(colour.rgb), colour.a);
 }

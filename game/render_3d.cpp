@@ -134,10 +134,10 @@ namespace {
    //
 
    static const float ground_verts[] = {
-      0.,   0., -900.,   0., 1., 0.,
-      800., 0., -900.,   0., 1., 0.,
-      0.,   0.,  0.,     0., 1., 0.,
-      800., 0.,  0.,     0., 1., 0.,
+      -400.,   0., -1300.,   0., 1., 0.,
+      1200., 0., -1300.,   0., 1., 0.,
+      -400.,   0.,  500.,     0., 1., 0.,
+      1200., 0.,  500.,     0., 1., 0.,
    };
    static const unsigned short ground_indices[] = {
       0, 2, 1,
@@ -269,7 +269,7 @@ namespace {
 
    glm::mat4 get_proj() {
       // 0, 0 is the bottom left of the lookAt target!
-      return glm::ortho<float>(-400., 400., -300., 300., 100., 2000.);
+      return glm::ortho<float>(-800., 800., -600., 600., 100., 2000.);
       //return glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f);
    }
 
@@ -383,7 +383,7 @@ namespace game {
       //gl::enable(gl::enable_cap_t::multisample);
       gl::enable(gl::enable_cap_t::blend);
 
-#ifndef WIN32
+#ifndef _MSC_VER
       gl::point_size(3.);
       gl::enable(gl::enable_cap_t::point_smooth);
 #endif

@@ -17,7 +17,7 @@ struct PositionalLight {
 	mediump float attenuation;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .15, COLOUR_FIRE_LOW, .00004);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .04, COLOUR_FIRE_LOW, .00008);
 
 uniform mediump vec4 colour;
 uniform samplerCube shadow_texture;
@@ -26,17 +26,16 @@ varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
 
 const mediump vec3 c_sky_light_dir = vec3(-1., -1., -1.);
-const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .05;
+const mediump vec3 c_sky_light_intensity = vec3(.1, .2, .8) * .00;
 
-const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .09;
+const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .0;
 
 mediump float random(mediump vec4 seed4) {
    mediump float dot_product = dot(seed4, vec4(12.9898,78.233,45.164,94.673));
    return fract(sin(dot_product) * 43758.5453);
 }
 
-mediump float unpack(mediump vec4 packed_dist)
-{
+mediump float unpack(mediump vec4 packed_dist) {
    const mediump vec4 unpackFactors = vec4( 1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0 );
    return dot(packed_dist,unpackFactors);
 }
@@ -84,7 +83,7 @@ lowp vec4 gamma(lowp vec4 c) {
 mediump vec3 light(PositionalLight light) {
    // calculate attenuation (light strengtht based on inverse square law)
    mediump float dist = distance(frag_position, light.world_position);
-   mediump float att = 1. / (1. + light.attenuation * dist + light.attenuation * dist * dist);
+   mediump float att = 1. / (0.25 + light.attenuation * dist * dist) - .05;
 
    // from http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
    // att = clamp(1.0 - dist*dist/(radius*radius), 0.0, 1.0); att *= att
@@ -129,4 +128,5 @@ void main() {
    
    gl_FragColor = vec4(ambient + diffuse + colour.rgb * light(c_light), colour.a);
    //gl_FragColor = mix(c_fog_colour, gl_FragColor, fog_factor());
+   //gl_FragColor = colour; // vec4(.0, .0, .0, 1.);
 }

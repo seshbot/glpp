@@ -143,7 +143,7 @@ public:
 };
 
 using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
-   constant_create_policy_t<6000>,
+   constant_create_policy_t<500>,
    constant_update_policy_t,
    constant_depth_delete_policy_t<0> >;
 

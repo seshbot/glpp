@@ -2180,7 +2180,7 @@ namespace glpp
             auto * vid_mode = glfwGetVideoMode(monitor);
             return dim_t{ vid_mode->width, vid_mode->height };
          }
-         return dim_t{ 640, 480 };
+         return dim_t{ 1920, 1089 };
       }();
 
       auto* prev_win = impl_ ? impl_->window_ : nullptr;
