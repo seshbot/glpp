@@ -168,14 +168,14 @@ namespace {
    // render callbacks
    //
 
-   struct mesh_render_callback_t : public glpp::pass_t::render_callback {
-      mesh_render_callback_t(
-         unsigned mesh_idx,
+   struct mesh_render_batch_callback_t : public glpp::pass_t::render_batch_callback {
+      mesh_render_batch_callback_t(
+         unsigned pass_mesh_idx,
          game::world_view_t::const_iterator itBegin,
          game::world_view_t::const_iterator itEnd,
          glm::mat4 const & view_matrix,
          glm::mat4 const & proj_matrix)
-         : mesh_idx_(mesh_idx)
+         : pass_mesh_idx_(pass_mesh_idx)
          , itEnd_(itEnd)
          , it_(itBegin)
          , proj_view_matrix_(proj_matrix * view_matrix) {
@@ -193,7 +193,7 @@ namespace {
          p.uniform("mvp").set(proj_view_matrix_ * model_transform);
          //            p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
 
-         auto & mesh = animation.meshes()[mesh_idx_];
+         auto & mesh = animation.meshes()[pass_mesh_idx_];
          p.uniform("bones[0]").set(mesh.bone_transforms());
 
          it_++;
@@ -201,10 +201,10 @@ namespace {
       }
 
    private:
-      mesh_render_callback_t(mesh_render_callback_t const &) {}
-      mesh_render_callback_t & operator=(mesh_render_callback_t const &) { return *this; }
+      mesh_render_batch_callback_t(mesh_render_batch_callback_t const &) {}
+      mesh_render_batch_callback_t & operator=(mesh_render_batch_callback_t const &) { return *this; }
 
-      unsigned mesh_idx_;
+      unsigned pass_mesh_idx_;
       game::world_view_t::const_iterator itEnd_;
       mutable game::world_view_t::const_iterator it_;
       glm::mat4 proj_view_matrix_;
@@ -226,19 +226,25 @@ namespace {
       auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
          .attrib("bone_weights", 4);
 
+      auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
+
       passes_3d.push_back(
          prg_3d.pass()
          .with(verts)
          .with(normals)
          .with(bone_indices)
          .with(bone_weights)
-         .set_uniform("colour", mesh.material().diffuse_colour));
+         .set_uniform("colour", mesh.material().diffuse_colour)
+         //.set_uniform_action("bones[0]", set_bones_action)
+         );
 
       passes_3d_shadow.push_back(
          prg_3d_shadow.pass()
          .with(verts)
          .with(bone_indices)
-         .with(bone_weights));
+         .with(bone_weights)
+         //.set_uniform_action("bones[0]", set_bones_action)
+         );
    };
 
 
@@ -579,16 +585,16 @@ namespace game {
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit));
 
-         auto mesh_idx = 0U;
+         auto pass_mesh_idx = 0U;
          for (auto & pass : d3_body_shadow_passes) {
             pass.draw_batch(
-               mesh_render_callback_t{
-                  mesh_idx,
+               mesh_render_batch_callback_t{
+                  pass_mesh_idx,
                   world_view.creatures_begin(),
                   world_view.creatures_end(),
                   view, light_proj },
                glpp::DrawMode::Triangles);
-            mesh_idx++;
+            pass_mesh_idx++;
          }
       }
       context.shadow_fbo->unbind();
@@ -622,18 +628,18 @@ namespace game {
             prev_selected_item = debug_selected_item_;
             utils::log(utils::LOG_INFO, " !!! Selecting mesh '%s'\n", (debug_selected_item_ < (int)mesh_names.size()) ? mesh_names[debug_selected_item_].c_str() : "INVALID");
          }
-         auto mesh_idx = 0U;
+         auto pass_mesh_idx = 0U;
          for (auto & pass : d3_body_passes) {
-            if (!debug_special_mode_enabled_ || mesh_idx == debug_selected_item_) {
+            if (!debug_special_mode_enabled_ || pass_mesh_idx == debug_selected_item_) {
                pass.draw_batch(
-                  mesh_render_callback_t{
-                     mesh_idx,
+                  mesh_render_batch_callback_t{
+                     pass_mesh_idx,
                      world_view.creatures_begin(),
                      world_view.creatures_end(),
                      get_view(*this), get_proj() },
                   glpp::DrawMode::Triangles);
             }
-            mesh_idx++;
+            pass_mesh_idx++;
          }
 
          debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);

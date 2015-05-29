@@ -110,8 +110,13 @@ namespace game {
    // class world_t
    //
 
-   world_t::world_t(creature_info_table & entity_db, particle_info_table & particle_db, player_controller_t const & player_controller)
+   world_t::world_t(
+      creature_info_table & entity_db,
+      prop_info_table & prop_db,
+      particle_info_table & particle_db,
+      player_controller_t const & player_controller)
       : entity_db_(entity_db)
+      , prop_db_(prop_db)
       , particle_db_(particle_db)
       , player_controller_(player_controller)
       , player_id_(create_creature(creature_t::types::person, { center_world_location(), {} }))
@@ -122,6 +127,13 @@ namespace game {
       auto id = entity_db_.create_row();
       entity_db_.moment(id) = moment;
       entity_db_.creature_info(id) = { type };
+      return id;
+   }
+
+   entity_id_t world_t::create_prop(prop_t::types type, moment_t const & moment) {
+      auto id = prop_db_.create_row();
+      prop_db_.moment(id) = moment;
+      prop_db_.prop_info(id) = { type };
       return id;
    }
 
@@ -245,8 +257,9 @@ namespace game {
    // class world_view_t
    //
 
-   world_view_t::world_view_t(creature_info_table & entity_db, particle_info_table & particle_db, sprite_repository_t & sprite_repository)
+   world_view_t::world_view_t(creature_info_table & entity_db, prop_info_table & prop_db, particle_info_table & particle_db, sprite_repository_t & sprite_repository)
       : entity_db_(entity_db)
+      , prop_db_(prop_db)
       , particle_db_(particle_db)
       , sprite_repository_(sprite_repository)
    { }
@@ -267,79 +280,112 @@ namespace game {
 
    void world_view_t::update(double time_since_last) {
       update_creatures(time_since_last);
+      update_props(time_since_last);
       update_particles(time_since_last);
    }
 
    void world_view_t::update_creatures(double time_since_last) {
       auto & sprites = entity_db_.sprites();
-      auto & creatures = entity_db_.creature_infos();
+      auto & entities = entity_db_.creature_infos();
       auto & moments = entity_db_.moments();
       auto & plans = entity_db_.plans();
 
-      std::vector<render_info_t> creature_render_info;
+      std::vector<render_info_t> updated_render_info;
 
       for (std::size_t idx = 0; idx < entity_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
-         auto & creature = creatures[idx];
+         auto & entity = entities[idx];
          auto & moment = moments[idx];
          auto & plan = plans[idx];
 
          // create and track sprites if no sprite associated with entity
          if (!sprite_ptr) {
-            sprite_ptr = create_sprite(creature, moment, plan);
+            sprite_ptr = create_sprite(entity, moment, plan);
          }
 
          auto & sprite = *sprite_ptr;
-         sprite_repository_.creature_updated(idx, creature, sprite, moment, plan);
-         sprite.advance_by(time_since_last);
+         sprite_repository_.animate(idx, entity, sprite, moment, plan, time_since_last);
 
-         creature_render_info.push_back({ {*sprite_ptr}, moment });
+         updated_render_info.push_back({ {*sprite_ptr}, moment });
       }
 
-      std::sort(std::begin(creature_render_info), std::end(creature_render_info), cmp_by_animation);
+      std::sort(std::begin(updated_render_info), std::end(updated_render_info), cmp_by_animation);
 
-      creature_render_info_.swap(creature_render_info);
+      creature_render_info_.swap(updated_render_info);
    }
 
-   void world_view_t::update_particles(double time_since_last) {
-      auto & sprites = particle_db_.sprites();
-      auto & particles = particle_db_.particle_infos();
+   void world_view_t::update_props(double time_since_last) {
+      auto & sprites = prop_db_.sprites();
+      auto & entities = prop_db_.prop_infos();
       auto & moments = particle_db_.moments();
 
-      std::vector<render_info_t> particle_render_info;
+      std::vector<render_info_t> updated_render_info;
 
       for (std::size_t idx = 0; idx < particle_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
-         auto & particle = particles[idx];
+         auto & entity = entities[idx];
          auto & moment = moments[idx];
 
          // create and track sprites if no sprite associated with entity
          if (!sprite_ptr) {
-            sprite_ptr = create_sprite(particle, moment);
+            sprite_ptr = create_sprite(entity, moment);
          }
 
          auto & sprite = *sprite_ptr;
-         sprite_repository_.particle_updated(idx, particle, sprite, moment);
-         sprite.advance_by(time_since_last);
+         sprite_repository_.animate(idx, entity, sprite, moment, time_since_last);
 
-         particle_render_info.push_back({ {*sprite_ptr}, moment });
+         updated_render_info.push_back({ { *sprite_ptr }, moment });
+      }
+
+      std::sort(std::begin(updated_render_info), std::end(updated_render_info), cmp_by_animation);
+
+      prop_render_info_.swap(updated_render_info);
+   }
+
+   void world_view_t::update_particles(double time_since_last) {
+      auto & sprites = particle_db_.sprites();
+      auto & entities = particle_db_.particle_infos();
+      auto & moments = particle_db_.moments();
+
+      std::vector<render_info_t> updated_render_info;
+
+      for (std::size_t idx = 0; idx < particle_db_.size(); idx++) {
+         auto & sprite_ptr = sprites[idx];
+         auto & entity = entities[idx];
+         auto & moment = moments[idx];
+
+         // create and track sprites if no sprite associated with entity
+         if (!sprite_ptr) {
+            sprite_ptr = create_sprite(entity, moment);
+         }
+
+         auto & sprite = *sprite_ptr;
+         sprite_repository_.animate(idx, entity, sprite, moment, time_since_last);
+
+         updated_render_info.push_back({ {*sprite_ptr}, moment });
       }
 
       //std::sort(std::begin(particle_render_info), std::end(particle_render_info), cmp_by_tex_id);
 
-      particle_render_info_.swap(particle_render_info);
+      particle_render_info_.swap(updated_render_info);
    }
 
-   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(creature_t const & creature, moment_t & moment, plan_t const & plan) {
+   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(creature_t const & entity, moment_t & moment, plan_t const & plan) {
       return std::unique_ptr<glpp::animation_timeline_t>(
          new glpp::animation_timeline_t(
-            sprite_repository_.find_sprite(creature, moment, plan)));
+            sprite_repository_.find_sprite(entity, moment, plan)));
    }
 
-   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(particle_t const & particle, moment_t & moment) {
+   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(prop_t const & entity, moment_t & moment) {
       return std::unique_ptr<glpp::animation_timeline_t>(
          new glpp::animation_timeline_t(
-         sprite_repository_.find_sprite(particle, moment)));
+            sprite_repository_.find_sprite(entity, moment)));
+   }
+
+   std::unique_ptr<glpp::animation_timeline_t> world_view_t::create_sprite(particle_t const & entity, moment_t & moment) {
+      return std::unique_ptr<glpp::animation_timeline_t>(
+         new glpp::animation_timeline_t(
+         sprite_repository_.find_sprite(entity, moment)));
    }
 
 }

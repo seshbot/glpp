@@ -170,47 +170,69 @@ int main()
             anim_indices animations;
          };
       public:
-         sprite_repository(glpp::archive_t const & assets, game::creature_info_table const & creature_db)
+         sprite_repository(glpp::archive_t const & assets, game::creature_info_table const & creature_db, game::prop_info_table const & prop_db)
             : creature_db_(creature_db)
+            , prop_db_(prop_db)
          {
             scenes_.push_back(scene_info{ assets.load_scene("dude-anim.fbx") });
+            scenes_.push_back(scene_info{ assets.load_scene("campfire.fbx") });
          }
 
-         glpp::animation_timeline_t find_sprite(game::creature_t const & creature, game::moment_t & moment, game::plan_t const & plan) const override {
-            auto & scene_info = scene_info_of(creature);
+         glpp::animation_timeline_t find_sprite(game::creature_t const & entity, game::moment_t & moment, game::plan_t const & plan) const override {
+            auto & scene_info = scene_info_of(entity);
             auto scene_idx = animation_idx_of(scene_info, moment, plan);
             auto sprite = scene_info.scene.create_timeline(scene_idx);
             sprite.advance_by(std::rand() / 60.);
             return sprite;
          }
 
-         void creature_updated(std::size_t db_idx, game::creature_t const & creature, glpp::animation_timeline_t & cursor, game::moment_t & moment, game::plan_t & plan) const override {
-            auto scene_idx = animation_idx_of(creature, moment, plan);
-            if (cursor.scene_idx() == scene_idx) return;
+         void animate(std::size_t db_idx, game::creature_t const & entity, glpp::animation_timeline_t & cursor, game::moment_t & moment, game::plan_t & plan, double time_since_last) const override {
+            auto scene_idx = animation_idx_of(entity, moment, plan);
+            if (cursor.scene_idx() != scene_idx) {
+               // creature doing something new - start a new animation
+               cursor = scene_of(entity).create_timeline(scene_idx);
+            }
 
-            // creature doing something new - start a new animation
-            cursor = scene_of(creature).create_timeline(scene_idx);
+            cursor.advance_by(time_since_last);
          }
 
-         glpp::animation_timeline_t find_sprite(game::particle_t const & particle, game::moment_t & moment) const override {
+         glpp::animation_timeline_t find_sprite(game::prop_t const & entity, game::moment_t & moment) const override {
+            auto & scene_info = scene_info_of(entity);
+            auto sprite = scene_info.scene.create_timeline(0);
+            return sprite;
+         }
+
+         void animate(std::size_t db_idx, game::prop_t const & entity, glpp::animation_timeline_t & cursor, game::moment_t & moment, double time_since_last) const override {
+            cursor.advance_by(time_since_last);
+         }
+
+         glpp::animation_timeline_t find_sprite(game::particle_t const & entity, game::moment_t & moment) const override {
             throw std::runtime_error("unimplemented");
          }
 
-         void particle_updated(std::size_t db_idx, game::particle_t const & particle, glpp::animation_timeline_t & cursor, game::moment_t & moment) const override {
+         void animate(std::size_t db_idx, game::particle_t const & entity, glpp::animation_timeline_t & cursor, game::moment_t & moment, double time_since_last) const override {
             throw std::runtime_error("unimplemented");
          }
 
       private:
-         scene_info const & scene_info_of(game::creature_t const & creature) const {
-            switch (creature.type) {
+         scene_info const & scene_info_of(game::creature_t const & entity) const {
+            switch (entity.type) {
             case game::creature_t::person:
             case game::creature_t::monster:
             default:
                return scenes_[0];
             }
          }
-         glpp::scene_t const & scene_of(game::creature_t const & creature) const {
-            return scene_info_of(creature).scene;
+         scene_info const & scene_info_of(game::prop_t const & entity) const {
+            switch (entity.type) {
+            case game::prop_t::tree:
+            case game::prop_t::campfire:
+            default:
+               return scenes_[1];
+            }
+         }
+         glpp::scene_t const & scene_of(game::creature_t const & entity) const {
+            return scene_info_of(entity).scene;
          }
          unsigned animation_idx_of(scene_info const & scene, game::moment_t & moment, game::plan_t const & plan) const {
             if (moment.is_moving()) return scene.animations.walking;
@@ -221,6 +243,7 @@ int main()
          }
 
          game::creature_info_table const & creature_db_;
+         game::prop_info_table const & prop_db_;
 
          std::vector<scene_info> scenes_;
       };
@@ -230,13 +253,14 @@ int main()
       //
 
       game::creature_info_table creature_db;
+      game::prop_info_table prop_db;
       game::particle_info_table particle_db;
 
       player_controller controller(controls);
-      sprite_repository sprite_repository(context.assets, creature_db);
+      sprite_repository sprite_repository(context.assets, creature_db, prop_db);
 
-      game::world_t world(creature_db, particle_db, controller);
-      game::world_view_t world_view(creature_db, particle_db, sprite_repository);
+      game::world_t world(creature_db, prop_db, particle_db, controller);
+      game::world_view_t world_view(creature_db, prop_db, particle_db, sprite_repository);
 
       for (auto i = 0; i < 20; i++) {
          world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });

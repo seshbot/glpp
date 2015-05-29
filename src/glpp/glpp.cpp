@@ -1711,7 +1711,7 @@ namespace glpp
       }
    }
 
-   pass_t & pass_t::draw_batch(render_callback const & cb, DrawMode mode) {
+   pass_t & pass_t::draw_batch(render_batch_callback const & cb, DrawMode mode) {
       prepare_draw_();
 
       auto draw_count = calc_draw_count_();
@@ -1722,7 +1722,7 @@ namespace glpp
       return *this;
    }
 
-   pass_t & pass_t::draw_batch(render_callback const & cb, DrawMode mode, unsigned first, unsigned count) {
+   pass_t & pass_t::draw_batch(render_batch_callback const & cb, DrawMode mode, unsigned first, unsigned count) {
       prepare_draw_();
 
       while (cb.prepare_next(state_->prg_)) {

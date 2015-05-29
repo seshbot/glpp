@@ -104,7 +104,7 @@ class constant_update_policy_t {
 protected:
    using idx_t = std::size_t;
 
-   const glm::vec3 PARTICLE_VEL = { 0., -1000., 0. };
+   const glm::vec3 PARTICLE_VEL = { 0., -1500., 0. };
 
    template <typename T>
    void particle_created(T & emitter, idx_t idx) {

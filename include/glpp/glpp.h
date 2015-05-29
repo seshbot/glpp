@@ -484,8 +484,8 @@ namespace glpp {
       using uniform_action_t = std::function < void(uniform & u) > ;
 
    public:
-      struct render_callback {
-         virtual ~render_callback() {}
+      struct render_batch_callback {
+         virtual ~render_batch_callback() {}
 
          virtual bool prepare_next(program & p) const = 0;
       };
@@ -512,8 +512,8 @@ namespace glpp {
       pass_t & draw(DrawMode mode);
       pass_t & draw(DrawMode mode, unsigned first, unsigned count);
 
-      pass_t & draw_batch(render_callback const & cb, DrawMode mode);
-      pass_t & draw_batch(render_callback const & cb, DrawMode mode, unsigned first, unsigned count);
+      pass_t & draw_batch(render_batch_callback const & cb, DrawMode mode);
+      pass_t & draw_batch(render_batch_callback const & cb, DrawMode mode, unsigned first, unsigned count);
 
    private:
       glpp::uniform uniform(std::string const & name);

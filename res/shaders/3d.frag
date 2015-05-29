@@ -17,7 +17,7 @@ struct PositionalLight {
 	mediump float attenuation;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .04, COLOUR_FIRE_LOW, .00008);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .02, COLOUR_FIRE_LOW, .00008);
 
 uniform mediump vec4 colour;
 uniform samplerCube shadow_texture;
@@ -51,8 +51,7 @@ const mediump vec2 SAMP_2 = vec2(0.94558609,-0.76890725);
 const mediump vec2 SAMP_3 = vec2(-0.094184101,-0.92938870);
 const mediump vec2 SAMP_4 = vec2(0.34495938,0.29387760);
 
-mediump float calc_shadow_factor(mediump vec3 world_position)
-{
+mediump float calc_shadow_factor(mediump vec3 world_position) {
    mediump vec3 pos_from_light = world_position - frag_position;
    mediump vec3 sample_norm1 = normalize(cross(vec3(0., 1., 0.), pos_from_light));
    mediump vec3 sample_norm2 = normalize(cross(sample_norm1, pos_from_light));
@@ -73,7 +72,6 @@ mediump float calc_shadow_factor(mediump vec3 world_position)
    if (sample_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_4.x + sample_norm2 * SAMP_4.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
    return visibility;
 }
-
 
 lowp vec4 gamma(lowp vec4 c) {
 	return vec4(sqrt(c.rgb), c.a);  // 2.0 gamma correction (use below for 2.2)

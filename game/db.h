@@ -82,4 +82,41 @@ private:
 };
 
 
+//
+// template definitions
+//
+
+
+template <typename T>
+table_column_t<T>::table_column_t(table_index_t const & index) : index_(index) {}
+
+template <typename T>
+T & table_column_t<T>::select(table_row_id_type id) { return values_[index_.index_of(id)]; }
+
+template <typename T>
+T const & table_column_t<T>::select(table_row_id_type id) const { return values_[index_.index_of(id)]; }
+
+template <typename T>
+void table_column_t<T>::delete_by_id(table_row_id_type id) {
+   auto elem_idx = index_.index_of(id);
+   auto end_idx = values_.size() - 1;
+   std::swap(values_[elem_idx], values_[end_idx]);
+   values_.pop_back();
+}
+
+template <typename T>
+void table_column_t<T>::set_by_id(table_row_id_type id, T & val) {
+   values_.at(index_.index_of(id)) = val;
+}
+
+template <typename T>
+void table_column_t<T>::alloc_row() {
+   values_.push_back({});
+}
+
+template <typename T>
+void table_column_t<T>::alloc_row(T const & val) {
+   values_.push_back(val);
+}
+
 #endif // #ifndef DB__H
