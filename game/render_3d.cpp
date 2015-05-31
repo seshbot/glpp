@@ -247,6 +247,48 @@ namespace {
          );
    };
 
+   void bind_mesh_buffers(glpp::program & prg, glpp::mesh_t const & mesh, bool shadow_mapping) {
+      auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
+         .attrib("p", 3);
+      auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
+         .attrib("normal", 3);
+      auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
+         .attrib("bone_indices", 4);
+      auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
+         .attrib("bone_weights", 4);
+
+      auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
+
+      // if (!shadow_mapping) {
+      //    passes_3d.push_back(
+      //       prg_3d.pass()
+      //       .with(verts)
+      //       .with(normals)
+      //       .with(bone_indices)
+      //       .with(bone_weights)
+      //       .set_uniform("colour", mesh.material().diffuse_colour)
+      //       //.set_uniform_action("bones[0]", set_bones_action)
+      //       );
+      // }
+      // else {
+      //    passes_3d_shadow.push_back(
+      //       prg_3d_shadow.pass()
+      //       .with(verts)
+      //       .with(bone_indices)
+      //       .with(bone_weights)
+      //       //.set_uniform_action("bones[0]", set_bones_action)
+      //       );
+      // }
+   }
+
+   void bind_instance_buffers(glpp::program & prg, glpp::mesh_t const & mesh, glm::mat4 const & model_tx, glm::mat4 const & mvp_tx) {
+      // p.uniform("model").set(model_tx);
+      // p.uniform("mvp").set(mvp_tx);
+      // //            p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
+
+      // p.uniform("bones[0]").set(mesh.bone_transforms());
+   }
+
 
    //
    // state callbacks
@@ -435,6 +477,69 @@ namespace game {
          utils::log(utils::LOG_INFO, "'%s' bones:%d weights-config:%d\n", m.name().c_str(), m.bone_count(), add_config(m));
       }
 #endif
+
+      // struct mesh_render_info {
+      //    glpp::scene_t const & scene;
+      //    std::vector<glpp::pass_t> d3_mesh_passes;
+      //    std::vector<glpp::pass_t> d3_shadow_mesh_passes;
+      // };
+
+      auto make_mesh_passes = [](glpp::program & program, glpp::scene_t & scene, bool shadow) {
+         std::vector<glpp::pass_t> result;
+
+         auto animation = first_animation(scene);
+         for (auto & mesh : animation.meshes()) {
+            // utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
+            // mesh_names.push_back(mesh.name());
+
+            auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
+               .attrib("p", 3);
+            auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
+               .attrib("normal", 3);
+            auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
+               .attrib("bone_indices", 4);
+            auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
+               .attrib("bone_weights", 4);
+
+            auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
+
+            if (!shadow) {
+               result.push_back(
+                  program.pass()
+                  .with(verts)
+                  .with(normals)
+                  .with(bone_indices)
+                  .with(bone_weights)
+                  .set_uniform("colour", mesh.material().diffuse_colour)
+                  //.set_uniform_action("bones[0]", set_bones_action)
+                  );               
+            }
+            else {
+               result.push_back(
+                  program.pass()
+                  .with(verts)
+                  .with(bone_indices)
+                  .with(bone_weights)
+                  //.set_uniform_action("bones[0]", set_bones_action)
+                  );
+            }
+         }
+
+         return result;
+      };
+
+      auto make_render_info = [&](glpp::scene_t & scene) -> mesh_render_info {
+         return {
+            scene,
+            make_mesh_passes(context.prg_3d, scene, false),
+            make_mesh_passes(context.prg_3d_shadow, scene, true)
+         };
+      };
+
+      // render info for all models
+      mesh_renderers.push_back(make_render_info(context.model_dude));
+      mesh_renderers.push_back(make_render_info(context.model_campfire));
+
 
       //
       // body passes

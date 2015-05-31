@@ -66,6 +66,14 @@ namespace game {
 
       render_context & context;
 
+      struct mesh_render_info {
+         glpp::scene_t const & scene;
+         std::vector<glpp::pass_t> d3_mesh_passes;
+         std::vector<glpp::pass_t> d3_shadow_mesh_passes;
+      };
+
+      std::vector<mesh_render_info> mesh_renderers;
+
       // actual render passes that are executed
       std::vector<glpp::pass_t> d3_body_passes;
       std::vector<glpp::pass_t> d3_body_shadow_passes;
