@@ -64,79 +64,155 @@ namespace glpp {
       }
    }
 
-   mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, std::vector<glm::mat4> const & bone_transforms)
-      : ai_mesh_{ &mesh }
-      , is_animated_{ true }
-      , default_transforms_()
-      , bone_transforms_(&bone_transforms)
-      , material_(get_mesh_material(scene, mesh))
-      , indices_(get_mesh_indices(mesh))
-      , bone_indices_(mesh.mNumVertices)
-      , bone_weights_(mesh.mNumVertices)
-   {
-      std::vector<unsigned> vertex_bone_counts(mesh.mNumVertices);
+   //
+   // animation_t::impl implementation
+   //
 
-      for (auto bone_idx = 0U; bone_idx < mesh.mNumBones; bone_idx++) {
-         auto & bone = *mesh.mBones[bone_idx];
-         for (auto weight_idx = 0U; weight_idx < bone.mNumWeights; weight_idx++) {
-            auto & weight = bone.mWeights[weight_idx];
-            auto array_idx = vertex_bone_counts[weight.mVertexId]++;
-            assert(array_idx < 4 && "vertex has more than 4 bones");
-            bone_indices_[weight.mVertexId][array_idx] = (float)bone_idx;
-            bone_weights_[weight.mVertexId][array_idx] = weight.mWeight;
+   struct animation_t::impl {
+   public:
+      impl(aiScene const & scene, aiAnimation const & animation)
+         : ai_animation(&animation)
+         , ai_scene(&scene)
+      {
+         // ensure node data never moves - allocate enough space for one entry per node
+         std::function<unsigned(aiNode* n)> child_count = [&](aiNode* n) {
+            auto count = 1U; // count ourselves
+            for (auto idx = 0U; idx < n->mNumChildren; idx++) count += child_count(n->mChildren[idx]);
+            return count;
+         };
+         auto node_count = child_count(scene.mRootNode);
+         nodes.reserve(node_count);
+
+         // node node_animation lookup table
+         std::map<std::string, ai::node_animation_t*> nodes_by_name;
+         auto lookup_node_anim = [&](aiNode const * node)-> ai::node_animation_t * {
+            if (!node) return{};
+            auto it = nodes_by_name.find(std::string{ node->mName.C_Str() });
+            assert(it != nodes_by_name.end());
+            return it->second;
+         };
+         auto lookup_bone_anim = [&](aiBone const * bone)-> ai::node_animation_t * {
+            assert(bone);
+            auto it = nodes_by_name.find(std::string{ bone->mName.C_Str() });
+            assert(it != nodes_by_name.end());
+            return it->second;
+         };
+
+         //
+         // create node animations
+         //
+
+         std::function<void(aiNode* n)> create_nodes_recursive = [&](aiNode* n) {
+            auto node_name = n->mName.C_Str();
+            assert(nodes_by_name.find(node_name) == nodes_by_name.end());
+            nodes.push_back({ *n });
+            nodes_by_name[node_name] = &nodes.back();
+            for (auto idx = 0U; idx < n->mNumChildren; idx++)
+               create_nodes_recursive(n->mChildren[idx]);
+         };
+         create_nodes_recursive(scene.mRootNode);
+
+         //
+         // create mesh animations by recursively iterating through nodes
+         //
+
+         std::function<unsigned(aiNode* n)> count_meshes_recursive = [&](aiNode* n) -> unsigned {
+            auto child_mesh_count = 0U;
+            for (auto idx = 0U; idx < n->mNumChildren; idx++)
+               child_mesh_count += count_meshes_recursive(n->mChildren[idx]);
+            return n->mNumMeshes + child_mesh_count;
+         };
+         mesh_animations.reserve(count_meshes_recursive(scene.mRootNode));
+
+         std::function<void(aiNode* n)> create_meshes_recursive = [&](aiNode* n) {
+            auto * node = lookup_node_anim(n);
+            for (auto mesh_idx = 0U; mesh_idx < n->mNumMeshes; mesh_idx++) {
+               auto & mesh = *scene.mMeshes[n->mMeshes[mesh_idx]];
+               std::vector<ai::mesh_animation_t::bone_t> bones;
+               for (auto bone_idx = 0U; bone_idx < mesh.mNumBones; bone_idx++) {
+                  auto * bone = mesh.mBones[bone_idx];
+                  auto * bone_node = lookup_bone_anim(bone);
+                  bones.push_back({ *bone, *bone_node });
+               }
+               mesh_animations.push_back({ mesh, node, std::move(bones) });
+               node->mesh_animations_.push_back(&mesh_animations.back());
+            }
+            for (auto idx = 0U; idx < n->mNumChildren; idx++)
+               create_meshes_recursive(n->mChildren[idx]);
+         };
+         create_meshes_recursive(scene.mRootNode);
+
+         //
+         // add animations to nodes and track channels
+         //
+
+         for (auto chan_idx = 0U; chan_idx < animation.mNumChannels; chan_idx++) {
+            auto* channel = animation.mChannels[chan_idx];
+            auto node_name = std::string{ channel->mNodeName.C_Str() };
+
+            auto * node_animation = nodes_by_name.find(node_name)->second;
+            node_animation->attach_animation(*channel, chan_idx);
          }
+
+         //
+         // connect node animation hierarchy
+         //
+
+         for (auto & anim : nodes) {
+            auto & node = anim.node_;
+            // set parent
+            assert(!anim.parent);
+            anim.parent = lookup_node_anim(node.mParent);
+
+            // set children
+            for (auto child_idx = 0U; child_idx < node.mNumChildren; child_idx++) {
+               auto * elem = lookup_node_anim(node.mChildren[child_idx]);
+               anim.children.push_back(elem);
+            }
+         }
+
+         auto root_node_name = std::string{ scene.mRootNode->mName.C_Str() };
+         root_node = nodes_by_name.find(root_node_name)->second;
+
+         global_inverse_transform = glm::inverse(ai::to_mat4(root_node->ai_node().mTransformation));
+      }
+
+      std::string name() const {
+         return ai::get_name(*ai_animation);
+      }
+
+      aiAnimation const * ai_animation;
+      aiScene const * ai_scene;
+
+      ai::node_animation_t const * root_node;
+      glm::mat4 global_inverse_transform;
+      std::vector<ai::node_animation_t> nodes; // storage for node anim hierarchy
+      std::vector<ai::mesh_animation_t> mesh_animations;
+   };
+
+
+   namespace {
+      template <typename T>
+      std::size_t make_hash(T t) {
+         return std::hash<T>()(t);
+      }
+
+      template <typename T, typename U>
+      std::size_t make_hash(T t, U u) {
+         auto seed = make_hash(t);
+         // from http://www.boost.org/doc/libs/1_37_0/doc/html/hash/reference.html#boost.hash_combine
+         return seed ^ make_hash(u) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
       }
    }
-
-   mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform)
-      : ai_mesh_{ &mesh }
-      , is_animated_{ false }
-      , default_transforms_{ default_transform }
-      , bone_transforms_(nullptr)
-      , material_(get_mesh_material(scene, mesh))
-      , indices_(get_mesh_indices(mesh))
-      , bone_indices_(mesh.mNumVertices)
-      , bone_weights_(mesh.mNumVertices)
-   {
-      // all vertices point to a single bone transform - the default transform for this mesh
-      for (auto idx = 0U; idx < mesh.mNumVertices; idx++) {
-         bone_indices_[idx][0] = 0.;
-         bone_weights_[idx][0] = 1.;
-      }
-   }
-
-   std::vector<glm::mat4> const & mesh_t::bone_transforms() const {
-      if (is_animated_) {
-         return *bone_transforms_;
-      }
-      else {
-         return default_transforms_;
-      }
-   }
-
-   std::string mesh_t::name() const { return ai::get_name(*ai_mesh_); }
-   unsigned mesh_t::bone_count() const { return ai_mesh_->mNumBones; }
-
-   mesh_t::buffer_desc_t<float> mesh_t::vertices() const { return{ reinterpret_cast<float*>(ai_mesh_->mVertices), ai_mesh_->mNumVertices * 3 }; }
-   mesh_t::buffer_desc_t<uint32_t> mesh_t::indices() const { return{ indices_.data(), static_cast<uint32_t>(indices_.size()) }; }
-   mesh_t::buffer_desc_t<float> mesh_t::normals() const {
-      assert(ai_mesh_->HasNormals());
-      return{ reinterpret_cast<float*>(ai_mesh_->mNormals), ai_mesh_->mNumVertices * 3 };
-   }
-   mesh_t::buffer_desc_t<float> mesh_t::bone_indices() const { return{ bone_indices_.data()->data(), static_cast<uint32_t>(bone_indices_.size() * 4) }; }
-   mesh_t::buffer_desc_t<float> mesh_t::bone_weights() const { return{ bone_weights_.data()->data(), static_cast<uint32_t>(bone_weights_.size() * 4) }; }
 
 
    //
-   // animation_timeline_t implementation
+   // animation_timeline_t::impl implementation
    //
-
 
    struct animation_timeline_t::impl {
-      impl(ai::animation_t const & animation_in, scene_t const & scene, unsigned scene_idx, double time_secs)
+      impl(animation_t::impl const & animation_in, double time_secs)
          : animation(animation_in)
-         , scene(scene)
-         , scene_idx(scene_idx)
          , current_time_secs(time_secs)
       {
          auto animation_time_ticks = ai::animation_secs_to_ticks(*animation.ai_animation, time_secs);
@@ -270,9 +346,7 @@ namespace glpp {
          for_each_mesh_impl(*root_node_snapshot, callback);
       }
 
-      scene_t const & scene;
-      unsigned scene_idx;
-      ai::animation_t const & animation;
+      animation_t::impl const & animation;
       double current_time_secs;
       ai::node_animation_timeline_t const * root_node_snapshot;
       std::vector<ai::node_animation_timeline_t> node_snapshots;
@@ -299,55 +373,17 @@ namespace glpp {
    };
 
 
-   animation_timeline_t::animation_timeline_t(animation_timeline_t &&) = default;
-   animation_timeline_t & animation_timeline_t::operator=(animation_timeline_t &&) = default;
-   
-   animation_timeline_t::animation_timeline_t(ai::animation_t const & animation, scene_t const & scene, unsigned scene_idx, double time_secs)
-      : impl_{ new impl{animation, scene, scene_idx, time_secs} } {
-   }
-
-   animation_timeline_t::~animation_timeline_t() = default;
-
-   std::string animation_timeline_t::name() const {
-      return impl_->name();
-   }
-
-   void animation_timeline_t::advance_to(double time_secs) {
-      impl_->advance_to(time_secs);
-   }
-
-   void animation_timeline_t::advance_by(double time_secs) {
-      impl_->advance_by(time_secs);
-   }
-
-   scene_t const & animation_timeline_t::scene() const {
-      return impl_->scene;
-   }
-
-   unsigned animation_timeline_t::scene_idx() const {
-      return impl_->scene_idx;
-   }
-
-   std::vector<mesh_t> const & animation_timeline_t::meshes() const {
-      return impl_->meshes;
-   }
-
-   double animation_timeline_t::current_time_secs() const {
-      return impl_->current_time_secs;
-   }
-
-
    //
-   // scene_t implementation
+   // scene_t::impl implementation
    //
 
    struct scene_t::impl {
-      impl(aiScene const * ai_scene)
+      impl(scene_t const & concept, aiScene const * ai_scene)
          : ai_scene_(ai_scene) {
          animations_.reserve(ai_scene->mNumAnimations);
 
          for (auto idx = 0U; idx < ai_scene->mNumAnimations; idx++) {
-            animations_.push_back({ *ai_scene, *ai_scene->mAnimations[idx] });
+            animations_.push_back({ concept, *ai_scene, *ai_scene->mAnimations[idx], idx });
             // to snapshot: animation_timeline_t(animation_t const & animation, double time_secs)
          }
 
@@ -380,27 +416,84 @@ namespace glpp {
          throw std::runtime_error("animation '" + name + "' not found in scene");
       }
 
-      ai::animation_t const & animation(unsigned idx) const {
+      animation_t const & animation(unsigned idx) const {
          return animations_[idx];
       }
 
       std::unique_ptr<const aiScene> ai_scene_;
-      std::vector<ai::animation_t> animations_;
+      std::vector<animation_t> animations_;
       std::vector<mesh_t> meshes_;
    };
 
-   scene_t::scene_t(scene_t &&) = default;
-   scene_t & scene_t::operator=(scene_t&&) = default;
 
-   namespace {
-      template <typename T>
-      unsigned make_hash(T t) {
-         return std::hash<T>()(t);
-      }
+   //
+   // animation_timeline_t implementation
+   //
+
+   animation_timeline_t::animation_timeline_t(animation_timeline_t &&) = default;
+   animation_timeline_t & animation_timeline_t::operator=(animation_timeline_t &&) = default;
+
+   animation_timeline_t::animation_timeline_t(animation_t const & animation, double time_secs)
+      : animation_(&animation)
+      , impl_{ new impl{ *animation.impl_, time_secs } } {
    }
+
+   animation_timeline_t::~animation_timeline_t() = default;
+
+   std::string animation_timeline_t::name() const {
+      return impl_->name();
+   }
+
+   void animation_timeline_t::advance_to(double time_secs) {
+      impl_->advance_to(time_secs);
+   }
+
+   void animation_timeline_t::advance_by(double time_secs) {
+      impl_->advance_by(time_secs);
+   }
+
+   std::vector<mesh_t> const & animation_timeline_t::meshes() const {
+      return impl_->meshes;
+   }
+
+   double animation_timeline_t::current_time_secs() const {
+      return impl_->current_time_secs;
+   }
+
+
+   //
+   // animation_t impelmentation
+   //
+
+   animation_t::animation_t(scene_t const & scene, aiScene const & ai_scene, aiAnimation const & ai_animation, unsigned scene_idx)
+   : scene_idx_(scene_idx)
+   , id_(make_hash(&scene.impl_->ai_scene_, &ai_animation))
+   , scene_id_(scene.id())
+   , impl_(new impl(ai_scene, ai_animation)) {
+   }
+
+   animation_t::animation_t(animation_t &&) = default;
+   animation_t & animation_t::operator=(animation_t &&) = default;
+   animation_t::~animation_t() = default;
+
+   std::string animation_t::name() const {
+      return impl_->name();
+   }
+
+   animation_timeline_t animation_t::create_timeline() const {
+      return{ *this, 0. };
+   }
+
+   //
+   // scene_t implementation
+   //
+
+   scene_t::scene_t(scene_t && other) = default; // : impl_(std::move(other.impl_)), id_(other.id_) {}
+   scene_t & scene_t::operator=(scene_t && other) = default; // { impl_ = std::move(other.impl_); id_ = other.id_; return *this; }
+
    scene_t::scene_t(aiScene const * ai_scene)
-      : impl_{new impl {ai_scene} }
-      , id_{make_hash(ai_scene) } {
+      : id_{ make_hash(ai_scene) }
+      , impl_{new impl {*this, ai_scene} } {
    }
 
    scene_t::~scene_t() = default;
@@ -434,12 +527,78 @@ namespace glpp {
       return impl_->animation_names();
    }
 
-   animation_timeline_t scene_t::create_timeline(unsigned idx) const {
-      return{ impl_->animation(idx), *this, idx, 0. };
+   animation_t const & scene_t::animation(unsigned idx) const {
+      return impl_->animation(idx);
    }
 
-   animation_timeline_t scene_t::create_timeline(std::string const & name) const {
-      return create_timeline(impl_->animation_idx(name));
+   animation_t const & scene_t::animation(std::string const & name) const {
+      return animation(impl_->animation_idx(name));
    }
 
+
+   //
+   // mesh_t implementation
+   //
+
+   mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, std::vector<glm::mat4> const & bone_transforms)
+      : ai_mesh_{ &mesh }
+      , is_animated_{ true }
+      , default_transforms_()
+      , bone_transforms_(&bone_transforms)
+      , material_(get_mesh_material(scene, mesh))
+      , indices_(get_mesh_indices(mesh))
+      , bone_indices_(mesh.mNumVertices)
+      , bone_weights_(mesh.mNumVertices)
+   {
+      std::vector<unsigned> vertex_bone_counts(mesh.mNumVertices);
+
+      for (auto bone_idx = 0U; bone_idx < mesh.mNumBones; bone_idx++) {
+         auto & bone = *mesh.mBones[bone_idx];
+         for (auto weight_idx = 0U; weight_idx < bone.mNumWeights; weight_idx++) {
+            auto & weight = bone.mWeights[weight_idx];
+            auto array_idx = vertex_bone_counts[weight.mVertexId]++;
+            assert(array_idx < 4 && "vertex has more than 4 bones");
+            bone_indices_[weight.mVertexId][array_idx] = (float)bone_idx;
+            bone_weights_[weight.mVertexId][array_idx] = weight.mWeight;
+         }
+      }
+   }
+
+   mesh_t::mesh_t(aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform)
+      : ai_mesh_{ &mesh }
+      , is_animated_{ false }
+      , default_transforms_{ default_transform }
+      , bone_transforms_(nullptr)
+      , material_(get_mesh_material(scene, mesh))
+      , indices_(get_mesh_indices(mesh))
+      , bone_indices_(mesh.mNumVertices)
+      , bone_weights_(mesh.mNumVertices)
+   {
+      // all vertices point to a single bone transform - the default transform for this mesh
+      for (auto idx = 0U; idx < mesh.mNumVertices; idx++) {
+         bone_indices_[idx][0] = 0.;
+         bone_weights_[idx][0] = 1.;
+      }
+   }
+
+   std::vector<glm::mat4> const & mesh_t::bone_transforms() const {
+      if (is_animated_) {
+         return *bone_transforms_;
+      }
+      else {
+         return default_transforms_;
+      }
+   }
+
+   std::string mesh_t::name() const { return ai::get_name(*ai_mesh_); }
+   unsigned mesh_t::bone_count() const { return ai_mesh_->mNumBones; }
+
+   mesh_t::buffer_desc_t<float> mesh_t::vertices() const { return{ reinterpret_cast<float*>(ai_mesh_->mVertices), ai_mesh_->mNumVertices * 3 }; }
+   mesh_t::buffer_desc_t<uint32_t> mesh_t::indices() const { return{ indices_.data(), static_cast<uint32_t>(indices_.size()) }; }
+   mesh_t::buffer_desc_t<float> mesh_t::normals() const {
+      assert(ai_mesh_->HasNormals());
+      return{ reinterpret_cast<float*>(ai_mesh_->mNormals), ai_mesh_->mNumVertices * 3 };
+   }
+   mesh_t::buffer_desc_t<float> mesh_t::bone_indices() const { return{ bone_indices_.data()->data(), static_cast<uint32_t>(bone_indices_.size() * 4) }; }
+   mesh_t::buffer_desc_t<float> mesh_t::bone_weights() const { return{ bone_weights_.data()->data(), static_cast<uint32_t>(bone_weights_.size() * 4) }; }
 } // namespace glpp

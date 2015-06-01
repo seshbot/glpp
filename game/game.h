@@ -68,7 +68,8 @@ namespace game {
       };
 
       struct render_info_t {
-         render_info_t(glpp::animation_timeline_t const & sprite, moment_t const & moment) : sprite(&sprite), moment(&moment) {}
+         render_info_t(glpp::animation_timeline_t const & sprite, moment_t const & moment)
+            : sprite(&sprite), moment(&moment) {}
          render_info_t(render_info_t const & other) = default;
          render_info_t & operator=(render_info_t const & other) = default;
 

@@ -8,9 +8,23 @@
 #include "particles_3d.h"
 
 #include <memory>
+#include <map>
 
 
 namespace game {
+   struct model_repository {
+      model_repository(model_repository const &) = delete;
+      model_repository & operator=(model_repository const &) = delete;
+      model_repository(model_repository &&) = delete;
+      model_repository & operator=(model_repository &&) = delete;
+
+      explicit model_repository(glpp::archive_t const & assets);
+
+      glpp::scene_t const & find_scene_by_name(std::string const & name) const;
+
+      std::map<std::string, glpp::scene_t> scenes;
+   };
+
 
    namespace impl {
       struct ensure_gl_init {
@@ -20,7 +34,7 @@ namespace game {
    }
 
    struct render_context : impl::ensure_gl_init {
-      render_context(glpp::context::key_callback_t key_callback);
+      render_context(glpp::archive_t const & assets, glpp::context::key_callback_t key_callback);
 
       bool closing() const { return context.win().closing(); }
       void swap() { context.win().swap(); }
@@ -33,11 +47,7 @@ namespace game {
 
       glpp::context context;
 
-      glpp::archive_t assets;
-
-      // TODO: this stuff should go in some kind of repository
-      glpp::scene_t model_dude;
-      glpp::scene_t model_campfire;
+      glpp::archive_t const & assets;
 
       glpp::program prg_3d;
       glpp::program prg_3d_shadow;
@@ -52,7 +62,7 @@ namespace game {
    };
 
    struct renderer {
-      renderer(render_context & ctx);
+      renderer(model_repository const & models, render_context & ctx);
 
       void update_and_render(double time_since_last_tick, game::world_view_t const & world_view);
 

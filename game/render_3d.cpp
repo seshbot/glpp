@@ -339,23 +339,37 @@ namespace {
 
 
    glpp::animation_timeline_t first_animation(glpp::scene_t const & scene) {
-      auto animation_name = scene.animation_names()[0];
-      return scene.create_timeline(animation_name);
+      auto animation_names = scene.animation_names();
+      auto animation_name = animation_names[0];
+      return scene.animation(animation_name).create_timeline();
    }
 }
 
 
 namespace game {
+   //
+   // scene_repository implementation
+   //
+
+   model_repository::model_repository(glpp::archive_t const & archive) {
+      scenes.insert({ "dude", archive.load_scene("dude-anim.fbx") });
+      scenes.insert({ "campfire", archive.load_scene("campfire.fbx") });
+   }
+
+   glpp::scene_t const & model_repository::find_scene_by_name(std::string const & name) const {
+      auto it = scenes.find(name);
+      if (it == scenes.end()) throw std::runtime_error((std::string("cannot find 3D scene '") + name + "'").c_str());
+      return it->second;
+   }
+
 
    //
    // context_3d implementation
    //
 
-   render_context::render_context(glpp::context::key_callback_t key_callback)
+   render_context::render_context(glpp::archive_t const & assets, glpp::context::key_callback_t key_callback)
       : context(key_callback)
-      , assets{ glpp::archive_t::load_from_directory({ "../../res/" }) }
-      , model_dude{ assets.load_scene("dude-anim.fbx") }
-      , model_campfire{ assets.load_scene("campfire.fbx") }
+      , assets(assets)
       , prg_3d{ create_program(assets, "3d") }
       , prg_3d_shadow{ create_program(assets, "3d_shadow") }
       , prg_3d_particle{ create_program(assets, "3d_particle") }
@@ -446,9 +460,9 @@ namespace game {
    // view_3d implementation
    //
 
-   renderer::renderer(render_context & ctx)
+   renderer::renderer(model_repository const & models, render_context & ctx)
       : context(ctx)
-      , dude_walk_animation{ first_animation(context.model_dude) }
+      , dude_walk_animation{ first_animation(models.find_scene_by_name("dude")) }
    {
 #if 0
       auto next_config = 1;
@@ -478,17 +492,11 @@ namespace game {
       }
 #endif
 
-      // struct mesh_render_info {
-      //    glpp::scene_t const & scene;
-      //    std::vector<glpp::pass_t> d3_mesh_passes;
-      //    std::vector<glpp::pass_t> d3_shadow_mesh_passes;
-      // };
-
-      auto make_mesh_passes = [](glpp::program & program, glpp::scene_t & scene, bool shadow) {
+      auto make_mesh_passes = [](glpp::program & program, glpp::scene_t const & scene, bool shadow) {
          std::vector<glpp::pass_t> result;
 
-         auto animation = first_animation(scene);
-         for (auto & mesh : animation.meshes()) {
+         //auto animation = first_animation(scene);
+         for (auto & mesh : scene.meshes()) {
             // utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
             // mesh_names.push_back(mesh.name());
 
@@ -528,7 +536,7 @@ namespace game {
          return result;
       };
 
-      auto make_render_info = [&](glpp::scene_t & scene) -> mesh_render_info {
+      auto make_render_info = [&](glpp::scene_t const & scene) -> mesh_render_info {
          return {
             scene,
             make_mesh_passes(context.prg_3d, scene, false),
@@ -537,15 +545,15 @@ namespace game {
       };
 
       // render info for all models
-      mesh_renderers.push_back(make_render_info(context.model_dude));
-      mesh_renderers.push_back(make_render_info(context.model_campfire));
+      mesh_renderers.push_back(make_render_info(models.find_scene_by_name("dude")));
+      mesh_renderers.push_back(make_render_info(models.find_scene_by_name("campfire")));
 
 
       //
       // body passes
       //
 
-      auto animation_name = context.model_dude.animation_names()[0];
+      auto animation_name = models.find_scene_by_name("dude").animation_names()[0];
       utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_name.c_str());
       for (auto & mesh : dude_walk_animation.meshes()) {
          utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
@@ -558,7 +566,7 @@ namespace game {
       // campfire passes
       //
 
-      for (auto & mesh : context.model_campfire.meshes()) {
+      for (auto & mesh : models.find_scene_by_name("campfire").meshes()) {
          mesh_names.push_back(mesh.name());
          accumulate_mesh(mesh, context.prg_3d, d3_campfire_passes, context.prg_3d_shadow, d3_campfire_shadow_passes);
       }
@@ -635,7 +643,7 @@ namespace game {
       // update animations
       //
       emitter.update(time_since_last_tick);
-      dude_walk_animation.advance_by(time_since_last_tick);
+//      dude_walk_animation.advance_by(time_since_last_tick);
 
 
       //
@@ -726,6 +734,31 @@ namespace game {
             gl::clear_buffer_flags_t::depth_buffer_bit);
 
          ground_pass.back().draw(glpp::DrawMode::Triangles);
+
+
+         auto mesh_passes_for_animation = [&](glpp::animation_t const & animation, bool shadow) -> std::vector<glpp::pass_t> & {
+            auto animation_name_in = animation.name();
+            auto key_in = animation.scene_id();
+            for (auto & render_info : mesh_renderers) {
+               auto key_curr = render_info.scene.id();
+               if (key_curr == key_in) {
+                  return shadow ? render_info.d3_shadow_mesh_passes : render_info.d3_mesh_passes;
+               }
+            }
+
+            utils::log(utils::LOG_WARN, "cannot find mesh passes for animation %s\n", animation.name().c_str());
+            static std::vector<glpp::pass_t> default_passes;
+            return default_passes;
+         };
+
+
+         for (auto entity_it = world_view.creatures_begin(); entity_it != world_view.creatures_end(); ++entity_it) {
+            auto & entity_info = *entity_it;
+            auto & passes = mesh_passes_for_animation(entity_info.sprite->animation(), false);
+         }
+
+
+
 
          //gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
          static int prev_selected_item = -1;

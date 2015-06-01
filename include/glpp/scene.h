@@ -13,6 +13,7 @@
 
 // forward declarations
 struct aiScene;
+struct aiAnimation;
 struct aiMesh;
 
 namespace glpp
@@ -20,10 +21,8 @@ namespace glpp
    //
    // forward declarations
    //
-   namespace ai {
-      struct animation_t;
-   }
    class scene_t;
+   class animation_t;
    class mesh_t;
 
    /**
@@ -37,13 +36,12 @@ namespace glpp
       animation_timeline_t & operator=(animation_timeline_t &&);
       ~animation_timeline_t();
 
+      animation_t const & animation() const { return *animation_; }
       std::string name() const;
 
       void advance_to(double time_secs);
       void advance_by(double time_secs);
 
-      scene_t const & scene() const;
-      unsigned scene_idx() const;
       std::vector<mesh_t> const & meshes() const;
       double current_time_secs() const;
 
@@ -55,13 +53,42 @@ namespace glpp
       std::vector<std::string> const & node_bone_names(std::string const & node_name) const;
 
    private:
-      friend class scene_t;
-      animation_timeline_t(ai::animation_t const & animation, scene_t const & scene, unsigned scene_idx, double time_secs = 0);
+      friend class animation_t;
+      animation_timeline_t(animation_t const & animation, double time_secs = 0);
 
+      animation_t const * animation_;
       struct impl;
       std::unique_ptr<impl> impl_;
    };
 
+   // owns all high-level state for a single animation, including node hierarchy and mesh bone structure
+   class animation_t {
+   public:
+      animation_t(animation_t &&);
+      animation_t & operator=(animation_t &&);
+      ~animation_t();
+
+      unsigned scene_idx() const { return scene_idx_; }
+
+      std::string name() const;
+      std::size_t id() const { return id_; }
+      std::size_t scene_id() const { return scene_id_; }
+
+      animation_timeline_t create_timeline() const;
+
+   private:
+      friend class scene_t;
+      friend class animation_timeline_t;
+
+      animation_t(scene_t const & scene, aiScene const & ai_scene, aiAnimation const & ai_animation, unsigned scene_idx);
+
+      unsigned scene_idx_;
+      std::size_t id_;
+      std::size_t scene_id_;
+
+      struct impl;
+      std::unique_ptr<const impl> impl_;
+   };
 
    /**
     * a handle to a loaded scene, from which animations may be created
@@ -76,21 +103,24 @@ namespace glpp
 
       static scene_t create_from_file(std::string const & filename);
 
-      unsigned id() const { return id_; }
+      std::size_t id() const { return id_; }
 
       // unanimated meshes
       std::vector<mesh_t> const & meshes() const;
 
       std::vector<std::string> animation_names() const;
-      animation_timeline_t create_timeline(unsigned idx) const;
-      animation_timeline_t create_timeline(std::string const & name) const;
+      animation_t const & animation(unsigned idx) const;
+      animation_t const & animation(std::string const & name) const;
 
    private:
+      friend class animation_t;
+
       scene_t(aiScene const * ai_scene);
+
+      std::size_t id_;
 
       struct impl;
       std::unique_ptr<const impl> impl_;
-      unsigned id_;
    };
 
 

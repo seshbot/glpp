@@ -271,10 +271,10 @@ namespace game {
       //}
 
       bool cmp_by_animation(world_view_t::render_info_t const & a, world_view_t::render_info_t const & b) {
-         auto a_scene_id = a.sprite->scene().id();
-         auto b_scene_id = b.sprite->scene().id();
+         auto a_scene_id = a.sprite->animation().scene_id();
+         auto b_scene_id = b.sprite->animation().scene_id();
          if (a_scene_id != b_scene_id) return a_scene_id < b_scene_id;
-         return a.sprite->scene_idx() < b.sprite->scene_idx();
+         return a.sprite->animation().scene_idx() < b.sprite->animation().scene_idx();
       }
    }
 

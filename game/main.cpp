@@ -131,8 +131,11 @@ int main()
          controls.handle_key_action(key, action);
       };
       
-      game::render_context context{ key_handler };
-      game::renderer view { context };
+      auto assets = glpp::archive_t::load_from_directory(glpp::path_t{ "../../res/" });
+      game::render_context context{ assets, key_handler };
+
+      game::model_repository scene_repo{ assets };
+      game::renderer view { scene_repo, context };
 
       //
       // load game data
@@ -165,32 +168,33 @@ int main()
             }
          };
          struct scene_info {
-            scene_info(glpp::scene_t scene_in) : scene{ std::move(scene_in) }, animations(anim_indices::find_indices(scene)) {}
-            glpp::scene_t scene;
+            scene_info(glpp::scene_t const & scene) : scene{ scene }, animations(anim_indices::find_indices(scene)) {}
+            glpp::scene_t const & scene;
             anim_indices animations;
          };
       public:
-         sprite_repository(glpp::archive_t const & assets, game::creature_info_table const & creature_db, game::prop_info_table const & prop_db)
-            : creature_db_(creature_db)
+         sprite_repository(game::model_repository const & scene_repo, game::creature_info_table const & creature_db, game::prop_info_table const & prop_db)
+            : scene_repo_(scene_repo)
+            , creature_db_(creature_db)
             , prop_db_(prop_db)
          {
-            scenes_.push_back(scene_info{ assets.load_scene("dude-anim.fbx") });
-            scenes_.push_back(scene_info{ assets.load_scene("campfire.fbx") });
+            scenes_.push_back({ scene_repo.find_scene_by_name("dude")});
+            scenes_.push_back({ scene_repo.find_scene_by_name("campfire") });
          }
 
          glpp::animation_timeline_t find_sprite(game::creature_t const & entity, game::moment_t & moment, game::plan_t const & plan) const override {
             auto & scene_info = scene_info_of(entity);
             auto scene_idx = animation_idx_of(scene_info, moment, plan);
-            auto sprite = scene_info.scene.create_timeline(scene_idx);
+            auto sprite = scene_info.scene.animation(scene_idx).create_timeline();
             sprite.advance_by(std::rand() / 60.);
             return sprite;
          }
 
          void animate(std::size_t db_idx, game::creature_t const & entity, glpp::animation_timeline_t & cursor, game::moment_t & moment, game::plan_t & plan, double time_since_last) const override {
             auto scene_idx = animation_idx_of(entity, moment, plan);
-            if (cursor.scene_idx() != scene_idx) {
+            if (cursor.animation().scene_idx() != scene_idx) {
                // creature doing something new - start a new animation
-               cursor = scene_of(entity).create_timeline(scene_idx);
+               cursor = scene_of(entity).animation(scene_idx).create_timeline();
             }
 
             cursor.advance_by(time_since_last);
@@ -198,7 +202,7 @@ int main()
 
          glpp::animation_timeline_t find_sprite(game::prop_t const & entity, game::moment_t & moment) const override {
             auto & scene_info = scene_info_of(entity);
-            auto sprite = scene_info.scene.create_timeline(0);
+            auto sprite = scene_info.scene.animation(0).create_timeline();
             return sprite;
          }
 
@@ -242,6 +246,7 @@ int main()
             return animation_idx_of(scene_info_of(creature), moment, plan);
          }
 
+         game::model_repository const & scene_repo_;
          game::creature_info_table const & creature_db_;
          game::prop_info_table const & prop_db_;
 
@@ -257,7 +262,7 @@ int main()
       game::particle_info_table particle_db;
 
       player_controller controller(controls);
-      sprite_repository sprite_repository(context.assets, creature_db, prop_db);
+      sprite_repository sprite_repository(scene_repo, creature_db, prop_db);
 
       game::world_t world(creature_db, prop_db, particle_db, controller);
       game::world_view_t world_view(creature_db, prop_db, particle_db, sprite_repository);
