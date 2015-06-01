@@ -8,6 +8,8 @@
 #   include <glpp/gl2.h>
 #endif
 
+#include <algorithm>
+
 namespace gl {
 #ifdef _MSC_VER
    using namespace gles2;
@@ -352,8 +354,8 @@ namespace game {
    //
 
    model_repository::model_repository(glpp::archive_t const & archive) {
-      scenes.insert({ "dude", archive.load_scene("dude-anim.fbx") });
-      scenes.insert({ "campfire", archive.load_scene("campfire.fbx") });
+      scenes.emplace("dude", archive.load_scene("dude-anim.fbx"));
+      scenes.emplace("campfire", archive.load_scene("campfire.fbx"));
    }
 
    glpp::scene_t const & model_repository::find_scene_by_name(std::string const & name) const {
@@ -462,7 +464,6 @@ namespace game {
 
    renderer::renderer(model_repository const & models, render_context & ctx)
       : context(ctx)
-      , dude_walk_animation{ first_animation(models.find_scene_by_name("dude")) }
    {
 #if 0
       auto next_config = 1;
@@ -492,11 +493,12 @@ namespace game {
       }
 #endif
 
-      auto make_mesh_passes = [](glpp::program & program, glpp::scene_t const & scene, bool shadow) {
+      auto make_mesh_passes = [](glpp::program & program, glpp::animation_t const & animation, bool shadow) {
          std::vector<glpp::pass_t> result;
 
          //auto animation = first_animation(scene);
-         for (auto & mesh : scene.meshes()) {
+         auto sprite = animation.create_timeline();
+         for (auto & mesh : sprite.meshes()) {
             // utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
             // mesh_names.push_back(mesh.name());
 
@@ -536,40 +538,22 @@ namespace game {
          return result;
       };
 
-      auto make_render_info = [&](glpp::scene_t const & scene) -> mesh_render_info {
+      auto make_render_info = [&](glpp::animation_t const & animation) -> mesh_render_info {
          return {
-            scene,
-            make_mesh_passes(context.prg_3d, scene, false),
-            make_mesh_passes(context.prg_3d_shadow, scene, true)
+            animation,
+            make_mesh_passes(context.prg_3d, animation, false),
+            make_mesh_passes(context.prg_3d_shadow, animation, true)
          };
       };
 
+      auto create_renderers_for_scene = [&](glpp::scene_t const & scene) {
+         for (auto anim_name : scene.animation_names()) {
+            mesh_renderers.push_back(make_render_info(scene.animation(anim_name)));
+         }
+      };
       // render info for all models
-      mesh_renderers.push_back(make_render_info(models.find_scene_by_name("dude")));
-      mesh_renderers.push_back(make_render_info(models.find_scene_by_name("campfire")));
-
-
-      //
-      // body passes
-      //
-
-      auto animation_name = models.find_scene_by_name("dude").animation_names()[0];
-      utils::log(utils::LOG_INFO, "== Animation '%s' Meshes ==\n", animation_name.c_str());
-      for (auto & mesh : dude_walk_animation.meshes()) {
-         utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
-         mesh_names.push_back(mesh.name());
-         accumulate_mesh(mesh, context.prg_3d, d3_body_passes, context.prg_3d_shadow, d3_body_shadow_passes);
-      }
-
-
-      //
-      // campfire passes
-      //
-
-      for (auto & mesh : models.find_scene_by_name("campfire").meshes()) {
-         mesh_names.push_back(mesh.name());
-         accumulate_mesh(mesh, context.prg_3d, d3_campfire_passes, context.prg_3d_shadow, d3_campfire_shadow_passes);
-      }
+      create_renderers_for_scene(models.find_scene_by_name("dude"));
+      create_renderers_for_scene(models.find_scene_by_name("campfire"));
 
 
       //
@@ -636,6 +620,21 @@ namespace game {
 
    }
 
+   namespace {
+      std::vector<glpp::pass_t> & mesh_passes_for_animation(renderer & state, glpp::animation_t const & animation, bool shadow) {
+         for (auto & render_info : state.mesh_renderers) {
+            if (animation == render_info.animation) {
+               return shadow ? render_info.d3_shadow_mesh_passes : render_info.d3_mesh_passes;
+            }
+         }
+
+         assert(false && "cannot find mesh passes for animation");
+         utils::log(utils::LOG_WARN, "cannot find mesh passes for animation %s\n", animation.name().c_str());
+         static std::vector<glpp::pass_t> default_passes;
+         return default_passes;
+      }
+   }
+
    void renderer::update_and_render(double time_since_last_tick, game::world_view_t const & world_view) {
       context.reload_framebuffers();
 
@@ -644,6 +643,34 @@ namespace game {
       //
       emitter.update(time_since_last_tick);
 //      dude_walk_animation.advance_by(time_since_last_tick);
+
+
+
+      auto render_entity_meshes = [&](auto entity_it, auto entity_it_end, glm::mat4 const & view_mat, glm::mat4 const & proj_mat, bool use_shadow_passes) {
+         while (entity_it != entity_it_end) {
+            auto & entity_info = *entity_it;
+            auto & passes = mesh_passes_for_animation(*this, entity_info.sprite->animation(), use_shadow_passes);
+
+            auto same_entity_type = [&](auto & entity_info_in) {
+               return entity_info_in.sprite->animation() == entity_info.sprite->animation();
+            };
+            auto entity_partition_end = std::partition_point(entity_it, entity_it_end, same_entity_type);
+
+            auto pass_mesh_idx = 0U;
+            for (auto & pass : passes) {
+               pass.draw_batch(
+                  mesh_render_batch_callback_t{
+                     pass_mesh_idx++,
+                     entity_it,
+                     entity_partition_end,
+                     view_mat, proj_mat },
+                  glpp::DrawMode::Triangles);
+            }
+
+            entity_it = entity_partition_end;
+         }
+      };
+
 
 
       //
@@ -698,17 +725,8 @@ namespace game {
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit));
 
-         auto pass_mesh_idx = 0U;
-         for (auto & pass : d3_body_shadow_passes) {
-            pass.draw_batch(
-               mesh_render_batch_callback_t{
-                  pass_mesh_idx,
-                  world_view.creatures_begin(),
-                  world_view.creatures_end(),
-                  view, light_proj },
-               glpp::DrawMode::Triangles);
-            pass_mesh_idx++;
-         }
+
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), view, light_proj, true);
       }
       context.shadow_fbo->unbind();
       gl::cull_face(gl::cull_face_mode_t::back);
@@ -735,50 +753,7 @@ namespace game {
 
          ground_pass.back().draw(glpp::DrawMode::Triangles);
 
-
-         auto mesh_passes_for_animation = [&](glpp::animation_t const & animation, bool shadow) -> std::vector<glpp::pass_t> & {
-            auto animation_name_in = animation.name();
-            auto key_in = animation.scene_id();
-            for (auto & render_info : mesh_renderers) {
-               auto key_curr = render_info.scene.id();
-               if (key_curr == key_in) {
-                  return shadow ? render_info.d3_shadow_mesh_passes : render_info.d3_mesh_passes;
-               }
-            }
-
-            utils::log(utils::LOG_WARN, "cannot find mesh passes for animation %s\n", animation.name().c_str());
-            static std::vector<glpp::pass_t> default_passes;
-            return default_passes;
-         };
-
-
-         for (auto entity_it = world_view.creatures_begin(); entity_it != world_view.creatures_end(); ++entity_it) {
-            auto & entity_info = *entity_it;
-            auto & passes = mesh_passes_for_animation(entity_info.sprite->animation(), false);
-         }
-
-
-
-
-         //gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
-         static int prev_selected_item = -1;
-         if (debug_selected_item_ != prev_selected_item) {
-            prev_selected_item = debug_selected_item_;
-            utils::log(utils::LOG_INFO, " !!! Selecting mesh '%s'\n", (debug_selected_item_ < (int)mesh_names.size()) ? mesh_names[debug_selected_item_].c_str() : "INVALID");
-         }
-         auto pass_mesh_idx = 0U;
-         for (auto & pass : d3_body_passes) {
-            if (!debug_special_mode_enabled_ || pass_mesh_idx == debug_selected_item_) {
-               pass.draw_batch(
-                  mesh_render_batch_callback_t{
-                     pass_mesh_idx,
-                     world_view.creatures_begin(),
-                     world_view.creatures_end(),
-                     get_view(*this), get_proj() },
-                  glpp::DrawMode::Triangles);
-            }
-            pass_mesh_idx++;
-         }
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), get_view(*this), get_proj(), false);
 
          debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
 

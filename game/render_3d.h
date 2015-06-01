@@ -77,18 +77,12 @@ namespace game {
       render_context & context;
 
       struct mesh_render_info {
-         glpp::scene_t const & scene;
+         glpp::animation_t const & animation;
          std::vector<glpp::pass_t> d3_mesh_passes;
          std::vector<glpp::pass_t> d3_shadow_mesh_passes;
       };
 
       std::vector<mesh_render_info> mesh_renderers;
-
-      // actual render passes that are executed
-      std::vector<glpp::pass_t> d3_body_passes;
-      std::vector<glpp::pass_t> d3_body_shadow_passes;
-      std::vector<glpp::pass_t> d3_campfire_passes;
-      std::vector<glpp::pass_t> d3_campfire_shadow_passes;
 
       std::vector<glpp::pass_t> debug_diamond_pass;
       std::vector<glpp::pass_t> ground_pass;
@@ -99,9 +93,6 @@ namespace game {
       std::vector<std::string> mesh_names;
 
       constant_particle_emitter_buffer_t emitter;
-
-      // TODO: we should have one of these for each visible entity
-      glpp::animation_timeline_t dude_walk_animation;
 
       float view_height = 1.;
       bool debug_do_special_thing_ = false;

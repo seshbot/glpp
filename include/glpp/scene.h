@@ -76,6 +76,14 @@ namespace glpp
 
       animation_timeline_t create_timeline() const;
 
+      friend bool operator<(animation_t const & lhs, animation_t const & rhs) {
+         if (lhs.scene_id_ != rhs.scene_id_) return lhs.scene_id_ < rhs.scene_id_;
+         return lhs.scene_idx_ < rhs.scene_idx_;
+      }
+      friend bool operator>(animation_t const & lhs, animation_t const & rhs) { return rhs < lhs; }
+      friend bool operator==(animation_t const & lhs, animation_t const & rhs) { return !(rhs < lhs) && !(lhs < rhs); }
+      friend bool operator!=(animation_t const & lhs, animation_t const & rhs) { return !(rhs == lhs); }
+
    private:
       friend class scene_t;
       friend class animation_timeline_t;
