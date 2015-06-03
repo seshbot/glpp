@@ -171,20 +171,38 @@ namespace {
    //
 
    struct mesh_render_batch_callback_t : public glpp::pass_t::render_batch_callback {
+      using entity_filter = std::function<bool(game::world_view_t::render_info_t const &)>;
+      static bool default_entity_filter(game::world_view_t::render_info_t const &) { return true; }
+
+      mesh_render_batch_callback_t(
+         unsigned pass_mesh_idx,
+         game::world_view_t::const_iterator itBegin,
+         game::world_view_t::const_iterator itEnd,
+         glm::mat4 const & view_matrix,
+         glm::mat4 const & proj_matrix,
+         entity_filter filter)
+         : pass_mesh_idx_(pass_mesh_idx)
+         , itEnd_(itEnd)
+         , it_(itBegin)
+         , filter_(filter)
+         , proj_view_matrix_(proj_matrix * view_matrix) {
+      }
+
       mesh_render_batch_callback_t(
          unsigned pass_mesh_idx,
          game::world_view_t::const_iterator itBegin,
          game::world_view_t::const_iterator itEnd,
          glm::mat4 const & view_matrix,
          glm::mat4 const & proj_matrix)
-         : pass_mesh_idx_(pass_mesh_idx)
-         , itEnd_(itEnd)
-         , it_(itBegin)
-         , proj_view_matrix_(proj_matrix * view_matrix) {
+         : mesh_render_batch_callback_t(pass_mesh_idx, itBegin, itEnd, view_matrix, proj_matrix, default_entity_filter) {
       }
 
       bool prepare_next(glpp::program & p) const override {
-         if (it_ == itEnd_) return false;
+         while (true) {
+            if (it_ == itEnd_) return false;
+            if (filter_(*it_)) break; // found valid entity
+            ++it_;
+         }
 
          auto & current_render_info = *it_;
          auto & moment = *current_render_info.moment;
@@ -198,7 +216,7 @@ namespace {
          auto & mesh = animation.meshes()[pass_mesh_idx_];
          p.uniform("bones[0]").set(mesh.bone_transforms());
 
-         it_++;
+         ++it_;
          return true;
       }
 
@@ -209,6 +227,7 @@ namespace {
       unsigned pass_mesh_idx_;
       game::world_view_t::const_iterator itEnd_;
       mutable game::world_view_t::const_iterator it_;
+      entity_filter filter_;
       glm::mat4 proj_view_matrix_;
    };
 
@@ -218,78 +237,58 @@ namespace {
    // helper functions
    //
 
-   void accumulate_mesh(glpp::mesh_t const & mesh, glpp::program & prg_3d, std::vector<glpp::pass_t> & passes_3d, glpp::program & prg_3d_shadow, std::vector<glpp::pass_t> & passes_3d_shadow) {
-      auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
-         .attrib("p", 3);
-      auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
-         .attrib("normal", 3);
-      auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
-         .attrib("bone_indices", 4);
-      auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
-         .attrib("bone_weights", 4);
+   std::vector<glpp::pass_t> make_mesh_passes(glpp::program & program, glpp::animation_t const & animation, bool shadow) {
+      std::vector<glpp::pass_t> result;
 
-      auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
+      //auto animation = first_animation(scene);
+      auto sprite = animation.create_timeline();
+      for (auto & mesh : sprite.meshes()) {
+         // utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
+         // mesh_names.push_back(mesh.name());
 
-      passes_3d.push_back(
-         prg_3d.pass()
-         .with(verts)
-         .with(normals)
-         .with(bone_indices)
-         .with(bone_weights)
-         .set_uniform("colour", mesh.material().diffuse_colour)
-         //.set_uniform_action("bones[0]", set_bones_action)
-         );
+         auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
+            .attrib("p", 3);
+         auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
+            .attrib("normal", 3);
+         auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
+            .attrib("bone_indices", 4);
+         auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
+            .attrib("bone_weights", 4);
 
-      passes_3d_shadow.push_back(
-         prg_3d_shadow.pass()
-         .with(verts)
-         .with(bone_indices)
-         .with(bone_weights)
-         //.set_uniform_action("bones[0]", set_bones_action)
-         );
+         auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
+
+         if (!shadow) {
+            result.push_back(
+               program.pass()
+               .with(verts)
+               .with(normals)
+               .with(bone_indices)
+               .with(bone_weights)
+               .set_uniform("colour", mesh.material().diffuse_colour)
+               //.set_uniform_action("bones[0]", set_bones_action)
+               );
+         }
+         else {
+            result.push_back(
+               program.pass()
+               .with(verts)
+               .with(bone_indices)
+               .with(bone_weights)
+               //.set_uniform_action("bones[0]", set_bones_action)
+               );
+         }
+      }
+
+      return result;
    };
 
-   void bind_mesh_buffers(glpp::program & prg, glpp::mesh_t const & mesh, bool shadow_mapping) {
-      auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
-         .attrib("p", 3);
-      auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
-         .attrib("normal", 3);
-      auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
-         .attrib("bone_indices", 4);
-      auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
-         .attrib("bone_weights", 4);
-
-      auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
-
-      // if (!shadow_mapping) {
-      //    passes_3d.push_back(
-      //       prg_3d.pass()
-      //       .with(verts)
-      //       .with(normals)
-      //       .with(bone_indices)
-      //       .with(bone_weights)
-      //       .set_uniform("colour", mesh.material().diffuse_colour)
-      //       //.set_uniform_action("bones[0]", set_bones_action)
-      //       );
-      // }
-      // else {
-      //    passes_3d_shadow.push_back(
-      //       prg_3d_shadow.pass()
-      //       .with(verts)
-      //       .with(bone_indices)
-      //       .with(bone_weights)
-      //       //.set_uniform_action("bones[0]", set_bones_action)
-      //       );
-      // }
-   }
-
-   void bind_instance_buffers(glpp::program & prg, glpp::mesh_t const & mesh, glm::mat4 const & model_tx, glm::mat4 const & mvp_tx) {
-      // p.uniform("model").set(model_tx);
-      // p.uniform("mvp").set(mvp_tx);
-      // //            p.uniform("normal_matrix").set(glm::transpose(glm::inverse(model_transform)));
-
-      // p.uniform("bones[0]").set(mesh.bone_transforms());
-   }
+   game::renderer::mesh_render_info make_render_info(glpp::animation_t const & animation, glpp::program & prg_3d, glpp::program & prg_3d_shadow) {
+      return{
+         animation,
+         make_mesh_passes(prg_3d, animation, false),
+         make_mesh_passes(prg_3d_shadow, animation, true)
+      };
+   };
 
 
    //
@@ -465,95 +464,15 @@ namespace game {
    renderer::renderer(model_repository const & models, render_context & ctx)
       : context(ctx)
    {
-#if 0
-      auto next_config = 1;
-      std::map<std::string, int> mesh_weight_configs;
-      auto add_config = [&](glpp::mesh_t const & m) -> int {
-         auto ws = m.bone_weights();
-         auto ws_str = std::string{};
-         for (auto idx = 0U; idx < ws.count; idx++) {
-            ws_str += std::to_string(ws.buffer[idx]) + ",";
-         }
-         auto it = mesh_weight_configs.find(ws_str);
-         if (it != mesh_weight_configs.end()) return it->second;
-
-         auto new_config = next_config++;
-         mesh_weight_configs[ws_str] = new_config;
-         return new_config;
-      };
-
-      utils::log(utils::LOG_INFO, "==========================\n     scene meshes\n==========================\n");
-      for (auto & m : context.model_dude.meshes()) {
-         utils::log(utils::LOG_INFO, "'%s' bones:%d weights-config:%d\n", m.name().c_str(), m.bone_count(), add_config(m));
-      }
-      auto t = context.model_dude.create_timeline(0);
-      utils::log(utils::LOG_INFO, "==========================\n    timeline meshes\n==========================\n");
-      for (auto & m : t.meshes()) {
-         utils::log(utils::LOG_INFO, "'%s' bones:%d weights-config:%d\n", m.name().c_str(), m.bone_count(), add_config(m));
-      }
-#endif
-
-      auto make_mesh_passes = [](glpp::program & program, glpp::animation_t const & animation, bool shadow) {
-         std::vector<glpp::pass_t> result;
-
-         //auto animation = first_animation(scene);
-         auto sprite = animation.create_timeline();
-         for (auto & mesh : sprite.meshes()) {
-            // utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
-            // mesh_names.push_back(mesh.name());
-
-            auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
-               .attrib("p", 3);
-            auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
-               .attrib("normal", 3);
-            auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
-               .attrib("bone_indices", 4);
-            auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
-               .attrib("bone_weights", 4);
-
-            auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
-
-            if (!shadow) {
-               result.push_back(
-                  program.pass()
-                  .with(verts)
-                  .with(normals)
-                  .with(bone_indices)
-                  .with(bone_weights)
-                  .set_uniform("colour", mesh.material().diffuse_colour)
-                  //.set_uniform_action("bones[0]", set_bones_action)
-                  );               
-            }
-            else {
-               result.push_back(
-                  program.pass()
-                  .with(verts)
-                  .with(bone_indices)
-                  .with(bone_weights)
-                  //.set_uniform_action("bones[0]", set_bones_action)
-                  );
-            }
-         }
-
-         return result;
-      };
-
-      auto make_render_info = [&](glpp::animation_t const & animation) -> mesh_render_info {
-         return {
-            animation,
-            make_mesh_passes(context.prg_3d, animation, false),
-            make_mesh_passes(context.prg_3d_shadow, animation, true)
-         };
-      };
-
-      auto create_renderers_for_scene = [&](glpp::scene_t const & scene) {
+      auto accumulate_scene_renderers = [&](glpp::scene_t const & scene) {
          for (auto anim_name : scene.animation_names()) {
-            mesh_renderers.push_back(make_render_info(scene.animation(anim_name)));
+            mesh_renderers.push_back(make_render_info(scene.animation(anim_name), context.prg_3d, context.prg_3d_shadow));
          }
       };
+
       // render info for all models
-      create_renderers_for_scene(models.find_scene_by_name("dude"));
-      create_renderers_for_scene(models.find_scene_by_name("campfire"));
+      accumulate_scene_renderers(models.find_scene_by_name("dude"));
+      accumulate_scene_renderers(models.find_scene_by_name("campfire"));
 
 
       //
@@ -646,7 +565,14 @@ namespace game {
 
 
 
-      auto render_entity_meshes = [&](auto entity_it, auto entity_it_end, glm::mat4 const & view_mat, glm::mat4 const & proj_mat, bool use_shadow_passes) {
+      auto default_entity_filter = [](auto const &) { return true; };
+      auto render_entity_meshes = [&](
+         auto entity_it,
+         auto entity_it_end,
+         auto entity_filter,
+         glm::mat4 const & view_mat,
+         glm::mat4 const & proj_mat,
+         bool use_shadow_passes) {
          while (entity_it != entity_it_end) {
             auto & entity_info = *entity_it;
             auto & passes = mesh_passes_for_animation(*this, entity_info.sprite->animation(), use_shadow_passes);
@@ -663,7 +589,8 @@ namespace game {
                      pass_mesh_idx++,
                      entity_it,
                      entity_partition_end,
-                     view_mat, proj_mat },
+                     view_mat, proj_mat,
+                     entity_filter },
                   glpp::DrawMode::Triangles);
             }
 
@@ -725,8 +652,30 @@ namespace game {
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit));
 
+         auto filter = [&](game::world_view_t::render_info_t const & render_info) {
+            // not casting shadows upwards
+            if (face.face == glpp::frame_buffer_t::POSITIVE_Y) return false;
 
-         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), view, light_proj, true);
+            auto light_to_entity = render_info.moment->pos() - glm::vec2(light_pos.x, -light_pos.z);
+            auto light_height_squared = light_pos.y * light_pos.y;
+            auto light_to_entity_dist_squared = light_to_entity.x * light_to_entity.x + light_to_entity.y * light_to_entity.y;
+
+            // anything thats close to the light gets included
+            if (light_to_entity_dist_squared < (2 * light_height_squared)) {
+               return true;
+            }
+
+            // TODO: exclude entities that are far away
+
+            // not close to the light, wont cast a shadow underneath the light
+            if (face.face == glpp::frame_buffer_t::NEGATIVE_Y) return false;
+
+            auto light_to_entity_norm = glm::normalize(light_to_entity);
+            auto dot = light_to_entity.x * face.view_direction.x + light_to_entity.y * -face.view_direction.z;
+
+            return dot > 0;
+         };
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
       }
       context.shadow_fbo->unbind();
       gl::cull_face(gl::cull_face_mode_t::back);
@@ -753,7 +702,7 @@ namespace game {
 
          ground_pass.back().draw(glpp::DrawMode::Triangles);
 
-         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), get_view(*this), get_proj(), false);
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, get_view(*this), get_proj(), false);
 
          debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
 
