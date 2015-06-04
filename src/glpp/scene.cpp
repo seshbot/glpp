@@ -70,9 +70,21 @@ namespace glpp {
 
    struct animation_t::impl {
    public:
+      impl(aiScene const & scene)
+         : ai_scene(&scene)
+         , name_("default")
+         , ticks_per_second(0)
+         , duration_ticks(0)
+         , root_node(nullptr)
+      {
+      }
+
       impl(aiScene const & scene, aiAnimation const & animation)
-         : ai_animation(&animation)
-         , ai_scene(&scene)
+         : ai_scene(&scene)
+         , name_(ai::get_name(animation))
+         , ticks_per_second(animation.mTicksPerSecond)
+         , duration_ticks(animation.mDuration)
+         , root_node(nullptr)
       {
          // ensure node data never moves - allocate enough space for one entry per node
          std::function<unsigned(aiNode* n)> child_count = [&](aiNode* n) {
@@ -178,12 +190,15 @@ namespace glpp {
       }
 
       std::string name() const {
-         return ai::get_name(*ai_animation);
+         return name_;
       }
 
-      aiAnimation const * ai_animation;
+      //aiAnimation const * ai_animation;
       aiScene const * ai_scene;
 
+      std::string name_;
+      double ticks_per_second;
+      double duration_ticks;
       ai::node_animation_t const * root_node;
       glm::mat4 global_inverse_transform;
       std::vector<ai::node_animation_t> nodes; // storage for node anim hierarchy
@@ -212,74 +227,87 @@ namespace glpp {
 
    struct animation_timeline_t::impl {
       impl(animation_t::impl const & animation_in, double time_secs)
-         : animation(animation_in)
+         : name_(animation_in.name())
+         , ticks_per_second(animation_in.ticks_per_second)
+         , duration_ticks(animation_in.duration_ticks)
          , current_time_secs(time_secs)
       {
-         auto animation_time_ticks = ai::animation_secs_to_ticks(*animation.ai_animation, time_secs);
+         // not animated
+         if (!animation_in.root_node) {
+            auto & ai_scene = *animation_in.ai_scene;
 
-         //
-         // create node animation snapshots
-         //
-
-         node_snapshots.reserve(animation.nodes.size());
-         std::map<std::string, ai::node_animation_timeline_t const *> node_snapshots_by_name;
-
-         std::function<ai::node_animation_timeline_t const *(ai::node_animation_t const &, ai::node_animation_timeline_t const *)> create_and_add_snapshot_recursive = [&](ai::node_animation_t const & n, ai::node_animation_timeline_t const * parent) {
-            node_snapshots.emplace_back(n, parent, animation.global_inverse_transform, animation_time_ticks, animation.ai_animation->mDuration);
-            auto * new_snapshot = &node_snapshots.back();
-
-            auto ins = node_snapshots_by_name.insert(std::make_pair(new_snapshot->name(), new_snapshot));
-            assert(ins.second && "node snapshot already existed with this name");
-
-            for (auto & child : n.children) {
-               auto * new_child = create_and_add_snapshot_recursive(*child, new_snapshot);
-               new_snapshot->children.push_back(new_child);
-            }
-
-            return new_snapshot;
-         };
-
-         root_node_snapshot = create_and_add_snapshot_recursive(*animation.root_node, nullptr);
-
-         //
-         // create mesh/bone structure (node.mesh_animations) for each animation node
-         //
-
-         for (auto & node : node_snapshots) {
-            for (auto & m : node.node_animation.mesh_animations()) {
-               std::vector<aiBone const *> bones;
-               std::vector<ai::node_animation_timeline_t const *> bone_nodes;
-               std::vector<glm::mat4> bone_offsets;
-               for (auto & b : m->bones) {
-                  auto it = node_snapshots_by_name.find(b.node.name());
-                  assert(it != node_snapshots_by_name.end());
-                  auto bone_node = it->second;
-                  bones.push_back(&b.ai_bone);
-                  bone_nodes.push_back(bone_node);
-                  bone_offsets.push_back(ai::to_mat4(b.ai_bone.mOffsetMatrix));
-               }
-               node.mesh_bone_snapshots.push_back({ m->ai_mesh, node, bones, bone_nodes, bone_offsets, {} });
-            }
+            // TODO: incorporate global inverse transform here? (third parameter)
+            ai::for_each_mesh(ai_scene, *ai_scene.mRootNode, {}, [&](aiMesh const & mesh, glm::mat4 const & transform) {
+               meshes.push_back({ ai_scene, mesh, transform });
+            });
          }
+         else {
+            auto animation_time_ticks = ai::animation_secs_to_ticks(ticks_per_second, duration_ticks, time_secs);
 
-         auto & ai_scene = *animation.ai_scene;
-         for_each_mesh([&](ai::mesh_bone_snapshot_t const & mesh_bone_snapshots){
-            // aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform, std::vector<glm::mat4> const & bone_transforms
-            auto & mesh = mesh_bone_snapshots.ai_mesh;
-            auto & bone_transforms = mesh_bone_snapshots.bone_transforms;
-            meshes.push_back({ ai_scene, mesh, bone_transforms });
-         });
+            //
+            // create node animation snapshots
+            //
 
-         advance_to(time_secs);
+            node_snapshots.reserve(animation_in.nodes.size());
+            std::map<std::string, ai::node_animation_timeline_t const *> node_snapshots_by_name;
+
+            std::function<ai::node_animation_timeline_t const *(ai::node_animation_t const &, ai::node_animation_timeline_t const *)> create_and_add_snapshot_recursive = [&](ai::node_animation_t const & n, ai::node_animation_timeline_t const * parent) {
+               node_snapshots.emplace_back(n, parent, animation_in.global_inverse_transform, animation_time_ticks, duration_ticks);
+               auto * new_snapshot = &node_snapshots.back();
+
+               auto ins = node_snapshots_by_name.insert(std::make_pair(new_snapshot->name(), new_snapshot));
+               assert(ins.second && "node snapshot already existed with this name");
+
+               for (auto & child : n.children) {
+                  auto * new_child = create_and_add_snapshot_recursive(*child, new_snapshot);
+                  new_snapshot->children.push_back(new_child);
+               }
+
+               return new_snapshot;
+            };
+
+            root_node_snapshot = create_and_add_snapshot_recursive(*animation_in.root_node, nullptr);
+
+            //
+            // create mesh/bone structure (node.mesh_animations) for each animation node
+            //
+
+            for (auto & node : node_snapshots) {
+               for (auto & m : node.node_animation.mesh_animations()) {
+                  std::vector<aiBone const *> bones;
+                  std::vector<ai::node_animation_timeline_t const *> bone_nodes;
+                  std::vector<glm::mat4> bone_offsets;
+                  for (auto & b : m->bones) {
+                     auto it = node_snapshots_by_name.find(b.node.name());
+                     assert(it != node_snapshots_by_name.end());
+                     auto bone_node = it->second;
+                     bones.push_back(&b.ai_bone);
+                     bone_nodes.push_back(bone_node);
+                     bone_offsets.push_back(ai::to_mat4(b.ai_bone.mOffsetMatrix));
+                  }
+                  node.mesh_bone_snapshots.push_back({ m->ai_mesh, node, bones, bone_nodes, bone_offsets,{} });
+               }
+            }
+
+            auto & ai_scene = *animation_in.ai_scene;
+            for_each_mesh([&](ai::mesh_bone_snapshot_t const & mesh_bone_snapshots) {
+               // aiScene const & scene, aiMesh const & mesh, glm::mat4 const & default_transform, std::vector<glm::mat4> const & bone_transforms
+               auto & mesh = mesh_bone_snapshots.ai_mesh;
+               auto & bone_transforms = mesh_bone_snapshots.bone_transforms;
+               meshes.push_back({ ai_scene, mesh, bone_transforms });
+            });
+
+            advance_to(time_secs);
+         }
       }
 
-      std::string name() const {
-         return animation.name();
+      std::string const & name() const {
+         return name_;
       }
 
       void advance_to(double time_secs) {
          current_time_secs = time_secs;
-         auto animation_time_ticks = ai::animation_secs_to_ticks(*animation.ai_animation, time_secs);
+         auto animation_time_ticks = ai::animation_secs_to_ticks(ticks_per_second, duration_ticks, time_secs);
 
          // advance all nodes first
          for (auto & node : node_snapshots) {
@@ -346,7 +374,9 @@ namespace glpp {
          for_each_mesh_impl(*root_node_snapshot, callback);
       }
 
-      animation_t::impl const & animation;
+      std::string name_;
+      double ticks_per_second;
+      double duration_ticks;
       double current_time_secs;
       ai::node_animation_timeline_t const * root_node_snapshot;
       std::vector<ai::node_animation_timeline_t> node_snapshots;
@@ -379,7 +409,8 @@ namespace glpp {
 
    struct scene_t::impl {
       impl(scene_t const & concept, aiScene const * ai_scene)
-         : ai_scene_(ai_scene) {
+         : ai_scene_(ai_scene)
+         , default_animation_(concept, *ai_scene) {
          animations_.reserve(ai_scene->mNumAnimations);
 
          for (auto idx = 0U; idx < ai_scene->mNumAnimations; idx++) {
@@ -421,6 +452,7 @@ namespace glpp {
       }
 
       std::unique_ptr<const aiScene> ai_scene_;
+      animation_t default_animation_;
       std::vector<animation_t> animations_;
       std::vector<mesh_t> meshes_;
    };
@@ -464,6 +496,13 @@ namespace glpp {
    //
    // animation_t impelmentation
    //
+
+   animation_t::animation_t(scene_t const & scene, aiScene const & ai_scene)
+      : scene_idx_(DEFAULT_ANIMATION_IDX)
+      , id_(make_hash(&scene.impl_->ai_scene_))
+      , scene_id_(scene.id())
+      , impl_(new impl(ai_scene)) {
+   }
 
    animation_t::animation_t(scene_t const & scene, aiScene const & ai_scene, aiAnimation const & ai_animation, unsigned scene_idx)
    : scene_idx_(scene_idx)
@@ -535,6 +574,9 @@ namespace glpp {
       return animation(impl_->animation_idx(name));
    }
 
+   animation_t const & scene_t::default_animation() const {
+      return impl_->default_animation_;
+   }
 
    //
    // mesh_t implementation

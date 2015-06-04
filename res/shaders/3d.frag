@@ -17,7 +17,7 @@ struct PositionalLight {
 	mediump float attenuation;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -300.), COLOUR_FIRE_LOW * .02, COLOUR_FIRE_LOW, .00008);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .00008);
 
 uniform mediump vec4 colour;
 uniform samplerCube shadow_texture;

@@ -152,25 +152,29 @@ int main()
       };
 
       class sprite_repository : public game::world_view_t::sprite_repository_t {
-         struct anim_indices {
-            unsigned standing;
-            unsigned walking;
+         struct sprite_animations {
+            glpp::animation_t const & standing;
+            glpp::animation_t const & walking;
 
-            static anim_indices find_indices(glpp::scene_t const & scene) {
-               anim_indices result{ 0, 0 };
+            static sprite_animations find_indices(glpp::scene_t const & scene) {
                auto names = scene.animation_names();
-               for (auto idx = 0U; idx < names.size(); idx++) {
-                  auto & name = names[idx];
-                  if (name.find("Armature|Dude.stand") != std::string::npos) { result.standing = idx; continue; }
-                  if (name.find("Armature|Dude.walk") != std::string::npos) { result.walking = idx; continue; }
-               }
-               return result;
+               auto find_animation = [&](auto name_fragment) -> glpp::animation_t const & {
+                  for (auto idx = 0U; idx < names.size(); idx++) {
+                     auto & name = names[idx];
+                     if (name.find(name_fragment) != std::string::npos) { return scene.animation(name); }
+                  }
+                  return scene.default_animation();
+               };
+               return{
+                  find_animation("Armature|Dude.stand"),
+                  find_animation("Armature|Dude.walk")
+               };
             }
          };
          struct scene_info {
-            scene_info(glpp::scene_t const & scene) : scene{ scene }, animations(anim_indices::find_indices(scene)) {}
+            scene_info(glpp::scene_t const & scene) : scene{ scene }, animations(sprite_animations::find_indices(scene)) {}
             glpp::scene_t const & scene;
-            anim_indices animations;
+            sprite_animations animations;
          };
       public:
          sprite_repository(game::model_repository const & scene_repo, game::creature_info_table const & creature_db, game::prop_info_table const & prop_db)
@@ -184,17 +188,17 @@ int main()
 
          glpp::animation_timeline_t find_sprite(game::creature_t const & entity, game::moment_t & moment, game::plan_t const & plan) const override {
             auto & scene_info = scene_info_of(entity);
-            auto scene_idx = animation_idx_of(scene_info, moment, plan);
-            auto sprite = scene_info.scene.animation(scene_idx).create_timeline();
+            auto & animation = animation_of(scene_info, moment);
+            auto sprite = animation.create_timeline();
             sprite.advance_by(std::rand() / 60.);
             return sprite;
          }
 
          void animate(std::size_t db_idx, game::creature_t const & entity, glpp::animation_timeline_t & cursor, game::moment_t & moment, game::plan_t & plan, double time_since_last) const override {
-            auto scene_idx = animation_idx_of(entity, moment, plan);
-            if (cursor.animation().scene_idx() != scene_idx) {
+            auto & new_animation = animation_of(entity, moment, plan);
+            if (cursor.animation() != new_animation) {
                // creature doing something new - start a new animation
-               cursor = scene_of(entity).animation(scene_idx).create_timeline();
+               cursor = new_animation.create_timeline();
             }
 
             cursor.advance_by(time_since_last);
@@ -202,7 +206,8 @@ int main()
 
          glpp::animation_timeline_t find_sprite(game::prop_t const & entity, game::moment_t & moment) const override {
             auto & scene_info = scene_info_of(entity);
-            auto sprite = scene_info.scene.animation(0).create_timeline();
+            auto & animation = animation_of(scene_info, moment);
+            auto sprite = animation.create_timeline();
             return sprite;
          }
 
@@ -238,12 +243,15 @@ int main()
          glpp::scene_t const & scene_of(game::creature_t const & entity) const {
             return scene_info_of(entity).scene;
          }
-         unsigned animation_idx_of(scene_info const & scene, game::moment_t & moment, game::plan_t const & plan) const {
+         glpp::animation_t const & animation_of(scene_info const & scene, game::moment_t & moment) const {
             if (moment.is_moving()) return scene.animations.walking;
             return scene.animations.standing;
          }
-         unsigned animation_idx_of(game::creature_t const & creature, game::moment_t & moment, game::plan_t const & plan) const {
-            return animation_idx_of(scene_info_of(creature), moment, plan);
+         glpp::animation_t const & animation_of(game::creature_t const & entity, game::moment_t & moment, game::plan_t const & plan) const {
+            return animation_of(scene_info_of(entity), moment);
+         }
+         glpp::animation_t const & animation_of(game::prop_t const & entity, game::moment_t & moment) const {
+            return animation_of(scene_info_of(entity), moment);
          }
 
          game::model_repository const & scene_repo_;
@@ -267,11 +275,12 @@ int main()
       game::world_t world(creature_db, prop_db, particle_db, controller);
       game::world_view_t world_view(creature_db, prop_db, particle_db, sprite_repository);
 
-      for (auto i = 0; i < 20; i++) {
+      for (auto i = 0; i < 5; i++) {
          world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
       }
 
-      // world.create_creature(game::creature_t::types::person, { {0., 0.}, {} });
+      world.create_prop(game::prop_t::campfire, { game::center_world_location(), {} });
+      //world.create_creature(game::creature_t::types::person, { game::center_world_location(), {} });
 
       //
       // set up key bindings
@@ -313,16 +322,6 @@ int main()
          return true;
       });
 
-
-      // get a GL name for our texture
-      // load data into texture
-      // bind texture id to texture unit
-      // bind texture unit to uniform
-
-      // https://open.gl/textures has a good run-down
-
-      // https://github.com/adobe/angle adobe wrapper??
-
       controls.register_action_handler(glpp::Key::KEY_F, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          context.toggle_fullscreen();
          return true;
@@ -330,8 +329,6 @@ int main()
 
 
       // TODO: create 'config' files for controls, game creatures and repository models
-      // TODO: remove 'renderer::dude_walk_animation' and use world_view for model info
-
 
 
       //

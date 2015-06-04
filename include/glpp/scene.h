@@ -4,11 +4,16 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+//#include <limits>
 #include <string>
 #include <vector>
 #include <array>
 #include <functional>
 #include <memory>
+
+#ifdef max
+#  undef max
+#endif
 
 
 // forward declarations
@@ -68,8 +73,6 @@ namespace glpp
       animation_t & operator=(animation_t &&);
       ~animation_t();
 
-      unsigned scene_idx() const { return scene_idx_; }
-
       std::string name() const;
       std::size_t id() const { return id_; }
       std::size_t scene_id() const { return scene_id_; }
@@ -88,7 +91,10 @@ namespace glpp
       friend class scene_t;
       friend class animation_timeline_t;
 
+      animation_t(scene_t const & scene, aiScene const & ai_scene);
       animation_t(scene_t const & scene, aiScene const & ai_scene, aiAnimation const & ai_animation, unsigned scene_idx);
+
+      static const unsigned DEFAULT_ANIMATION_IDX = std::numeric_limits<unsigned>::max();
 
       unsigned scene_idx_;
       std::size_t id_;
@@ -119,6 +125,7 @@ namespace glpp
       std::vector<std::string> animation_names() const;
       animation_t const & animation(unsigned idx) const;
       animation_t const & animation(std::string const & name) const;
+      animation_t const & default_animation() const;
 
    private:
       friend class animation_t;

@@ -242,12 +242,16 @@ namespace ai {
       return{ { l.x, l.y, l.z }, { u.x, u.y, u.z } };
    };
 
-   double animation_secs_to_ticks(aiAnimation const & animation, double secs) {
-      auto ticks_per_sec = animation.mTicksPerSecond != 0.0 ? animation.mTicksPerSecond : 25.0;
-      auto animation_time_ticks = secs * ticks_per_sec;
-      animation_time_ticks = (animation.mDuration > 0.) ? std::fmod(animation_time_ticks, animation.mDuration) : 0.;
+   double animation_secs_to_ticks(double ticks_per_second, double duration_ticks, double secs) {
+      if (ticks_per_second == 0.0) ticks_per_second = 25.0;
+      auto animation_time_ticks = secs * ticks_per_second;
+      animation_time_ticks = (duration_ticks > 0.) ? std::fmod(animation_time_ticks, duration_ticks) : 0.;
 
       return animation_time_ticks;
+   }
+
+   double animation_secs_to_ticks(aiAnimation const & animation, double secs) {
+      return animation_secs_to_ticks(animation.mTicksPerSecond, animation.mDuration, secs);
    }
 } // namespace ai
 } // namespace glpp

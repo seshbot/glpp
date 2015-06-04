@@ -47,6 +47,7 @@ namespace ai
    struct bounds_t { glm::vec3 lower; glm::vec3 upper; };
    bounds_t find_mesh_bounds(aiMesh const & m);
 
+   double animation_secs_to_ticks(double ticks_per_second, double duration_ticks, double secs);
    double animation_secs_to_ticks(aiAnimation const & animation, double secs);
 } // namespace ai
 

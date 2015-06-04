@@ -1715,8 +1715,10 @@ namespace glpp
       prepare_draw_();
 
       auto draw_count = calc_draw_count_();
+      auto i = 0;
       while (cb.prepare_next(state_->prg_)) {
          draw_(mode, 0, draw_count);
+         ++i;
       }
 
       return *this;

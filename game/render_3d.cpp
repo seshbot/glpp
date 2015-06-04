@@ -172,7 +172,6 @@ namespace {
 
    struct mesh_render_batch_callback_t : public glpp::pass_t::render_batch_callback {
       using entity_filter = std::function<bool(game::world_view_t::render_info_t const &)>;
-      static bool default_entity_filter(game::world_view_t::render_info_t const &) { return true; }
 
       mesh_render_batch_callback_t(
          unsigned pass_mesh_idx,
@@ -186,15 +185,6 @@ namespace {
          , it_(itBegin)
          , filter_(filter)
          , proj_view_matrix_(proj_matrix * view_matrix) {
-      }
-
-      mesh_render_batch_callback_t(
-         unsigned pass_mesh_idx,
-         game::world_view_t::const_iterator itBegin,
-         game::world_view_t::const_iterator itEnd,
-         glm::mat4 const & view_matrix,
-         glm::mat4 const & proj_matrix)
-         : mesh_render_batch_callback_t(pass_mesh_idx, itBegin, itEnd, view_matrix, proj_matrix, default_entity_filter) {
       }
 
       bool prepare_next(glpp::program & p) const override {
@@ -465,6 +455,7 @@ namespace game {
       : context(ctx)
    {
       auto accumulate_scene_renderers = [&](glpp::scene_t const & scene) {
+         mesh_renderers.push_back(make_render_info(scene.default_animation(), context.prg_3d, context.prg_3d_shadow));
          for (auto anim_name : scene.animation_names()) {
             mesh_renderers.push_back(make_render_info(scene.animation(anim_name), context.prg_3d, context.prg_3d_shadow));
          }
@@ -632,7 +623,7 @@ namespace game {
          { glpp::frame_buffer_t::NEGATIVE_Z,{ 0., 0., -1. },{ 0., -1., 0. }, "z_neg" },
       };
 
-      const auto light_pos = glm::vec3{ 400., 30., -300. };
+      const auto light_pos = glm::vec3{ 400., 30., -424. };
       const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
 
       gl::disable(gl::enable_cap_t::blend);
@@ -676,6 +667,7 @@ namespace game {
             return dot > 0;
          };
          render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
+         render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
       }
       context.shadow_fbo->unbind();
       gl::cull_face(gl::cull_face_mode_t::back);
@@ -703,8 +695,9 @@ namespace game {
          ground_pass.back().draw(glpp::DrawMode::Triangles);
 
          render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, get_view(*this), get_proj(), false);
+         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, get_view(*this), get_proj(), false);
 
-         debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
+         //debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
 
          gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 

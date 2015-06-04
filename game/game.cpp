@@ -314,11 +314,11 @@ namespace game {
    void world_view_t::update_props(double time_since_last) {
       auto & sprites = prop_db_.sprites();
       auto & entities = prop_db_.prop_infos();
-      auto & moments = particle_db_.moments();
+      auto & moments = prop_db_.moments();
 
       std::vector<render_info_t> updated_render_info;
 
-      for (std::size_t idx = 0; idx < particle_db_.size(); idx++) {
+      for (std::size_t idx = 0; idx < prop_db_.size(); idx++) {
          auto & sprite_ptr = sprites[idx];
          auto & entity = entities[idx];
          auto & moment = moments[idx];
