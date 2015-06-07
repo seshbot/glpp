@@ -365,6 +365,7 @@ namespace game {
       , prg_3d_shadow{ create_program(assets, "3d_shadow") }
       , prg_3d_particle{ create_program(assets, "3d_particle") }
       , prg_post{ create_program(assets, "post") }
+      , rain_tex(assets.load_image("rain.png"))
       , shadow_tex{ std::unique_ptr<glpp::cube_map_texture_t>() }
       , post_tex{ std::unique_ptr<glpp::texture_t>() }
       , shadow_fbo{ std::unique_ptr<glpp::frame_buffer_t>() }

@@ -184,9 +184,14 @@ namespace glpp {
       if (!path.found || !path.is_directory) throw std::runtime_error(("cannot create archive from invalid directory "s + path.path).c_str());
    }
 
-   shader directory_archive_t::load_shader(std::string const & id) const {
+   glpp::path_t directory_archive_t::id_to_file_path(std::string const & id) const {
       auto file_path = combine(path, { id });
-      if (file_path.is_directory) throw std::runtime_error("cannot create shader from directory path");
+      if (file_path.is_directory) throw std::runtime_error("cannot create scene from directory path");
+      return file_path;
+   }
+
+   shader directory_archive_t::load_shader(std::string const & id) const {
+      auto file_path = id_to_file_path(id);
 
       auto type = [&] {
          auto ext = file_path.file_name_extension();
@@ -208,10 +213,15 @@ namespace glpp {
    }
    
    scene_t directory_archive_t::load_scene(std::string const & id) const {
-      auto file_path = combine(path, { id });
-      if (file_path.is_directory) throw std::runtime_error("cannot create scene from directory path");
+      auto file_path = id_to_file_path(id);
 
       return scene_t::create_from_file(file_path.path);
+   }
+
+   image_t directory_archive_t::load_image(std::string const & id) const {
+      auto file_path = id_to_file_path(id);
+
+      return{ file_path.path };
    }
 
 
@@ -229,6 +239,10 @@ namespace glpp {
 
    scene_t archive_t::load_scene(std::string const & id) const {
       return self_->load_scene_(id);
+   }
+
+   image_t archive_t::load_image(std::string const & id) const {
+      return self_->load_image_(id);
    }
 }
 

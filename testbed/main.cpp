@@ -27,6 +27,41 @@ namespace gl {
 #endif
 }
 
+
+auto VERT_SHADER_SOURCE = R"(
+#ifndef GL_ES
+#define highp
+#define mediump
+#define lowp
+#endif
+
+attribute mediump vec2 pos;
+attribute lowp vec4 col;
+
+varying mediump vec3 frag_pos;
+varying lowp vec4 frag_col;
+
+void main() {
+   gl_Position = vec4(pos, 0., 1.);
+   frag_col = col;
+}
+)";
+
+auto FRAG_SHADER_SOURCE = R"(
+#ifndef GL_ES
+#define highp
+#define mediump
+#define lowp
+#endif
+
+varying lowp vec4 frag_col;
+
+void main() {
+   gl_FragColor = frag_col;
+}
+)";
+
+
 #ifdef _MSC_VER
 int CALLBACK WinMain(
    HINSTANCE hInstance,
@@ -50,7 +85,38 @@ int main()
             should_reload_program = true;
       };
 
+      glpp::init();
       glpp::context context(key_handler);
+
+      glpp::program prg(
+         glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::Vertex), 
+         glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::Fragment)
+         );
+
+      const float verts[] = {
+         0.f, .5f,    1.f, 0.f, 0.f, 
+         -.5f, -.5f,  1.f, 1.f, 0.f,
+         .5f, -.5f,   0.f, 0.f, 1.f, 
+      };
+      auto vert_buffer = glpp::describe_buffer({ verts })
+         .attrib("pos", 2)
+         .attrib("col", 3)
+         .build(prg);
+
+      auto SAMPLE_TEXT = R"(a line of text
+another line of text with some data
+whats going on another line of text with some data
+another line but something
+what is going on here
+something should really happen here
+this is weird)";
+
+      auto text_buffer = glpp::describe_debug_text_buffer(SAMPLE_TEXT, -.95f, .95f, .0025f)
+         .attrib("pos", 2)
+         .skip_bytes(4 * 2) // skip [z, col] words
+         .build(prg);
+
+      gl::clear_color(1.f, 1.f, 1.f, 1.f);
 
       //
       // main loop
@@ -75,8 +141,10 @@ int main()
          //
          // render
          //
-
-         // TODO - render
+         prg.use();
+         glpp::draw(vert_buffer, glpp::DrawMode::Triangles);
+         gl::vertex_attrib_4f(prg.attrib("col").location(), .8, .8, .8, 1.);
+         glpp::draw(text_buffer, glpp::DrawMode::Triangles);
 
          last_tick = this_tick;
 

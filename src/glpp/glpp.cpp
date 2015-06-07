@@ -22,6 +22,7 @@ INITIALIZATION:
 TODO: platforms without GLES2? load GL2.0?
 */
 
+#include "detail/stb/stb_easy_font.h"
 
 #include <SOIL2/SOIL2.h>
 #include <GLFW/glfw3.h>
@@ -515,6 +516,34 @@ namespace glpp
    * class texture
    *
    */
+
+   image_t::image_t(std::string const & filename)
+      : data(SOIL_load_image(filename.c_str(), &width, &height, &channels, SOIL_LOAD_AUTO)) {
+      // TODO: allow SOIL_LOAD_LA (greyscale w/ alpha)
+   }
+
+   image_t::image_t(image_t && other)
+      : width{ other.width }
+      , height{ other.height }
+      , channels{ other.channels }
+      , data{ other.data } {
+      other.data = nullptr;
+   }
+
+   image_t & image_t::operator=(image_t && other) {
+      std::swap(width, other.width);
+      std::swap(height, other.height);
+      std::swap(channels, other.channels);
+      std::swap(data, other.data);
+      return *this;
+   }
+
+   image_t::~image_t() {
+      if (data)
+         SOIL_free_image_data(data);
+   }
+
+
    unsigned int texture_t::to_gl(texture_t::Target target) {
       auto tgt
          = target == texture_t::Target::TEXTURE_2D ? gl_::texture_target_t::texture_2d
@@ -524,15 +553,25 @@ namespace glpp
       return static_cast<unsigned int>(tgt);
    }
 
-   texture_t::state::state(std::string const & filename, Target target)
+   texture_t::state::state(image_t const & image, Target target)
    : format_(texture_format_t::RGBA) { // TODO: this may not be right?
+      dims_.x = image.width;
+      dims_.y = image.height;
+
+      int width = image.width;
+      int height = image.height;
+      id_ = SOIL_create_OGL_texture(image.data, &width, &height, image.channels, 0, SOIL_FLAG_INVERT_Y);
+
+      if (!id_) {
+         throw glpp::error(std::string("Could not load texture from image: ") + SOIL_last_result());
+      }
+
+#if 0
       int width;
       int height;
       int resized_width;
       int resized_height;
       int channels;
-
-      auto tgt = static_cast<gl_::texture_target_t>(to_gl(target));
 
       id_ = SOIL_load_OGL_texture_and_details(
          filename.c_str(),
@@ -547,6 +586,9 @@ namespace glpp
 
       dims_.x = width;
       dims_.y = height;
+#endif
+
+      auto tgt = static_cast<gl_::texture_target_t>(to_gl(target));
 
       GL_VERIFY(gl_ctx_.bind_texture(tgt, id_));
 
@@ -650,8 +692,8 @@ namespace glpp
       glDeleteTextures(1, &id_);
    }
 
-   texture_t::texture_t(std::string const & filename)
-      : state_(std::make_shared<state>(filename, TEXTURE_2D)) {
+   texture_t::texture_t(image_t const & image)
+      : state_(std::make_shared<state>(image, TEXTURE_2D)) {
    }
 
    texture_t::texture_t(dim_t const & dims, texture_format_t format)
@@ -1359,6 +1401,14 @@ namespace glpp
       }
    }
 
+   void buffer_t::unbind() const {
+      if (0 != state_->vertex_id_) {
+         gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::array_buffer, 0);
+      }
+      if (0 != state_->index_id_) {
+         gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, 0);
+      }
+   }
 
    unsigned attrib_info::calc_stride_bytes() const{
       return stride_bytes != 0
@@ -1391,14 +1441,20 @@ namespace glpp
       for (auto & attrib_info : packed.attribs) {
          auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
 
-         // TODO: HOLY CRAP get rid of this! we shouldnt need to do this every time!
          GL_VERIFY(gl_::vertex_attrib_pointer(
             attrib_info.attrib.location(), attrib_info.count, gl_type,
             false, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
 
-         // TODO: What about disabling?
          GL_VERIFY(gl_::enable_vertex_attrib_array(attrib_info.attrib.location()));
       }
+   }
+
+   void unbind(buffer_spec_t const & packed) {
+      for (auto & attrib_info : packed.attribs) {
+         GL_VERIFY(gl_::disable_vertex_attrib_array(attrib_info.attrib.location()));
+      }
+
+      packed.buffer.unbind();
    }
 
    void draw(buffer_spec_t const & b, DrawMode mode) {
@@ -1438,6 +1494,8 @@ namespace glpp
       else {
          GL_VERIFY(gl_::draw_arrays(gl_draw_mode(mode), first, count));
       }
+
+      unbind(b);
    }
 
 
@@ -1514,6 +1572,64 @@ namespace glpp
 
    buffer_spec_builder_t describe_buffer(buffer_t buffer) {
       return{ buffer };
+   }
+
+   buffer_spec_builder_t describe_debug_text_buffer(
+      std::string const & text, float leftmost, float topmost, float scale_factor) {
+#if 0
+      auto text_width = [&text] {
+         auto result = 0;
+         auto idx = 0U;
+         while (idx != std::string::npos) {
+            auto next_idx = text.find('\n', idx);
+            auto found_end = next_idx == std::string::npos;
+            auto substr = found_end
+               ? text.substr(idx)
+               : text.substr(idx, next_idx - idx);
+
+            auto substr_width = stb_easy_font_width(const_cast<char*>(substr.c_str()));
+
+            if (result < substr_width)
+               result = substr_width;
+
+            idx = found_end ? next_idx : next_idx + 1;
+         }
+         return result;
+      }();
+#endif
+
+      static char text_data_buffer[2*1024*1024]; // 2MB
+
+      auto quad_count = stb_easy_font_print(0, 0, (char*)text.c_str(), NULL, text_data_buffer, sizeof(text_data_buffer));
+
+      std::vector<unsigned short> text_indices(quad_count * 6);
+      for (auto quad_idx = 0; quad_idx < quad_count; quad_idx++) {
+         // quad: [v0x, v0y, v0z, v0col, v1x, v1y, v1z, v1col, v2x, v2y, v2z, v2col, v3x, v3y, v3z, v3col]
+         //       |      4 floats       |      4 floats       |       4 floats     |       4 floats      |
+         //       |                                      16 floats                                       |
+#define VERTEX_SPAN_IN_FLOATS 4
+#define QUAD_SPAN_IN_FLOATS 4 * VERTEX_SPAN_IN_FLOATS
+         auto * quad_verts = ((float*)text_data_buffer) + (quad_idx * QUAD_SPAN_IN_FLOATS);
+         for (auto vert_idx = 0U; vert_idx < 4; vert_idx++) {
+            auto * quad_vert = quad_verts + vert_idx * 4;
+            quad_vert[0] = scale_factor * quad_vert[0] + leftmost;
+            quad_vert[1] = -scale_factor * quad_vert[1] + topmost;
+         }
+
+         auto * quad_indices = text_indices.data() + quad_idx * 6;
+         // indices tri1: 0, 1, 2 tri2: 0, 2, 3 (6 indices per quad)
+         quad_indices[0] = quad_idx * 4 + 0;
+         quad_indices[1] = quad_idx * 4 + 1;
+         quad_indices[2] = quad_idx * 4 + 2;
+         quad_indices[3] = quad_idx * 4 + 0;
+         quad_indices[4] = quad_idx * 4 + 2;
+         quad_indices[5] = quad_idx * 4 + 3;
+      }
+
+      return describe_buffer({
+         { (float*)text_data_buffer, (unsigned)(quad_count * QUAD_SPAN_IN_FLOATS) },
+         { text_indices.data(), text_indices.size() }
+      });
    }
 
 
@@ -1683,12 +1799,14 @@ namespace glpp
    pass_t & pass_t::draw(DrawMode mode) {
       prepare_draw_();
       draw_(mode, 0, calc_draw_count_());
+      unprepare_draw_();
       return *this;
    }
 
    pass_t & pass_t::draw(DrawMode mode, unsigned first, unsigned count) {
       prepare_draw_();
       draw_(mode, first, count);
+      unprepare_draw_();
       return *this;
    }
 
@@ -1721,6 +1839,7 @@ namespace glpp
          ++i;
       }
 
+      unprepare_draw_();
       return *this;
    }
 
@@ -1731,6 +1850,7 @@ namespace glpp
          draw_(mode, first, count);
       }
 
+      unprepare_draw_();
       return *this;
    }
 
@@ -1797,6 +1917,17 @@ namespace glpp
       }
 
       for (auto & v : state_->vertex_buffers_) glpp::bind(v);
+   }
+
+   void pass_t::unprepare_draw_() {
+      if (state_->parent_) {
+         state_->parent_->unprepare_draw_();
+      }
+
+      // uniforms?
+      // TODO: texture units and texture bindings?
+
+      for (auto & v : state_->vertex_buffers_) glpp::unbind(v);
    }
 
 
@@ -2457,4 +2588,78 @@ namespace glpp
    void set_uniform(int location, texture_unit_t tex) { GL_VERIFY(gl_::uniform_1i(location, tex.id)); }
 
    //void set_uniform(gl::int_t location, GLuint i) { glUniform1ui(location, i); }
+
+
+
+#if 0
+   // 
+   // a bit of experimental work on a pre-packaged post-processing pass
+   //
+
+   auto POST_VERT_SHADER_SOURCE = R"(
+#ifndef GL_ES
+#define highp
+#define mediump
+#define lowp
+#endif
+
+attribute mediump vec2 p;
+attribute mediump vec2 tex_coords;
+
+varying mediump vec2 v_tex_coords;
+
+void main() {
+   v_tex_coords = tex_coords;
+   gl_Position = vec4(p.x, p.y, 0., 1.);
+}
+)";
+   auto POST_FRAG_SHADER_SOURCE = R"(
+#ifndef GL_ES
+#define highp
+#define mediump
+#define lowp
+#endif
+
+uniform sampler2D texture;
+
+varying mediump vec2 v_tex_coords;
+
+void main() {
+   lowp vec4 colour = texture2D(texture, v_tex_coords);
+   gl_FragColor = colour;
+}
+)";
+
+   glpp::program post_text_prg(
+      glpp::shader::create_from_source(POST_VERT_SHADER_SOURCE, glpp::shader::Vertex),
+      glpp::shader::create_from_source(POST_FRAG_SHADER_SOURCE, glpp::shader::Fragment)
+      );
+
+   static const float unit_square_verts[] = {
+      -1., 1., 0., 1.,
+      1., 1., 1., 1.,
+      -1., -1., 0., 0.,
+      1., -1., 1., 0.,
+   };
+
+   static const unsigned short unit_square_indices[] = {
+      0, 2, 1,
+      1, 2, 3,
+   };
+
+   auto screen_vertices_spec = [&]() -> glpp::buffer_spec_builder_t {
+      return glpp::describe_buffer({ unit_square_verts, unit_square_indices })
+         .attrib("p", 2)
+         .attrib("tex_coords", 2);
+   };
+
+   auto screen_dims = context.win().frame_buffer_dims();
+   auto text_screen_tex = glpp::texture_t{ screen_dims };
+   auto set_post_tex_cb = [&](glpp::uniform & u) { glpp::texture_unit_t tu{ 2 }; tu.activate(); text_screen_tex.bind();  u.set(tu); };
+   auto text_pass = post_text_prg.pass()
+      .set_uniform_action("texture", set_post_tex_cb)
+      .with(screen_vertices_spec());
+
+   glpp::frame_buffer_t texture_frame_buffer{ text_screen_tex };
+#endif
 }

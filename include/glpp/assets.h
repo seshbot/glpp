@@ -24,15 +24,16 @@ namespace glpp {
       friend path_t combine(path_t const & base, path_t const & suffix);
    };
 
-   struct file_t {};
-   struct image_t {};
-
    class directory_archive_t {
    public:
       directory_archive_t(path_t const & path);
 
       shader load_shader(std::string const & id) const;
       scene_t load_scene(std::string const & id) const;
+      image_t load_image(std::string const & id) const;
+
+   private:
+      glpp::path_t id_to_file_path(std::string const & id) const;
 
       path_t path;
    };
@@ -44,6 +45,7 @@ namespace glpp {
 
       shader load_shader(std::string const & id) const;
       scene_t load_scene(std::string const & id) const;
+      image_t load_image(std::string const & id) const;
       
    private:
       template <typename T>
@@ -53,6 +55,7 @@ namespace glpp {
          virtual ~concept_t() = default;
          virtual shader load_shader_(std::string const & id) const = 0;
          virtual scene_t load_scene_(std::string const & id) const = 0;
+         virtual image_t load_image_(std::string const & id) const = 0;
       };
 
       template <typename T>
@@ -60,6 +63,7 @@ namespace glpp {
          model(T data) : data_(std::move(data)) {}
          shader load_shader_(std::string const & id) const override { return data_.load_shader(id); }
          scene_t load_scene_(std::string const & id) const override { return data_.load_scene(id); }
+         image_t load_image_(std::string const & id) const override { return data_.load_image(id); }
 
          T data_;
       };

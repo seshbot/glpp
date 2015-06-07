@@ -71,11 +71,26 @@ namespace glpp {
       DEPTH,
    };
 
+   class image_t {
+   public:
+      image_t(std::string const & filename);
+      image_t(image_t && other);
+      image_t & operator=(image_t && other);
+      image_t(image_t const & other) = delete;
+      image_t & operator=(image_t const & other) = delete;
+      ~image_t();
+
+      int width;
+      int height;
+      int channels;
+      unsigned char * data;
+   };
+
    class texture_t {
    public:
       using id_type = uint32_t;
 
-      texture_t(std::string const & filename);
+      texture_t(image_t const & image);
       texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
 
       id_type id() const { return state_->id_; }
@@ -97,7 +112,7 @@ namespace glpp {
       static unsigned int to_gl(Target target);
 
       struct state {
-         state(std::string const & filename, Target target);
+         state(image_t const & image, Target target);
          state(dim_t const & dims, Target target, texture_format_t format);
          ~state();
          id_type id_;
@@ -389,6 +404,7 @@ namespace glpp {
       unsigned index_count() const { return state_->index_count_; }
 
       void bind() const;
+      void unbind() const;
 
       friend bool operator==(buffer_t const & lhs, buffer_t const & rhs) { return lhs.vertex_buffer_id() == rhs.vertex_buffer_id() && lhs.index_buffer_id() == rhs.index_buffer_id(); }
       friend bool operator!=(buffer_t const & lhs, buffer_t const & rhs) { return !(lhs == rhs); }
@@ -465,6 +481,8 @@ namespace glpp {
    };
 
    buffer_spec_builder_t describe_buffer(buffer_t buffer);
+   buffer_spec_builder_t describe_debug_text_buffer(
+      std::string const & text, float leftmost, float topmost, float scale_factor = 1.);
 
 
    enum class DrawMode {
@@ -520,6 +538,7 @@ namespace glpp {
       buffer_t const * index_buffer_() const;
       unsigned calc_draw_count_() const;
       void prepare_draw_(); // bind program, uniforms and textures
+      void unprepare_draw_();
       void draw_(DrawMode mode, unsigned first, unsigned count); // must call prepare_draw_ first
 
       friend class program;
@@ -654,7 +673,6 @@ namespace glpp {
    void set_uniform(int location, int i);
    void set_uniform(int location, texture_unit_t tex);
    //void set_uniform(GLint location, GLuint i);
-
 
    class sprite_sheet {
    public:
