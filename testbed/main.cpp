@@ -28,13 +28,14 @@ namespace gl {
 }
 
 
-auto VERT_SHADER_SOURCE = R"(
+static auto VERT_SHADER_SOURCE = R"(
 #ifndef GL_ES
 #define highp
 #define mediump
 #define lowp
 #endif
 
+attribute mediump vec2 mesh_pos;
 attribute mediump vec2 pos;
 attribute lowp vec4 col;
 
@@ -42,12 +43,14 @@ varying mediump vec3 frag_pos;
 varying lowp vec4 frag_col;
 
 void main() {
-   gl_Position = vec4(pos, 0., 1.);
+   gl_Position = vec4(mesh_pos + pos, 0., 1.);
    frag_col = col;
+
+   gl_PointSize = 3.;
 }
 )";
 
-auto FRAG_SHADER_SOURCE = R"(
+static auto FRAG_SHADER_SOURCE = R"(
 #ifndef GL_ES
 #define highp
 #define mediump
@@ -62,6 +65,35 @@ void main() {
 )";
 
 
+
+#include <random>
+
+struct particle_static_info {
+   float pos[2];
+   float col[4];
+};
+
+static std::vector<particle_static_info> create_particle_info(std::size_t n, float minx = -1., float maxx = 1., float miny = -1., float maxy = 1.) {
+   std::default_random_engine rnd_engine;
+   auto rnd = [&] {
+      return (float)((rnd_engine() % 1000) / 1000.);
+   };
+
+   float xrange = std::abs(maxx - minx);
+   float yrange = std::abs(maxy - miny);
+
+   std::vector<particle_static_info> result;
+   for (auto idx = 0U; idx < n; idx++) {
+      result.push_back({
+         { rnd() * xrange + minx, rnd() * yrange + miny },
+         { rnd(), rnd(), rnd(), 1.f }
+      });
+   }
+
+   return result;
+}
+
+
 #ifdef _MSC_VER
 int CALLBACK WinMain(
    HINSTANCE hInstance,
@@ -74,7 +106,6 @@ int main()
 #endif
 {
    utils::log(utils::LOG_INFO, "starting (cwd: %s)\n", utils::getcwd().c_str());
-
 
    try {
       bool should_reload_program = false;
@@ -93,30 +124,23 @@ int main()
          glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::Fragment)
          );
 
-      const float verts[] = {
-         0.f, .5f,    1.f, 0.f, 0.f, 
-         -.5f, -.5f,  1.f, 1.f, 0.f,
-         .5f, -.5f,   0.f, 0.f, 1.f, 
+      float vertices[] = {
+         -.01f, -.01f,
+         .01f, -.01f,
+         .0f, .01f,
       };
-      auto vert_buffer = glpp::describe_buffer({ verts })
-         .attrib("pos", 2)
-         .attrib("col", 3)
+
+      auto particle_mesh_buffer = glpp::describe_buffer({ vertices })
+         .attrib("mesh_pos", 2)
          .build(prg);
 
-      auto SAMPLE_TEXT = R"(a line of text
-another line of text with some data
-whats going on another line of text with some data
-another line but something
-what is going on here
-something should really happen here
-this is weird)";
-
-      auto text_buffer = glpp::describe_debug_text_buffer(SAMPLE_TEXT, -.95f, .95f, .0025f)
+      auto particle_positions = create_particle_info(1000);
+      auto particle_positions_buffer = glpp::describe_buffer({ {(float*)particle_positions.data(), 6 * particle_positions.size() } })
          .attrib("pos", 2)
-         .skip_bytes(4 * 2) // skip [z, col] words
+         .attrib("col", 4)
          .build(prg);
 
-      gl::clear_color(1.f, 1.f, 1.f, 1.f);
+      gl::clear_color(0.f, 0.f, 0.f, 1.f);
 
       //
       // main loop
@@ -137,14 +161,17 @@ this is weird)";
          const double MAX_TICK_SECONDS = 1. / 15.;
          if (time_since_last_tick > MAX_TICK_SECONDS) time_since_last_tick = MAX_TICK_SECONDS;
 
-
          //
          // render
          //
          prg.use();
-         glpp::draw(vert_buffer, glpp::DrawMode::Triangles);
-         gl::vertex_attrib_4f(prg.attrib("col").location(), .8, .8, .8, 1.);
-         glpp::draw(text_buffer, glpp::DrawMode::Triangles);
+         glpp::bind(particle_mesh_buffer);
+         glpp::bind(particle_positions_buffer);
+         gl::angle::vertex_attrib_divisor(prg.attrib("mesh_pos").location(), 0);
+         gl::angle::vertex_attrib_divisor(prg.attrib("pos").location(), 1);
+         gl::angle::vertex_attrib_divisor(prg.attrib("col").location(), 1);
+         gl::angle::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 3, 1000);
+         //glpp::draw(particle_positions_buffer, glpp::DrawMode::Points);
 
          last_tick = this_tick;
 

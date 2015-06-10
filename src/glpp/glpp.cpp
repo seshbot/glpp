@@ -1402,12 +1402,15 @@ namespace glpp
    }
 
    void buffer_t::unbind() const {
+#if 0
+      // TODO: is this necessary?
       if (0 != state_->vertex_id_) {
          gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::array_buffer, 0);
       }
       if (0 != state_->index_id_) {
          gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, 0);
       }
+#endif
    }
 
    unsigned attrib_info::calc_stride_bytes() const{

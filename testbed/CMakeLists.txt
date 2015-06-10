@@ -1,5 +1,8 @@
 
-set(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+set(SOURCE
+	${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/triangle_demo.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/text_demo.cpp)
 
 add_executable(gltestbed WIN32 CMakeLists.txt ${SOURCE})
 

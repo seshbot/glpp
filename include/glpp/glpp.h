@@ -481,9 +481,11 @@ namespace glpp {
    };
 
    buffer_spec_builder_t describe_buffer(buffer_t buffer);
-   buffer_spec_builder_t describe_debug_text_buffer(
-      std::string const & text, float leftmost, float topmost, float scale_factor = 1.);
 
+   // buffer [x:float, y:float, z:float, r:ubyte, g: ubyte, b: ubyte, a: ubyte]
+   // hint: render using orthographic projection of screen size
+   buffer_spec_builder_t describe_debug_text_buffer(
+      std::string const & text, float leftmost = 0., float topmost = 0., float scale_factor = 1.);
 
    enum class DrawMode {
       Points,
@@ -493,9 +495,9 @@ namespace glpp {
 
    unsigned num_vertices(buffer_spec_t const & b);
    void bind(buffer_spec_t const & b);
+   void unbind(buffer_spec_t const & b);
    void draw(buffer_spec_t const & b, DrawMode mode);
    void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count);
-
 
    class program;
    class pass_t {
