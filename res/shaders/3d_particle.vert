@@ -8,17 +8,20 @@ uniform mediump vec2 screen_size;
 uniform mediump mat4 proj;
 uniform mediump mat4 view;
 
+attribute mediump vec2 offset_coords;
+attribute mediump vec2 tex_coords;
 attribute mediump vec3 position;
 
-const float SPRITE_SIZE = .16;
-
+varying mediump vec2 frag_tex_coords;
+varying mediump vec3 frag_position;
 
 void main() {
     // good description here:  http://stackoverflow.com/questions/17397724/point-sprites-for-particle-system
-  vec4 viewPos = view * vec4(position, 1.);
-  vec4 projVoxel = proj * vec4(.5 * SPRITE_SIZE, .5 * SPRITE_SIZE, viewPos.z, viewPos.w);
-  vec2 projSize = screen_size * projVoxel.xy / projVoxel.w;
 
-  gl_PointSize = 3.2 * (projSize.x + projSize.y);
+  vec3 vertex_pos = position + vec3(offset_coords, 0.);
+  vec4 viewPos = view * vec4(vertex_pos, 1.);
+
   gl_Position = proj * viewPos;
+  frag_position = position;
+  frag_tex_coords = tex_coords;
 }

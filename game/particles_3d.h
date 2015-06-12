@@ -72,6 +72,21 @@ private:
 
 #include <random>
 
+class single_create_policy_t {
+protected:
+   bool created_ = false;
+
+   glm::vec3 create_location_ = {400., 50., -200.};
+   void set_create_location(glm::vec3 const & loc) { create_location_ = loc; }
+
+   template <typename T>
+   void create_particles(T & emitter, double time_since_last) {
+      if (created_) return;
+      created_ = true;
+      emitter.add(create_location_);
+   }
+};
+
 template <unsigned CREATE_PER_SEC>
 class constant_create_policy_t {
 protected:
@@ -85,7 +100,7 @@ protected:
       auto pos = glm::vec3{
          (float)(rnd() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
          800.,
-         800.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
+         100.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
 
       emitter.add(pos);
    }
@@ -118,6 +133,34 @@ protected:
    }
 };
 
+class oscillating_update_policy_t {
+protected:
+   using idx_t = std::size_t;
+
+   float amplitude_ = 1.;
+
+   template <typename T>
+   void particle_created(T & emitter, idx_t idx) {
+      emitter.vel_at(idx) = {0., 0., 0.};
+   }
+
+   template <typename T>
+   void update_particle(T & emitter, idx_t idx, float time_since_last) {
+      auto & pos = emitter.pos_at(idx);
+      auto create_time = emitter.create_time_at(idx);
+      auto xoffs = amplitude_ * std::sin((float)emitter.time() - create_time);
+      pos += glm::vec3{xoffs, 0., 0.};
+   }
+};
+
+class never_delete_policy_t {
+public:
+   using idx_t = std::size_t;
+
+   template <typename T>
+   bool should_delete(T & emitter, idx_t idx) { return false; }
+};
+
 template <unsigned TTL_MS>
 class constant_time_delete_policy_t {
 public:
@@ -146,6 +189,11 @@ using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
    constant_create_policy_t<500>,
    constant_update_policy_t,
    constant_depth_delete_policy_t<0> >;
+
+using test_particle_emitter_buffer_t = particle_emitter_buffer_t <
+   single_create_policy_t,
+   oscillating_update_policy_t,
+   never_delete_policy_t >;
 
 
 #endif // #ifndef PARTICLES_3D__H

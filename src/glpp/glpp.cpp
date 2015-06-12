@@ -517,30 +517,47 @@ namespace glpp
    *
    */
 
+   struct image_t::impl {
+      impl(std::string const & filename)
+         : data(SOIL_load_image(filename.c_str(), &width, &height, &channels, SOIL_LOAD_AUTO)) {
+         // TODO: allow SOIL_LOAD_LA (greyscale w/ alpha)
+      }
+
+      ~impl() {
+         //SOIL_free_image_data(data);
+      }
+
+      int width;
+      int height;
+      int channels;
+      unsigned char * data;
+   };
+
+   namespace {
+      static unsigned char * tmp;
+   }
+
    image_t::image_t(std::string const & filename)
-      : data(SOIL_load_image(filename.c_str(), &width, &height, &channels, SOIL_LOAD_AUTO)) {
+      : impl_(std::unique_ptr<impl>(new impl(filename))) {
       // TODO: allow SOIL_LOAD_LA (greyscale w/ alpha)
    }
 
-   image_t::image_t(image_t && other)
-      : width{ other.width }
-      , height{ other.height }
-      , channels{ other.channels }
-      , data{ other.data } {
-      other.data = nullptr;
+   image_t::~image_t() = default;
+
+   int image_t::width() const {
+      return impl_->width;
    }
 
-   image_t & image_t::operator=(image_t && other) {
-      std::swap(width, other.width);
-      std::swap(height, other.height);
-      std::swap(channels, other.channels);
-      std::swap(data, other.data);
-      return *this;
+   int image_t::height() const {
+      return impl_->height;
    }
 
-   image_t::~image_t() {
-      if (data)
-         SOIL_free_image_data(data);
+   int image_t::channels() const {
+      return impl_->channels;
+   }
+
+   unsigned char * image_t::data() const {
+      return impl_->data;
    }
 
 
@@ -553,14 +570,14 @@ namespace glpp
       return static_cast<unsigned int>(tgt);
    }
 
-   texture_t::state::state(image_t const & image, Target target)
+   texture_t::state::state(image_t image, Target target)
    : format_(texture_format_t::RGBA) { // TODO: this may not be right?
-      dims_.x = image.width;
-      dims_.y = image.height;
+      dims_.x = image.width();
+      dims_.y = image.height();
 
-      int width = image.width;
-      int height = image.height;
-      id_ = SOIL_create_OGL_texture(image.data, &width, &height, image.channels, 0, SOIL_FLAG_INVERT_Y);
+      int width = image.width();
+      int height = image.height();
+      id_ = SOIL_create_OGL_texture(image.data(), &width, &height, image.channels(), 0, SOIL_FLAG_INVERT_Y);
 
       if (!id_) {
          throw glpp::error(std::string("Could not load texture from image: ") + SOIL_last_result());
@@ -692,7 +709,7 @@ namespace glpp
       glDeleteTextures(1, &id_);
    }
 
-   texture_t::texture_t(image_t const & image)
+   texture_t::texture_t(image_t image)
       : state_(std::make_shared<state>(image, TEXTURE_2D)) {
    }
 

@@ -53,7 +53,9 @@ namespace glpp {
       }
 
       bool is_path_a_directory(std::string const & path) {
-         auto attr = GetFileAttributesA(path.c_str());
+         auto path_copy = path;
+
+         auto attr = GetFileAttributesA(path_copy.c_str());
          if (attr == INVALID_FILE_ATTRIBUTES) {
             throw std::runtime_error(get_last_error_message().c_str());
          }
@@ -221,7 +223,7 @@ namespace glpp {
    image_t directory_archive_t::load_image(std::string const & id) const {
       auto file_path = id_to_file_path(id);
 
-      return{ file_path.path };
+      return image_t{ file_path.path };
    }
 
 

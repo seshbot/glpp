@@ -73,11 +73,6 @@ mediump float calc_shadow_factor(mediump vec3 world_position) {
    return visibility;
 }
 
-lowp vec4 gamma(lowp vec4 c) {
-	return vec4(sqrt(c.rgb), c.a);  // 2.0 gamma correction (use below for 2.2)
-	//return vec4(pow(c.r, 1. / 2.2), pow(c.g, 1. / 2.2), pow(c.b, 1. / 2.2), c.a);
-}
-
 mediump vec3 light(PositionalLight light) {
    // calculate attenuation (light strengtht based on inverse square law)
    mediump float dist = distance(frag_position, light.world_position);

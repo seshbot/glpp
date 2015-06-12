@@ -365,6 +365,7 @@ namespace game {
       , prg_3d_shadow{ create_program(assets, "3d_shadow") }
       , prg_3d_particle{ create_program(assets, "3d_particle") }
       , prg_post{ create_program(assets, "post") }
+      //, test_tex(assets.load_image("test-100x100.png"))
       , rain_tex(assets.load_image("rain.png"))
       , shadow_tex{ std::unique_ptr<glpp::cube_map_texture_t>() }
       , post_tex{ std::unique_ptr<glpp::texture_t>() }
@@ -509,13 +510,13 @@ namespace game {
       // particle pass
       //
 
-      auto emitter_buffer_desc = glpp::describe_buffer(emitter.buffer())
-         .attrib("position", 3);
-      particle_pass.push_back(context.prg_3d_particle.pass()
-         .with(emitter_buffer_desc)
-         .set_uniform_action("screen_size", callbacks::set_screensize(context.context))
-         .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f))
-         .set_uniform_action("view", callbacks::set_view(*this)));
+      //auto emitter_buffer_desc = glpp::describe_buffer(emitter.buffer())
+      //   .attrib("position", 3);
+      //particle_pass.push_back(context.prg_3d_particle.pass()
+      //   .with(emitter_buffer_desc)
+      //   .set_uniform_action("screen_size", callbacks::set_screensize(context.context))
+      //   .set_uniform("proj", glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f))
+      //   .set_uniform_action("view", callbacks::set_view(*this)));
 
 
       //
@@ -675,10 +676,10 @@ namespace game {
       gl::enable(gl::enable_cap_t::blend);
 
       context.prg_3d.use();
-      glpp::texture_unit_t tu{ 3 };
-      tu.activate();
+      glpp::texture_unit_t shadow_tu{ 3 };
+      shadow_tu.activate();
       context.shadow_tex->bind();
-      context.prg_3d.uniform("shadow_texture").set(tu);
+      context.prg_3d.uniform("shadow_texture").set(shadow_tu);
 
       //
       // draw to anti-aliasing frame buffer
@@ -700,9 +701,50 @@ namespace game {
 
          //debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
 
+#if 1
          gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 
-         particle_pass.back().draw(glpp::DrawMode::Points);
+         context.prg_3d_particle.use();
+         context.prg_3d_particle.uniform("screen_size").set(glm::vec2{ dims.x, dims.y });
+         context.prg_3d_particle.uniform("proj").set(glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f));
+         context.prg_3d_particle.uniform("view").set(get_view(*this));
+         auto tu = glpp::texture_unit_t{ 5 };
+         tu.activate();
+         context.rain_tex.bind();
+         context.prg_3d_particle.uniform("texture").set(tu);
+
+         std::vector<glm::vec3> positions;
+         positions.assign(6, { 400., 50., -200. });
+         auto particle_position_buffer = glpp::describe_buffer(emitter.buffer())
+            .attrib("position", 3)
+            .build(context.prg_3d_particle);
+         glpp::bind(particle_position_buffer);
+         gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
+
+         static float particle_static_data[] = {
+            0., 0.,      0., 1.,  // x, y,   s, t
+            0., -90.,   0., 0.,  // x, y,   s, t
+            5., 0.,    1., 1.,  // x, y,   s, t
+            5., 0.,    1., 1.,  // x, y,   s, t
+            0., -90.,   0., 0.,  // x, y,   s, t
+            5., -90., 1., 0.,  // x, y,   s, t
+         };
+
+         auto particle_static_buffer = glpp::describe_buffer({ particle_static_data })
+            .attrib("offset_coords", 2)
+            .attrib("tex_coords", 2)
+            .build(context.prg_3d_particle);
+         glpp::bind(particle_static_buffer);
+
+         GL_CHECK();
+
+         GL_VERIFY(gl::angle::draw_arrays_instanced(gles2::primitive_type_t::triangles, 0, 6, emitter.count()));
+         //GL_VERIFY(gl::draw_arrays(gles2::primitive_type_t::points, 0, 6));
+
+         gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 0);
+         glpp::unbind(particle_static_buffer);
+         glpp::unbind(particle_position_buffer);
+#endif
       }
       // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
       context.tex_fbo->bind(glpp::frame_buffer_t::Draw);

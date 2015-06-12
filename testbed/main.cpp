@@ -167,7 +167,7 @@ int main()
          prg.use();
          glpp::bind(particle_mesh_buffer);
          glpp::bind(particle_positions_buffer);
-         gl::angle::vertex_attrib_divisor(prg.attrib("mesh_pos").location(), 0);
+         //gl::angle::vertex_attrib_divisor(prg.attrib("mesh_pos").location(), 0);
          gl::angle::vertex_attrib_divisor(prg.attrib("pos").location(), 1);
          gl::angle::vertex_attrib_divisor(prg.attrib("col").location(), 1);
          gl::angle::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 3, 1000);

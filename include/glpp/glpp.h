@@ -73,24 +73,28 @@ namespace glpp {
 
    class image_t {
    public:
-      image_t(std::string const & filename);
-      image_t(image_t && other);
-      image_t & operator=(image_t && other);
-      image_t(image_t const & other) = delete;
-      image_t & operator=(image_t const & other) = delete;
+      image_t(image_t const &) = default;
+      image_t & operator=(image_t const &) = default;
+      image_t(image_t &&) = default;
+      image_t & operator=(image_t &&) = default;
+      explicit image_t(std::string const & filename);
       ~image_t();
 
-      int width;
-      int height;
-      int channels;
-      unsigned char * data;
+      int width() const;
+      int height() const;
+      int channels() const;
+      unsigned char * data() const;
+
+   private:
+      struct impl;
+      std::shared_ptr<const impl> impl_;
    };
 
    class texture_t {
    public:
       using id_type = uint32_t;
 
-      texture_t(image_t const & image);
+      texture_t(image_t image);
       texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
 
       id_type id() const { return state_->id_; }
@@ -112,7 +116,7 @@ namespace glpp {
       static unsigned int to_gl(Target target);
 
       struct state {
-         state(image_t const & image, Target target);
+         state(image_t image, Target target);
          state(dim_t const & dims, Target target, texture_format_t format);
          ~state();
          id_type id_;
