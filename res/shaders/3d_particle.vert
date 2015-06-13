@@ -23,7 +23,7 @@ void main() {
 	vec2 horiz_direction = normalize(vec2(eye_to_center.x, eye_to_center.z));
 	vec2 horiz_direction_rot90 = vec2(horiz_direction.y, -horiz_direction.x);
 	float c = dot(horiz_direction, vec2(0., -1.));
-	float s = sin(acos(c)); // dot(horiz_direction_rot90, vec2(0., -1.));
+	float s = dot(horiz_direction_rot90, vec2(0., -1.));
 
 	mat4 rot = mat4(c,  0., s,  0.,
 					0., 1., 0., 0.,
