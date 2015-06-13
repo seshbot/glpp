@@ -365,7 +365,7 @@ namespace game {
       , prg_3d_shadow{ create_program(assets, "3d_shadow") }
       , prg_3d_particle{ create_program(assets, "3d_particle") }
       , prg_post{ create_program(assets, "post") }
-      //, test_tex(assets.load_image("test-100x100.png"))
+      , test_tex(assets.load_image("test-100x100.png"))
       , rain_tex(assets.load_image("rain.png"))
       , shadow_tex{ std::unique_ptr<glpp::cube_map_texture_t>() }
       , post_tex{ std::unique_ptr<glpp::texture_t>() }
@@ -708,6 +708,8 @@ namespace game {
          context.prg_3d_particle.uniform("screen_size").set(glm::vec2{ dims.x, dims.y });
          context.prg_3d_particle.uniform("proj").set(glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f));
          context.prg_3d_particle.uniform("view").set(get_view(*this));
+         context.prg_3d_particle.uniform("eye").set(get_camera_pos(*this));
+         
          auto tu = glpp::texture_unit_t{ 5 };
          tu.activate();
          context.rain_tex.bind();
@@ -720,12 +722,12 @@ namespace game {
          gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
 
          static float particle_static_data[] = {
-            0., 0.,    0., 1.,  // x, y,   s, t
-            0., -90.,  0., 0.,  // x, y,   s, t
-            5., 0.,    1., 1.,  // x, y,   s, t
-            5., 0.,    1., 1.,  // x, y,   s, t
-            0., -90.,  0., 0.,  // x, y,   s, t
-            5., -90.,  1., 0.,  // x, y,   s, t
+            -2., 0.,    0., 1.,  // x, y,   s, t
+            -2., -90.,  0., 0.,  // x, y,   s, t
+            -2., 0.,    1., 1.,  // x, y,   s, t
+            2., 0.,    1., 1.,  // x, y,   s, t
+            -2., -90.,  0., 0.,  // x, y,   s, t
+            2., -90.,  1., 0.,  // x, y,   s, t
          };
 
          auto particle_static_buffer = glpp::describe_buffer({ particle_static_data })

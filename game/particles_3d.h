@@ -137,7 +137,8 @@ class oscillating_update_policy_t {
 protected:
    using idx_t = std::size_t;
 
-   float amplitude_ = 1.;
+   float amplitude_ = 7.;
+   float frequency_ = 3.;
 
    template <typename T>
    void particle_created(T & emitter, idx_t idx) {
@@ -148,7 +149,7 @@ protected:
    void update_particle(T & emitter, idx_t idx, float time_since_last) {
       auto & pos = emitter.pos_at(idx);
       auto create_time = emitter.create_time_at(idx);
-      auto xoffs = amplitude_ * std::sin((float)emitter.time() - create_time);
+      auto xoffs = amplitude_ * std::sin(frequency_ * (float)emitter.time() - create_time);
       pos += glm::vec3{xoffs, 0., 0.};
    }
 };
