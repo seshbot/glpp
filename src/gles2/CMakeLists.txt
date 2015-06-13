@@ -1,10 +1,8 @@
 set(SOURCE
   gles2.cpp ${PROJECT_SOURCE_DIR}/include/glpp/gles2.h
   commands.cpp
-  extensions.cpp
   angle/extensions.cpp
   ${PROJECT_SOURCE_DIR}/include/glpp/gles2/commands.h
-  ${PROJECT_SOURCE_DIR}/include/glpp/gles2/extensions.h
   ${PROJECT_SOURCE_DIR}/include/glpp/gles2/extensions_enums.h
   ${PROJECT_SOURCE_DIR}/include/glpp/gles2/enums.h
   ${PROJECT_SOURCE_DIR}/include/glpp/gles2/angle/extensions.h

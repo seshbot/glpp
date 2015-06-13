@@ -713,8 +713,6 @@ namespace game {
          context.rain_tex.bind();
          context.prg_3d_particle.uniform("texture").set(tu);
 
-         std::vector<glm::vec3> positions;
-         positions.assign(6, { 400., 50., -200. });
          auto particle_position_buffer = glpp::describe_buffer(emitter.buffer())
             .attrib("position", 3)
             .build(context.prg_3d_particle);
@@ -722,12 +720,12 @@ namespace game {
          gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
 
          static float particle_static_data[] = {
-            0., 0.,      0., 1.,  // x, y,   s, t
-            0., -90.,   0., 0.,  // x, y,   s, t
+            0., 0.,    0., 1.,  // x, y,   s, t
+            0., -90.,  0., 0.,  // x, y,   s, t
             5., 0.,    1., 1.,  // x, y,   s, t
             5., 0.,    1., 1.,  // x, y,   s, t
-            0., -90.,   0., 0.,  // x, y,   s, t
-            5., -90., 1., 0.,  // x, y,   s, t
+            0., -90.,  0., 0.,  // x, y,   s, t
+            5., -90.,  1., 0.,  // x, y,   s, t
          };
 
          auto particle_static_buffer = glpp::describe_buffer({ particle_static_data })
@@ -736,10 +734,7 @@ namespace game {
             .build(context.prg_3d_particle);
          glpp::bind(particle_static_buffer);
 
-         GL_CHECK();
-
          GL_VERIFY(gl::angle::draw_arrays_instanced(gles2::primitive_type_t::triangles, 0, 6, emitter.count()));
-         //GL_VERIFY(gl::draw_arrays(gles2::primitive_type_t::points, 0, 6));
 
          gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 0);
          glpp::unbind(particle_static_buffer);

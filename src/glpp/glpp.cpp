@@ -869,7 +869,7 @@ namespace glpp
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, colour_rbo_id_));
 #ifdef _MSC_VER
       if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::bgra8_ext, dims_.x, dims_.y));
-      else GL_VERIFY(gl_::renderbuffer_storage_multisample_angle(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::bgra8_ext, dims_.x, dims_.y));
+      else GL_VERIFY(gl_::angle::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::bgra8_ext, dims_.x, dims_.y));
 #else
       if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::rgb8, dims_.x, dims_.y));
       else GL_VERIFY(gl_::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::rgb8, dims_.x, dims_.y));
@@ -880,7 +880,7 @@ namespace glpp
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, depth_rbo_id_));
 #ifdef _MSC_VER
       if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
-      else GL_VERIFY(gl_::renderbuffer_storage_multisample_angle(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
+      else GL_VERIFY(gl_::angle::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
 #else
       if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
       else GL_VERIFY(gl_::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
@@ -956,7 +956,7 @@ namespace glpp
       GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::read_framebuffer, fbo_id_)); // Make sure your multisampled FBO is the read framebuffer
 #ifdef _MSC_VER
       gl::int_t TMP_GL_NEAREST = 0x2600;
-      GL_VERIFY(gl_::blit_framebuffer_angle(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
+      GL_VERIFY(gl_::angle::blit_framebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
 #else
       gl::int_t TMP_GL_NEAREST = 0x2600;
       GL_VERIFY(gl_::blit_framebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
