@@ -86,6 +86,8 @@ namespace game {
 
       std::vector<mesh_render_info> mesh_renderers;
 
+      glpp::buffer_spec_t particle_mesh_buffer;
+      glpp::buffer_spec_t particle_position_buffer;
       std::vector<glpp::pass_t> debug_diamond_pass;
       std::vector<glpp::pass_t> ground_pass;
       std::vector<glpp::pass_t> particle_pass;

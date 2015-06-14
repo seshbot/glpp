@@ -25,12 +25,13 @@
 
 
 // TODO:
-// - fire mesh
+// - fire particles
 // - grass texture
 // - pass lights in uniforms
 // - day/night cycle
 // - text
 // - audio
+// - bloom
 
 namespace gl {
 #ifdef _MSC_VER

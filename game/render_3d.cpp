@@ -41,6 +41,10 @@ namespace game { namespace impl {
 namespace {
    const int shadow_texture_width = 100;
 
+   glpp::texture_unit_t POST_TEXTURE_UNIT{ 2 };
+   glpp::texture_unit_t SHADOW_TEXTURE_UNIT{ 3 };
+   glpp::texture_unit_t RAIN_TEXTURE_UNIT{ 5 };
+
    glpp::shader vert_shader(glpp::archive_t const & assets, std::string name) { return assets.load_shader(utils::fmt("shaders/%s.vert", name.c_str())); }
    glpp::shader frag_shader(glpp::archive_t const & assets, std::string name) { return assets.load_shader(utils::fmt("shaders/%s.frag", name.c_str())); }
 
@@ -345,6 +349,7 @@ namespace game {
    model_repository::model_repository(glpp::archive_t const & archive) {
       scenes.emplace("dude", archive.load_scene("dude-anim.fbx"));
       scenes.emplace("campfire", archive.load_scene("campfire.fbx"));
+      scenes.emplace("trees", archive.load_scene("trees.fbx"));
    }
 
    glpp::scene_t const & model_repository::find_scene_by_name(std::string const & name) const {
@@ -519,12 +524,29 @@ namespace game {
       //   .set_uniform_action("view", callbacks::set_view(*this)));
 
 
+      static float particle_static_data[] = {
+         -2., 0.,    0., 1.,  // x, y,   s, t
+         -2., -90.,  0., 0.,  // x, y,   s, t
+         -2., 0.,    1., 1.,  // x, y,   s, t
+         2., 0.,    1., 1.,  // x, y,   s, t
+         -2., -90.,  0., 0.,  // x, y,   s, t
+         2., -90.,  1., 0.,  // x, y,   s, t
+      };
+
+      particle_position_buffer = glpp::describe_buffer(emitter.buffer())
+         .attrib("position", 3)
+         .build(context.prg_3d_particle);
+      particle_mesh_buffer = glpp::describe_buffer({ particle_static_data })
+         .attrib("offset_coords", 2)
+         .attrib("tex_coords", 2)
+         .build(context.prg_3d_particle);
+
       //
       // post-processing pass
       //
 
       // TODO: dont hard-code the texture unit
-      auto set_post_tex_cb = [this](glpp::uniform & u) { glpp::texture_unit_t tu{ 2 }; tu.activate(); context.post_tex->bind();  u.set(tu); };
+      auto set_post_tex_cb = [this](glpp::uniform & u) { POST_TEXTURE_UNIT.activate(); context.post_tex->bind();  u.set(POST_TEXTURE_UNIT); };
       post_pass.push_back(context.prg_post.pass()
          .with(screen_vertices_spec())
          .set_uniform_action("texture", set_post_tex_cb)
@@ -676,10 +698,9 @@ namespace game {
       gl::enable(gl::enable_cap_t::blend);
 
       context.prg_3d.use();
-      glpp::texture_unit_t shadow_tu{ 3 };
-      shadow_tu.activate();
+      SHADOW_TEXTURE_UNIT.activate();
       context.shadow_tex->bind();
-      context.prg_3d.uniform("shadow_texture").set(shadow_tu);
+      context.prg_3d.uniform("shadow_texture").set(SHADOW_TEXTURE_UNIT);
 
       //
       // draw to anti-aliasing frame buffer
@@ -710,36 +731,19 @@ namespace game {
          context.prg_3d_particle.uniform("view").set(get_view(*this));
          context.prg_3d_particle.uniform("eye").set(get_camera_pos(*this));
          
-         auto tu = glpp::texture_unit_t{ 5 };
-         tu.activate();
+         RAIN_TEXTURE_UNIT.activate();
          context.rain_tex.bind();
-         context.prg_3d_particle.uniform("texture").set(tu);
+         context.prg_3d_particle.uniform("texture").set(RAIN_TEXTURE_UNIT);
 
-         auto particle_position_buffer = glpp::describe_buffer(emitter.buffer())
-            .attrib("position", 3)
-            .build(context.prg_3d_particle);
          glpp::bind(particle_position_buffer);
          gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
 
-         static float particle_static_data[] = {
-            -2., 0.,    0., 1.,  // x, y,   s, t
-            -2., -90.,  0., 0.,  // x, y,   s, t
-            -2., 0.,    1., 1.,  // x, y,   s, t
-            2., 0.,    1., 1.,  // x, y,   s, t
-            -2., -90.,  0., 0.,  // x, y,   s, t
-            2., -90.,  1., 0.,  // x, y,   s, t
-         };
-
-         auto particle_static_buffer = glpp::describe_buffer({ particle_static_data })
-            .attrib("offset_coords", 2)
-            .attrib("tex_coords", 2)
-            .build(context.prg_3d_particle);
-         glpp::bind(particle_static_buffer);
+         glpp::bind(particle_mesh_buffer);
 
          GL_VERIFY(gl::angle::draw_arrays_instanced(gles2::primitive_type_t::triangles, 0, 6, emitter.count()));
 
          gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 0);
-         glpp::unbind(particle_static_buffer);
+         glpp::unbind(particle_mesh_buffer);
          glpp::unbind(particle_position_buffer);
 #endif
       }
