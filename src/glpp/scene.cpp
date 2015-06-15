@@ -75,16 +75,16 @@ namespace glpp {
          , name_("default")
          , ticks_per_second(0)
          , duration_ticks(0)
-         , root_node(nullptr)
+         , root_node_animation(nullptr)
       {
       }
 
-      impl(aiScene const & scene, aiAnimation const & animation)
-         : ai_scene(&scene)
+      impl(aiScene const & scenex, aiAnimation const & animation)
+         : ai_scene(&scenex)
          , name_(ai::get_name(animation))
          , ticks_per_second(animation.mTicksPerSecond)
          , duration_ticks(animation.mDuration)
-         , root_node(nullptr)
+         , root_node_animation(nullptr)
       {
          // ensure node data never moves - allocate enough space for one entry per node
          std::function<unsigned(aiNode* n)> child_count = [&](aiNode* n) {
@@ -92,8 +92,8 @@ namespace glpp {
             for (auto idx = 0U; idx < n->mNumChildren; idx++) count += child_count(n->mChildren[idx]);
             return count;
          };
-         auto node_count = child_count(scene.mRootNode);
-         nodes.reserve(node_count);
+         auto node_count = child_count(ai_scene->mRootNode);
+         node_animations.reserve(node_count);
 
          // node node_animation lookup table
          std::map<std::string, ai::node_animation_t*> nodes_by_name;
@@ -117,12 +117,12 @@ namespace glpp {
          std::function<void(aiNode* n)> create_nodes_recursive = [&](aiNode* n) {
             auto node_name = n->mName.C_Str();
             assert(nodes_by_name.find(node_name) == nodes_by_name.end());
-            nodes.push_back({ *n });
-            nodes_by_name[node_name] = &nodes.back();
+            node_animations.push_back({ *n });
+            nodes_by_name[node_name] = &node_animations.back();
             for (auto idx = 0U; idx < n->mNumChildren; idx++)
                create_nodes_recursive(n->mChildren[idx]);
          };
-         create_nodes_recursive(scene.mRootNode);
+         create_nodes_recursive(ai_scene->mRootNode);
 
          //
          // create mesh animations by recursively iterating through nodes
@@ -134,12 +134,12 @@ namespace glpp {
                child_mesh_count += count_meshes_recursive(n->mChildren[idx]);
             return n->mNumMeshes + child_mesh_count;
          };
-         mesh_animations.reserve(count_meshes_recursive(scene.mRootNode));
+         mesh_animations.reserve(count_meshes_recursive(ai_scene->mRootNode));
 
          std::function<void(aiNode* n)> create_meshes_recursive = [&](aiNode* n) {
             auto * node = lookup_node_anim(n);
             for (auto mesh_idx = 0U; mesh_idx < n->mNumMeshes; mesh_idx++) {
-               auto & mesh = *scene.mMeshes[n->mMeshes[mesh_idx]];
+               auto & mesh = *ai_scene->mMeshes[n->mMeshes[mesh_idx]];
                std::vector<ai::mesh_animation_t::bone_t> bones;
                for (auto bone_idx = 0U; bone_idx < mesh.mNumBones; bone_idx++) {
                   auto * bone = mesh.mBones[bone_idx];
@@ -152,7 +152,7 @@ namespace glpp {
             for (auto idx = 0U; idx < n->mNumChildren; idx++)
                create_meshes_recursive(n->mChildren[idx]);
          };
-         create_meshes_recursive(scene.mRootNode);
+         create_meshes_recursive(ai_scene->mRootNode);
 
          //
          // add animations to nodes and track channels
@@ -170,7 +170,7 @@ namespace glpp {
          // connect node animation hierarchy
          //
 
-         for (auto & anim : nodes) {
+         for (auto & anim : node_animations) {
             auto & node = anim.node_;
             // set parent
             assert(!anim.parent);
@@ -183,10 +183,10 @@ namespace glpp {
             }
          }
 
-         auto root_node_name = std::string{ scene.mRootNode->mName.C_Str() };
-         root_node = nodes_by_name.find(root_node_name)->second;
+         auto root_node_name = std::string{ ai_scene->mRootNode->mName.C_Str() };
+         root_node_animation = nodes_by_name.find(root_node_name)->second;
 
-         global_inverse_transform = glm::inverse(ai::to_mat4(root_node->ai_node().mTransformation));
+         global_inverse_transform = glm::inverse(ai::to_mat4(root_node_animation->ai_node().mTransformation));
       }
 
       std::string name() const {
@@ -199,9 +199,9 @@ namespace glpp {
       std::string name_;
       double ticks_per_second;
       double duration_ticks;
-      ai::node_animation_t const * root_node;
+      ai::node_animation_t const * root_node_animation;
       glm::mat4 global_inverse_transform;
-      std::vector<ai::node_animation_t> nodes; // storage for node anim hierarchy
+      std::vector<ai::node_animation_t> node_animations; // storage for node anim hierarchy
       std::vector<ai::mesh_animation_t> mesh_animations;
    };
 
@@ -233,7 +233,7 @@ namespace glpp {
          , current_time_secs(time_secs)
       {
          // not animated
-         if (!animation_in.root_node) {
+         if (!animation_in.root_node_animation) {
             auto & ai_scene = *animation_in.ai_scene;
 
             // TODO: incorporate global inverse transform here? (third parameter)
@@ -248,7 +248,7 @@ namespace glpp {
             // create node animation snapshots
             //
 
-            node_snapshots.reserve(animation_in.nodes.size());
+            node_snapshots.reserve(animation_in.node_animations.size());
             std::map<std::string, ai::node_animation_timeline_t const *> node_snapshots_by_name;
 
             std::function<ai::node_animation_timeline_t const *(ai::node_animation_t const &, ai::node_animation_timeline_t const *)> create_and_add_snapshot_recursive = [&](ai::node_animation_t const & n, ai::node_animation_timeline_t const * parent) {
@@ -266,7 +266,7 @@ namespace glpp {
                return new_snapshot;
             };
 
-            root_node_snapshot = create_and_add_snapshot_recursive(*animation_in.root_node, nullptr);
+            root_node_snapshot = create_and_add_snapshot_recursive(*animation_in.root_node_animation, nullptr);
 
             //
             // create mesh/bone structure (node.mesh_animations) for each animation node
@@ -408,13 +408,13 @@ namespace glpp {
    //
 
    struct scene_t::impl {
-      impl(scene_t const & concept, aiScene const * ai_scene)
+      impl(scene_t const & scene, aiScene const * ai_scene)
          : ai_scene_(ai_scene)
-         , default_animation_(concept, *ai_scene) {
+         , default_animation_(scene, *ai_scene) {
          animations_.reserve(ai_scene->mNumAnimations);
 
          for (auto idx = 0U; idx < ai_scene->mNumAnimations; idx++) {
-            animations_.push_back({ concept, *ai_scene, *ai_scene->mAnimations[idx], idx });
+            animations_.push_back({ scene, *ai_scene, *ai_scene->mAnimations[idx], idx });
             // to snapshot: animation_timeline_t(animation_t const & animation, double time_secs)
          }
 

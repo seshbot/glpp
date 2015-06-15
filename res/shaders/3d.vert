@@ -11,11 +11,13 @@ uniform mediump mat4 bones[20];
 
 attribute mediump vec3 p;
 attribute mediump vec3 normal;
+attribute mediump vec2 tex_coords;
 attribute lowp vec4 bone_indices;
 attribute lowp vec4 bone_weights;
 
 varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
+varying mediump vec2 frag_tex_coords;
 
 
 void main() {
@@ -31,4 +33,6 @@ void main() {
 
    // TODO: incorporate BoneTransform in normal_matrix
    frag_normal = normalize(vec4(model * BoneTransform * vec4(normal, 0.)).xyz);
+
+   frag_tex_coords = tex_coords;
 }

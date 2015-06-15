@@ -41,8 +41,10 @@ namespace game { namespace impl {
 namespace {
    const int shadow_texture_width = 100;
 
+   glpp::texture_unit_t BLANK_TEXTURE_UNIT{ 9 };
    glpp::texture_unit_t POST_TEXTURE_UNIT{ 2 };
    glpp::texture_unit_t SHADOW_TEXTURE_UNIT{ 3 };
+   glpp::texture_unit_t GROUND_TEXTURE_UNIT{ 4 };
    glpp::texture_unit_t RAIN_TEXTURE_UNIT{ 5 };
 
    glpp::shader vert_shader(glpp::archive_t const & assets, std::string name) { return assets.load_shader(utils::fmt("shaders/%s.vert", name.c_str())); }
@@ -140,10 +142,10 @@ namespace {
    //
 
    static const float ground_verts[] = {
-      -400.,   0., -1300.,   0., 1., 0.,
-      1200., 0., -1300.,   0., 1., 0.,
-      -400.,   0.,  500.,     0., 1., 0.,
-      1200., 0.,  500.,     0., 1., 0.,
+      -400.,   0., -1300.,   0., 1., 0.,    0., 10.,
+      1200., 0., -1300.,     0., 1., 0.,    10., 10.,
+      -400.,   0.,  500.,    0., 1., 0.,    0., 0.,
+      1200., 0.,  500.,      0., 1., 0.,    10., 0.,
    };
    static const unsigned short ground_indices[] = {
       0, 2, 1,
@@ -231,7 +233,7 @@ namespace {
    // helper functions
    //
 
-   std::vector<glpp::pass_t> make_mesh_passes(glpp::program & program, glpp::animation_t const & animation, bool shadow) {
+   std::vector<glpp::pass_t> make_mesh_passes(game::render_context const & ctx, glpp::program & program, glpp::animation_t const & animation, bool shadow) {
       std::vector<glpp::pass_t> result;
 
       //auto animation = first_animation(scene);
@@ -252,6 +254,8 @@ namespace {
          auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
 
          if (!shadow) {
+            auto set_blank_tex_cb = [&](glpp::uniform & u) { BLANK_TEXTURE_UNIT.activate(); ctx.blank_tex.bind(); u.set(BLANK_TEXTURE_UNIT); };
+
             result.push_back(
                program.pass()
                .with(verts)
@@ -259,6 +263,7 @@ namespace {
                .with(bone_indices)
                .with(bone_weights)
                .set_uniform("colour", mesh.material().diffuse_colour)
+               .set_uniform_action("texture", set_blank_tex_cb)
                //.set_uniform_action("bones[0]", set_bones_action)
                );
          }
@@ -276,11 +281,11 @@ namespace {
       return result;
    };
 
-   game::renderer::mesh_render_info make_render_info(glpp::animation_t const & animation, glpp::program & prg_3d, glpp::program & prg_3d_shadow) {
+   game::renderer::mesh_render_info make_render_info(game::render_context const & ctx, glpp::animation_t const & animation, glpp::program & prg_3d, glpp::program & prg_3d_shadow) {
       return{
          animation,
-         make_mesh_passes(prg_3d, animation, false),
-         make_mesh_passes(prg_3d_shadow, animation, true)
+         make_mesh_passes(ctx, prg_3d, animation, false),
+         make_mesh_passes(ctx, prg_3d_shadow, animation, true)
       };
    };
 
@@ -370,7 +375,9 @@ namespace game {
       , prg_3d_shadow{ create_program(assets, "3d_shadow") }
       , prg_3d_particle{ create_program(assets, "3d_particle") }
       , prg_post{ create_program(assets, "post") }
+      , blank_tex(assets.load_image("blank-1x1.png"))
       , test_tex(assets.load_image("test-100x100.png"))
+      , ground_tex(assets.load_image("ground-64x64.png"))
       , rain_tex(assets.load_image("rain.png"))
       , shadow_tex{ std::unique_ptr<glpp::cube_map_texture_t>() }
       , post_tex{ std::unique_ptr<glpp::texture_t>() }
@@ -462,9 +469,9 @@ namespace game {
       : context(ctx)
    {
       auto accumulate_scene_renderers = [&](glpp::scene_t const & scene) {
-         mesh_renderers.push_back(make_render_info(scene.default_animation(), context.prg_3d, context.prg_3d_shadow));
+         mesh_renderers.push_back(make_render_info(context, scene.default_animation(), context.prg_3d, context.prg_3d_shadow));
          for (auto anim_name : scene.animation_names()) {
-            mesh_renderers.push_back(make_render_info(scene.animation(anim_name), context.prg_3d, context.prg_3d_shadow));
+            mesh_renderers.push_back(make_render_info(context, scene.animation(anim_name), context.prg_3d, context.prg_3d_shadow));
          }
       };
 
@@ -493,17 +500,20 @@ namespace game {
 
       auto ground_buffer_desc = glpp::describe_buffer({ ground_verts, ground_indices })
          .attrib("p", 3)
-         .attrib("normal", 3);
+         .attrib("normal", 3)
+         .attrib("tex_coords", 2);
       auto ground_bone_indices_buffer_desc = glpp::describe_buffer(glpp::static_array_t{ default_bone_indices })
          .attrib("bone_indices", 4);
       auto ground_bone_weights_buffer_desc = glpp::describe_buffer(glpp::static_array_t{ default_bone_weights })
          .attrib("bone_weights", 4);
 
+      auto set_ground_tex_cb = [this](glpp::uniform & u) { GROUND_TEXTURE_UNIT.activate(); context.ground_tex.bind();  u.set(GROUND_TEXTURE_UNIT); };
       ground_pass.push_back(context.prg_3d.pass()
          .with(ground_buffer_desc)
          .with(ground_bone_indices_buffer_desc)
          .with(ground_bone_weights_buffer_desc)
          .set_uniform("colour", glm::vec4(.8f, .8f, .16f, 1.f))
+         .set_uniform_action("texture", set_ground_tex_cb)
          .set_uniform("model", glm::mat4{})
          .set_uniform_action("mvp", callbacks::set_mvp(*this))
          //         .set_uniform("normal_matrix", glm::mat4{})

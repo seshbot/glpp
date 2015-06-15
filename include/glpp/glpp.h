@@ -519,6 +519,8 @@ namespace glpp {
       // create a pass that uses this pass as a parent - primitives added to child will not affect parent
       pass_t extend();
 
+      // TODO: set_attribute() calls glAttribxx()
+
       template <typename T>
       pass_t & set_uniform(std::string const & name, T val) {
          return set_uniform_action(name, [val](glpp::uniform & u){ u.set(val); });

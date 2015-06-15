@@ -54,7 +54,9 @@ namespace game {
       glpp::program prg_3d_particle;
       glpp::program prg_post;
 
+      glpp::texture_t blank_tex;
       glpp::texture_t test_tex;
+      glpp::texture_t ground_tex;
       glpp::texture_t rain_tex;
       std::unique_ptr<glpp::cube_map_texture_t> shadow_tex;
       std::unique_ptr<glpp::texture_t> post_tex;
