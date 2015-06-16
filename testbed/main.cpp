@@ -22,8 +22,12 @@
 namespace gl {
 #ifdef _MSC_VER
    using namespace gles2;
+   using angle::vertex_attrib_divisor;
+   using angle::draw_arrays_instanced;
 #else
    using namespace gl2;
+   using osx::vertex_attrib_divisor;
+   using osx::draw_arrays_instanced;
 #endif
 }
 
@@ -168,9 +172,9 @@ int main()
          glpp::bind(particle_mesh_buffer);
          glpp::bind(particle_positions_buffer);
          //gl::angle::vertex_attrib_divisor(prg.attrib("mesh_pos").location(), 0);
-         gl::angle::vertex_attrib_divisor(prg.attrib("pos").location(), 1);
-         gl::angle::vertex_attrib_divisor(prg.attrib("col").location(), 1);
-         gl::angle::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 3, 1000);
+         gl::vertex_attrib_divisor(prg.attrib("pos").location(), 1);
+         gl::vertex_attrib_divisor(prg.attrib("col").location(), 1);
+         gl::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 3, 1000);
          //glpp::draw(particle_positions_buffer, glpp::DrawMode::Points);
 
          last_tick = this_tick;

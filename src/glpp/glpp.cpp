@@ -5,7 +5,21 @@
    namespace gl_ = gles2;
 #else
 #  include <glpp/gl2.h>
-   namespace gl_ = gl2;
+   namespace gl_ {
+      using namespace gl2;
+      using gl2::osx::gen_framebuffers;
+      using gl2::osx::delete_framebuffers;
+      using gl2::osx::bind_framebuffer;
+      using gl2::osx::blit_framebuffer;
+      using gl2::osx::check_framebuffer_status;
+      using gl2::osx::framebuffer_texture_2d;
+      using gl2::osx::framebuffer_renderbuffer;
+      using gl2::osx::gen_renderbuffers;
+      using gl2::osx::delete_renderbuffers;
+      using gl2::osx::bind_renderbuffer;
+      using gl2::osx::renderbuffer_storage;
+      using gl2::osx::renderbuffer_storage_multisample;
+   }
 #endif
 
 /**
@@ -22,6 +36,7 @@ INITIALIZATION:
 TODO: platforms without GLES2? load GL2.0?
 */
 
+#include <math.h>
 #include "detail/stb/stb_easy_font.h"
 
 #include <SOIL2/SOIL2.h>
@@ -382,8 +397,12 @@ namespace glpp
          if (optimistic_ && bound_read_framebuffer_ == id) { bound_framebuffer_info_.calls_avoided++; return; }
          bound_read_framebuffer_ = id;
       }
-      
+
+#ifdef _MSC_VER
       GL_VERIFY(gl_::bind_framebuffer(target, id));
+#else
+      GL_VERIFY(gl_::osx::bind_framebuffer(target, id));
+#endif
    }
 
    static const unsigned TEXTURE0 = static_cast<unsigned>(gl_::texture_unit_t::texture0);

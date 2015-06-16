@@ -3,20 +3,22 @@
 #include <glpp/utils.h>
 
 #ifdef _MSC_VER
-#   include <glpp/gles2.h>
+#  include <glpp/gles2.h>
+   namespace gl {
+      using namespace gles2;
+      using angle::vertex_attrib_divisor;
+      using angle::draw_arrays_instanced;
+   }
 #else
 #   include <glpp/gl2.h>
+   namespace gl {
+      using namespace gl2;
+      using osx::vertex_attrib_divisor;
+      using osx::draw_arrays_instanced;
+   }
 #endif
 
 #include <algorithm>
-
-namespace gl {
-#ifdef _MSC_VER
-   using namespace gles2;
-#else
-   using namespace gl2;
-#endif
-}
 
 namespace game { namespace impl {
    //
@@ -746,13 +748,13 @@ namespace game {
          context.prg_3d_particle.uniform("texture").set(RAIN_TEXTURE_UNIT);
 
          glpp::bind(particle_position_buffer);
-         gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
+         gl::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
 
          glpp::bind(particle_mesh_buffer);
 
-         GL_VERIFY(gl::angle::draw_arrays_instanced(gles2::primitive_type_t::triangles, 0, 6, emitter.count()));
+         GL_VERIFY(gl::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 6, emitter.count()));
 
-         gl::angle::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 0);
+         gl::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 0);
          glpp::unbind(particle_mesh_buffer);
          glpp::unbind(particle_position_buffer);
 #endif
