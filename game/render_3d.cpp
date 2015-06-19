@@ -119,9 +119,15 @@ namespace {
 
    // verts are the same as normals! (we can reuse the same buffer for each)
    const float diamond_mesh_verts[] = {
-      0., 1., 0.,  // 0: top 
-      0., 0., 1.,   1., 0., 0.,    0., 0., -1.,    -1., 0., 0.,   // 1-4: mid band
-      0., -1., 0., // 5: bottom
+      // 0: top
+      0., 1., 0.,   .5, 1.,
+      // 1-4: mid band
+      0., 0., 1.,   .5, .5,
+      1., 0., 0.,   1., .5,
+      0., 0., -1.,  .5, .5,
+      -1., 0., 0.,  0., .5,
+      // 5: bottom
+      0., -1., 0.,  .5, 0.,
    };
 
    const unsigned short diamond_mesh_indices[] = {
@@ -131,7 +137,8 @@ namespace {
 
    glpp::buffer_spec_builder_t diamond_vert_buffer() {
       return glpp::describe_buffer({ diamond_mesh_verts, diamond_mesh_indices })
-         .attrib("p", 3);
+         .attrib("p", 3)
+         .attrib("tex_coords", 2);
    }
 
    glpp::buffer_spec_builder_t diamond_normal_buffer() {
@@ -144,10 +151,10 @@ namespace {
    //
 
    static const float ground_verts[] = {
-      -400.,   0., -1300.,   0., 1., 0.,    0., 10.,
-      1200., 0., -1300.,     0., 1., 0.,    10., 10.,
+      -400.,   0., -1300.,   0., 1., 0.,    0., 5.,
+      1200., 0., -1300.,     0., 1., 0.,    5.f * 1.33f, 5.,
       -400.,   0.,  500.,    0., 1., 0.,    0., 0.,
-      1200., 0.,  500.,      0., 1., 0.,    10., 0.,
+      1200., 0.,  500.,      0., 1., 0.,    5.f * 1.33f, 0.,
    };
    static const unsigned short ground_indices[] = {
       0, 2, 1,
@@ -668,6 +675,7 @@ namespace game {
       const auto light_pos = glm::vec3{ 400., 30., -424. };
       const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
 
+#if 1
       gl::disable(gl::enable_cap_t::blend);
       gl::cull_face(gl::cull_face_mode_t::front);
       gl::clear_color(1., 1., 1., 1.);
@@ -719,6 +727,7 @@ namespace game {
       SHADOW_TEXTURE_UNIT.activate();
       context.shadow_tex->bind();
       context.prg_3d.uniform("shadow_texture").set(SHADOW_TEXTURE_UNIT);
+#endif
 
       //
       // draw to anti-aliasing frame buffer
@@ -733,10 +742,14 @@ namespace game {
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit);
 
+#if 1
          ground_pass.back().draw(glpp::DrawMode::Triangles);
+#endif
 
+#if 1
          render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, get_view(*this), get_proj(), false);
          render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, get_view(*this), get_proj(), false);
+#endif
 
          //debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
 

@@ -27,7 +27,7 @@ void main() {
    gl_Position = vec4(mesh_pos + pos, 0., 1.);
    frag_col = col;
 
-      gl_PointSize = 3.;
+   gl_PointSize = 3.;
 }
 )";
 
@@ -44,7 +44,6 @@ void main() {
    gl_FragColor = frag_col;
 }
 )";
-
 
 
 #include <random>
@@ -136,10 +135,10 @@ void instanced_demo() {
       prg.use();
       glpp::bind(particle_mesh_buffer);
       glpp::bind(particle_positions_buffer);
-      gl::glVertexAttribDivisor(prg.attrib("mesh_pos").location(), 0);
-      gl::glVertexAttribDivisor(prg.attrib("pos").location(), 1);
-      gl::glVertexAttribDivisor(prg.attrib("col").location(), 1);
-      gl::glDrawArraysInstanced((gl::enum_t)gl::primitive_type_t::triangles, 0, 3, 1000);
+      //gl::angle::vertex_attrib_divisor(prg.attrib("mesh_pos").location(), 0);
+      gl::vertex_attrib_divisor(prg.attrib("pos").location(), 1);
+      gl::vertex_attrib_divisor(prg.attrib("col").location(), 1);
+      gl::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 3, 1000);
       //glpp::draw(particle_positions_buffer, glpp::DrawMode::Points);
 
       last_tick = this_tick;

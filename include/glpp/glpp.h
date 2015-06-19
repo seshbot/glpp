@@ -23,8 +23,15 @@
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
 
-#if defined(GLPP_DEBUG_OPENGL) || (defined(_DEBUG) && !defined(GLPP_NO_DEBUG_OPENGL))
-#define GLPP_DEBUG_OPENGL
+#ifndef _MSC_VER
+   // for now lets always enable debugging on non-windows
+#  define _DEBUG 1
+#endif
+
+#if defined(_DEBUG) && !defined(GLPP_NO_DEBUG_OPENGL)
+#  ifndef GLPP_DEBUG_OPENGL
+#    define GLPP_DEBUG_OPENGL 1
+#  endif
 #endif
 
 #ifdef GLPP_DEBUG_OPENGL

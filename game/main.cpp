@@ -157,7 +157,7 @@ int main()
             glpp::animation_t const & standing;
             glpp::animation_t const & walking;
 
-            static sprite_animations find_indices(glpp::scene_t const & scene) {
+            static sprite_animations find_scene_animations(glpp::scene_t const & scene) {
                auto names = scene.animation_names();
                auto find_animation = [&](auto name_fragment) -> glpp::animation_t const & {
                   for (auto idx = 0U; idx < names.size(); idx++) {
@@ -172,7 +172,7 @@ int main()
                };
             }
 
-            static sprite_animations find_indices(glpp::scene_t const & scene, std::string const & child_name) {
+            static sprite_animations find_scene_animations(glpp::scene_t const & scene, std::string const & child_name) {
                auto & sprite = scene.default_animation();
                for (auto idx = 0U; idx < sprite.child_count(); idx++) {
                   auto & child_sprite = sprite.child(idx);
@@ -183,9 +183,9 @@ int main()
          };
          struct scene_info {
             scene_info(glpp::scene_t const & scene)
-               : scene{ scene }, animations(sprite_animations::find_indices(scene)) {}
+               : scene{ scene }, animations(sprite_animations::find_scene_animations(scene)) {}
             scene_info(glpp::scene_t const & scene, std::string const & child_name)
-               : scene{ scene }, animations(sprite_animations::find_indices(scene, child_name)) {}
+               : scene{ scene }, animations(sprite_animations::find_scene_animations(scene, child_name)) {}
             glpp::scene_t const & scene;
             sprite_animations animations;
          };
@@ -290,9 +290,11 @@ int main()
       game::world_t world(creature_db, prop_db, particle_db, controller);
       game::world_view_t world_view(creature_db, prop_db, particle_db, sprite_repository);
 
+#if 0
       for (auto i = 0; i < 5; i++) {
          world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
       }
+#endif
 
       world.create_prop(game::prop_t::campfire, { game::center_world_location(), {} });
 

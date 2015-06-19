@@ -7,12 +7,15 @@
 #include <glpp/utils.h>
 #include <glpp/scene.h>
 
+#include <glm/gtx/transform.hpp>
+
 #ifdef _MSC_VER
 #   include <glpp/gles2.h>
 #else
 #   include <glpp/gl2.h>
 #endif
 
+#include <random>
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -26,8 +29,7 @@ namespace gl {
    using angle::draw_arrays_instanced;
 #else
    using namespace gl2;
-   using osx::vertex_attrib_divisor;
-   using osx::draw_arrays_instanced;
+   using namespace osx;
 #endif
 }
 
@@ -39,18 +41,15 @@ static auto VERT_SHADER_SOURCE = R"(
 #define lowp
 #endif
 
-attribute mediump vec2 mesh_pos;
+uniform mat4 transform;
+attribute mediump vec2 tex_coords;
 attribute mediump vec2 pos;
-attribute lowp vec4 col;
 
-varying mediump vec3 frag_pos;
-varying lowp vec4 frag_col;
+varying mediump vec2 frag_tex_coords;
 
 void main() {
-   gl_Position = vec4(mesh_pos + pos, 0., 1.);
-   frag_col = col;
-
-   gl_PointSize = 3.;
+   gl_Position = transform * vec4(pos, 0., 1.);
+   frag_tex_coords = tex_coords;
 }
 )";
 
@@ -61,41 +60,15 @@ static auto FRAG_SHADER_SOURCE = R"(
 #define lowp
 #endif
 
-varying lowp vec4 frag_col;
+uniform sampler2D texture;
+
+varying mediump vec2 frag_tex_coords;
 
 void main() {
-   gl_FragColor = frag_col;
+   gl_FragColor = texture2D(texture, frag_tex_coords);
 }
 )";
 
-
-
-#include <random>
-
-struct particle_static_info {
-   float pos[2];
-   float col[4];
-};
-
-static std::vector<particle_static_info> create_particle_info(std::size_t n, float minx = -1., float maxx = 1., float miny = -1., float maxy = 1.) {
-   std::default_random_engine rnd_engine;
-   auto rnd = [&] {
-      return (float)((rnd_engine() % 1000) / 1000.);
-   };
-
-   float xrange = std::abs(maxx - minx);
-   float yrange = std::abs(maxy - miny);
-
-   std::vector<particle_static_info> result;
-   for (auto idx = 0U; idx < n; idx++) {
-      result.push_back({
-         { rnd() * xrange + minx, rnd() * yrange + miny },
-         { rnd(), rnd(), rnd(), 1.f }
-      });
-   }
-
-   return result;
-}
 
 
 #ifdef _MSC_VER
@@ -128,23 +101,110 @@ int main()
          glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::Fragment)
          );
 
-      float vertices[] = {
-         -.01f, -.01f,
-         .01f, -.01f,
-         .0f, .01f,
+      float screen_vertices[] = {
+         -1.f, 1.f,     0., 1.,
+         -1.f, -1.f,    0., 0.,
+         1.f, 1.f,      1., 1.,
+         1.f, 1.f,      1., 1.,
+         -1.f, -1.f,    0., 0.,
+         1.f, -1.f,     1., 0.,
       };
 
-      auto particle_mesh_buffer = glpp::describe_buffer({ vertices })
-         .attrib("mesh_pos", 2)
+      float half_screen_vertices[] = {
+         -.5f, .5f,     0., 1.,
+         -.5f, -.5f,    0., 0.,
+         .5f, .5f,      1., 1.,
+         .5f, .5f,      1., 1.,
+         -.5f, -.5f,    0., 0.,
+         .5f, -.5f,     1., 0.,
+      };
+
+      glpp::texture_unit_t tex1_unit {1};
+      glpp::texture_unit_t tex2_unit {2};
+      glpp::texture_t tex1{glpp::image_t{"../../res/ground-64x64.png"}};
+      glpp::texture_t tex2{glpp::image_t{"../../res/test-100x100.png"}};
+
+      tex1_unit.activate();
+      tex1.bind();
+
+      tex2_unit.activate();
+      tex2.bind();
+
+      auto screen_vert_buffer = glpp::describe_buffer({ screen_vertices })
+         .attrib("pos", 2)
+         .attrib("tex_coords", 2)
          .build(prg);
 
-      auto particle_positions = create_particle_info(1000);
-      auto particle_positions_buffer = glpp::describe_buffer({ {(float*)particle_positions.data(), 6 * particle_positions.size() } })
+      auto half_screen_vert_buffer = glpp::describe_buffer({ half_screen_vertices })
          .attrib("pos", 2)
-         .attrib("col", 4)
+         .attrib("tex_coords", 2)
          .build(prg);
+
+      auto set_tex1_cb = [&](glpp::uniform & u) { tex1_unit.activate(); tex1.bind();  u.set(tex1_unit); };
+      auto set_tex2_cb = [&](glpp::uniform & u) { tex2_unit.activate(); tex2.bind();  u.set(tex2_unit); };
+      auto pass1 = prg.pass()
+         .with(screen_vert_buffer)
+         .set_uniform("transform", glm::mat4{})
+         .set_uniform("texture", tex1_unit);
+
+      auto pass2 = prg.pass()
+         .with(screen_vert_buffer)
+         .set_uniform("transform", glm::scale(glm::mat4{}, glm::vec3{.5, .75, 1.}))
+         .set_uniform("texture", tex2_unit);
 
       gl::clear_color(0.f, 0.f, 0.f, 1.f);
+
+      struct render_batch_callback_t : public glpp::pass_t::render_batch_callback {
+         static std::vector<glm::mat4> generate_transforms() {
+            auto gen = [] {
+               std::random_device rnd;
+               std::vector<glm::mat4> transforms;
+
+               // transforms.push_back(glm::translate(glm::mat4{}, glm::vec3{.5, .0, .0}));
+               // transforms.push_back(glm::scale(glm::translate(glm::mat4{}, glm::vec3{-.5, .0, .0}), glm::vec3{.5}));
+               // return transforms;
+
+               for (auto y = -1.f; y < 1.f; y += .4) {
+                  for (auto x = -1.f; x < 1.f; x += .4) {
+                     float scale = (rnd() % 100) / 100.f;
+                     scale = .1f + scale * .1f;
+                     glm::vec3 center_pos{x, y, 0.};
+
+                     auto translated = glm::translate(glm::mat4{}, center_pos);
+                     auto transform = glm::scale(translated, glm::vec3{scale, scale, 1.});
+
+                     transforms.push_back(transform);
+                  }
+               }
+               return transforms;
+            };
+
+            static std::vector<glm::mat4> transforms = gen();
+
+            return transforms;
+         }
+
+         std::vector<glm::mat4> transforms = generate_transforms();
+         mutable std::vector<glm::mat4>::const_iterator it = transforms.begin();
+
+         render_batch_callback_t(glm::vec2 const & local_offset, float local_scale) {
+            auto translated = glm::translate(glm::mat4{}, {local_offset.x, local_offset.y, 0.});
+            auto transform = glm::scale(translated, glm::vec3{local_scale, local_scale, 1.});
+
+            for (auto idx = 0U; idx < transforms.size(); idx++){
+               transforms[idx] = transforms[idx] * transform;
+            }
+         }
+
+         bool prepare_next(glpp::program & p) const override {
+            if (it == transforms.end()) return false;
+
+            p.uniform("transform").set(*it);
+
+            ++it;
+            return true;
+         }
+      };
 
       //
       // main loop
@@ -162,6 +222,8 @@ int main()
          double this_tick = glpp::get_time();
          double time_since_last_tick = this_tick - last_tick;
 
+         float oscillating = std::abs(std::fmod(this_tick, 2.) - 1.);
+
          const double MAX_TICK_SECONDS = 1. / 15.;
          if (time_since_last_tick > MAX_TICK_SECONDS) time_since_last_tick = MAX_TICK_SECONDS;
 
@@ -169,13 +231,13 @@ int main()
          // render
          //
          prg.use();
-         glpp::bind(particle_mesh_buffer);
-         glpp::bind(particle_positions_buffer);
-         //gl::angle::vertex_attrib_divisor(prg.attrib("mesh_pos").location(), 0);
-         gl::vertex_attrib_divisor(prg.attrib("pos").location(), 1);
-         gl::vertex_attrib_divisor(prg.attrib("col").location(), 1);
-         gl::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 3, 1000);
-         //glpp::draw(particle_positions_buffer, glpp::DrawMode::Points);
+
+         pass1.draw(glpp::DrawMode::Triangles);
+         float body_scale = .1;
+         pass2.draw_batch(render_batch_callback_t{{.0, .0}, body_scale}, glpp::DrawMode::Triangles);
+         pass2.draw_batch(render_batch_callback_t{{.0, body_scale * 1.5f}, body_scale * .5f}, glpp::DrawMode::Triangles);
+         pass2.draw_batch(render_batch_callback_t{{-1.25f * body_scale, body_scale * oscillating}, body_scale * .25f}, glpp::DrawMode::Triangles);
+         pass2.draw_batch(render_batch_callback_t{{1.25f * body_scale, body_scale * (1.f - oscillating)}, body_scale * .25f}, glpp::DrawMode::Triangles);
 
          last_tick = this_tick;
 

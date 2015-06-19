@@ -118,7 +118,8 @@ void main() {
    mediump vec3 l = normalize(-c_sky_light_dir);
    mediump float diffuse_intensity = clamp( dot( n,l ), 0.0, 1.0 );
 
-   mediump vec4 diffuse_colour = texture2D(texture, frag_tex_coords * .5 * vec2(1.33, 1.));
+   //mediump vec4 diffuse_colour = vec4(1., 0., 1., 1.);
+   mediump vec4 diffuse_colour = texture2D(texture, frag_tex_coords);
    if (diffuse_colour.rb == vec2(1., 1.)) {
       diffuse_colour = colour;
    }
