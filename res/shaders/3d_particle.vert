@@ -30,7 +30,7 @@ void main() {
 					-s, 0., c,  0.,
 					0., 0., 0., 1.);
 
-	vec4 rotated_offset = rot * vec4(offset_coords, 0., 0.);
+	vec4 rotated_offset = rot * vec4(2. * offset_coords, 0., 0.);
 
 	vec3 vertex_pos = position + rotated_offset.xyz;
 	vec4 viewPos = view * vec4(vertex_pos, 1.);

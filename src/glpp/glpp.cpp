@@ -964,6 +964,37 @@ namespace glpp
       GL_VERIFY(gl_ctx_.bind_framebuffer(t, 0));
    }
 
+   namespace {
+      void check_fbo_(gl_::framebuffer_target_t target) {
+         // Your framebuffer can only be used as a render target if memory has been allocated to store the results
+         auto status = gl_::check_framebuffer_status(target);
+         if (status != gl_::framebuffer_status_t::framebuffer_complete) {
+            auto status_msg = [status] {
+               switch (status) {
+                  //case GL_FRAMEBUFFER_UNDEFINED: return "GL_FRAMEBUFFER_UNDEFINED";
+               case gl_::framebuffer_status_t::framebuffer_incomplete_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+               case gl_::framebuffer_status_t::framebuffer_incomplete_missing_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+                  //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
+                  //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
+               case gl_::framebuffer_status_t::framebuffer_unsupported: return "GL_FRAMEBUFFER_UNSUPPORTED";
+#ifdef _MSC_VER
+               case gl_::framebuffer_status_t::framebuffer_incomplete_dimensions: return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+#else
+               case gl_::framebuffer_status_t::framebuffer_incomplete_draw_buffer: return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
+#endif
+                  //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+                  //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
+               default: return "UNRECOGNISED ENUM";
+               }
+            }();
+
+            utils::log(utils::LOG_ERROR, "framebuffer not initialised correctly: error 0x%x (%s)\n", status, status_msg);
+         }
+
+         GL_CHECK();
+      }
+   }
+
    void frame_buffer_t::blit_to_draw_buffer() const {
       // https://www.opengl.org/wiki/Framebuffer_Object
       // from https://www.opengl.org/wiki/Multisampling
@@ -973,12 +1004,13 @@ namespace glpp
 
       //GL_VERIFY(glBindFramebuffer(GL_DRAW_FRAMEBUFFER_ANGLE, 0));   // Make sure no FBO is set as the draw framebuffer
       GL_VERIFY(gl_ctx_.bind_framebuffer(gl_::framebuffer_target_t::read_framebuffer, fbo_id_)); // Make sure your multisampled FBO is the read framebuffer
+
 #ifdef _MSC_VER
       gl::int_t TMP_GL_NEAREST = 0x2600;
       GL_VERIFY(gl_::angle::blit_framebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
 #else
       gl::int_t TMP_GL_NEAREST = 0x2600;
-      GL_VERIFY(gl_::blit_framebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
+      GL_VERIFY(gl2::osx::blit_framebuffer(0, 0, dims_.x, dims_.y, 0, 0, dims_.x, dims_.y, gl_::clear_buffer_flags_t::color_buffer_bit, TMP_GL_NEAREST));
 #endif
    }
 
@@ -989,32 +1021,7 @@ namespace glpp
    }
 
    void frame_buffer_t::check_fbo() const {
-      // Your framebuffer can only be used as a render target if memory has been allocated to store the results
-      auto status = gl_::check_framebuffer_status(gl_::framebuffer_target_t::framebuffer);
-      if (status != gl_::framebuffer_status_t::framebuffer_complete) {
-         auto status_msg = [status] {
-            switch (status) {
-               //case GL_FRAMEBUFFER_UNDEFINED: return "GL_FRAMEBUFFER_UNDEFINED";
-            case gl_::framebuffer_status_t::framebuffer_incomplete_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
-            case gl_::framebuffer_status_t::framebuffer_incomplete_missing_attachment: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
-               //case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
-               //case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
-            case gl_::framebuffer_status_t::framebuffer_unsupported: return "GL_FRAMEBUFFER_UNSUPPORTED";
-#ifdef _MSC_VER
-            case gl_::framebuffer_status_t::framebuffer_incomplete_dimensions: return "GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
-#else
-            case gl_::framebuffer_status_t::framebuffer_incomplete_draw_buffer: return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
-#endif
-               //case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
-               //case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
-            default: return "UNRECOGNISED ENUM";
-            }
-         }();
-
-         utils::log(utils::LOG_ERROR, "framebuffer not initialised correctly: error 0x%x (%s)\n", status, status_msg);
-      }
-
-      GL_CHECK();
+      check_fbo_(gl_::framebuffer_target_t::framebuffer);
    }
 
    id_t current_frame_buffer() {
