@@ -18,6 +18,7 @@
 
 // forward declarations
 struct aiScene;
+struct aiNode;
 struct aiAnimation;
 struct aiMesh;
 
@@ -77,6 +78,9 @@ namespace glpp
       std::size_t id() const { return id_; }
       std::size_t scene_id() const { return scene_id_; }
 
+      std::size_t child_count() const;
+      animation_t const & child(std::size_t idx) const;
+
       animation_timeline_t create_timeline() const;
 
       friend bool operator<(animation_t const & lhs, animation_t const & rhs) {
@@ -91,7 +95,7 @@ namespace glpp
       friend class scene_t;
       friend class animation_timeline_t;
 
-      animation_t(scene_t const & scene, aiScene const & ai_scene);
+      animation_t(scene_t const & scene, aiScene const & ai_scene, aiNode const & ai_root_node, unsigned scene_idx);
       animation_t(scene_t const & scene, aiScene const & ai_scene, aiAnimation const & ai_animation, unsigned scene_idx);
 
       static const unsigned DEFAULT_ANIMATION_IDX = std::numeric_limits<unsigned>::max();

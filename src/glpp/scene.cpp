@@ -70,20 +70,31 @@ namespace glpp {
 
    struct animation_t::impl {
    public:
-      impl(aiScene const & scene)
-         : ai_scene(&scene)
-         , name_("default")
+      impl(scene_t const & scene, aiScene const & ai_scene_in, aiNode const & ai_root_node)
+         : ai_scene(&ai_scene_in)
+         , name_(ai::get_name(ai_root_node))
          , ticks_per_second(0)
          , duration_ticks(0)
+         , root_node(&ai_root_node)
          , root_node_animation(nullptr)
       {
+         // TODO: set global_inverse_transform
+
+         // only one level of child hierarchy for now
+         if (&ai_root_node == ai_scene_in.mRootNode) {
+            for (auto idx = 0U; idx < root_node->mNumChildren; idx++) {
+               auto & child = *root_node->mChildren[idx];
+               child_animations.push_back({ scene, ai_scene_in, child, animation_t::DEFAULT_ANIMATION_IDX - (idx + 1) });
+            }
+         }
       }
 
-      impl(aiScene const & scenex, aiAnimation const & animation)
-         : ai_scene(&scenex)
+      impl(aiScene const & scene, aiAnimation const & animation)
+         : ai_scene(&scene)
          , name_(ai::get_name(animation))
          , ticks_per_second(animation.mTicksPerSecond)
          , duration_ticks(animation.mDuration)
+         , root_node(nullptr)
          , root_node_animation(nullptr)
       {
          // ensure node data never moves - allocate enough space for one entry per node
@@ -193,14 +204,26 @@ namespace glpp {
          return name_;
       }
 
+      std::size_t child_count() const {
+         return child_animations.size();
+      }
+
+      animation_t const & child(std::size_t idx) const {
+         return child_animations[idx];
+      }
+
       //aiAnimation const * ai_animation;
       aiScene const * ai_scene;
 
       std::string name_;
       double ticks_per_second;
       double duration_ticks;
-      ai::node_animation_t const * root_node_animation;
       glm::mat4 global_inverse_transform;
+
+      aiNode const * root_node;
+      std::vector<animation_t> child_animations; // used only for non-animated sprites (storing multiple sprites in one scene)
+
+      ai::node_animation_t const * root_node_animation;
       std::vector<ai::node_animation_t> node_animations; // storage for node anim hierarchy
       std::vector<ai::mesh_animation_t> mesh_animations;
    };
@@ -234,14 +257,16 @@ namespace glpp {
       {
          // not animated
          if (!animation_in.root_node_animation) {
+            assert(animation_in.root_node && "non-animated animations are expected to have a root aiNode");
             auto & ai_scene = *animation_in.ai_scene;
 
             // TODO: incorporate global inverse transform here? (third parameter)
-            ai::for_each_mesh(ai_scene, *ai_scene.mRootNode, {}, [&](aiMesh const & mesh, glm::mat4 const & transform) {
+            ai::for_each_mesh(ai_scene, *animation_in.root_node, {}, [&](aiMesh const & mesh, glm::mat4 const & transform) {
                meshes.push_back({ ai_scene, mesh, transform });
             });
          }
          else {
+            assert(!animation_in.root_node && "animated animations are expected to have a null root aiNode");
             auto animation_time_ticks = ai::animation_secs_to_ticks(ticks_per_second, duration_ticks, time_secs);
 
             //
@@ -410,15 +435,15 @@ namespace glpp {
    struct scene_t::impl {
       impl(scene_t const & scene, aiScene const * ai_scene)
          : ai_scene_(ai_scene)
-         , default_animation_(scene, *ai_scene) {
-         animations_.reserve(ai_scene->mNumAnimations);
+         , default_animation_(scene, *ai_scene_, *ai_scene_->mRootNode, animation_t::DEFAULT_ANIMATION_IDX) {
+         animations_.reserve(ai_scene_->mNumAnimations);
 
-         for (auto idx = 0U; idx < ai_scene->mNumAnimations; idx++) {
-            animations_.push_back({ scene, *ai_scene, *ai_scene->mAnimations[idx], idx });
+         for (auto idx = 0U; idx < ai_scene_->mNumAnimations; idx++) {
+            animations_.push_back({ scene, *ai_scene_, *ai_scene_->mAnimations[idx], idx });
             // to snapshot: animation_timeline_t(animation_t const & animation, double time_secs)
          }
 
-         ai::log_scene_info(*ai_scene);
+         ai::log_scene_info(*ai_scene_);
 
          //utils::log(utils::LOG_INFO, "== Animation Hierarchies ==\n");
          //for (auto & animation : animations_) {
@@ -427,8 +452,8 @@ namespace glpp {
          //}
 
          // TODO: incorporate global inverse transform here? (third parameter)
-         ai::for_each_mesh(*ai_scene, *ai_scene->mRootNode, {}, [&](aiMesh const & mesh, glm::mat4 const & transform) {
-            meshes_.push_back({*ai_scene, mesh, transform});
+         ai::for_each_mesh(*ai_scene_, *ai_scene_->mRootNode, {}, [&](aiMesh const & mesh, glm::mat4 const & transform) {
+            meshes_.push_back({*ai_scene_, mesh, transform});
          });
       }
       
@@ -497,11 +522,11 @@ namespace glpp {
    // animation_t impelmentation
    //
 
-   animation_t::animation_t(scene_t const & scene, aiScene const & ai_scene)
-      : scene_idx_(DEFAULT_ANIMATION_IDX)
+   animation_t::animation_t(scene_t const & scene, aiScene const & ai_scene, aiNode const & ai_root_node, unsigned scene_idx)
+      : scene_idx_(scene_idx)
       , id_(make_hash(&scene.impl_->ai_scene_))
       , scene_id_(scene.id())
-      , impl_(new impl(ai_scene)) {
+      , impl_(new impl(scene, ai_scene, ai_root_node)) {
    }
 
    animation_t::animation_t(scene_t const & scene, aiScene const & ai_scene, aiAnimation const & ai_animation, unsigned scene_idx)
@@ -517,6 +542,14 @@ namespace glpp {
 
    std::string animation_t::name() const {
       return impl_->name();
+   }
+
+   std::size_t animation_t::child_count() const {
+      return impl_->child_count();
+   }
+
+   animation_t const & animation_t::child(std::size_t idx) const {
+      return impl_->child(idx);
    }
 
    animation_timeline_t animation_t::create_timeline() const {

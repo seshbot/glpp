@@ -171,9 +171,21 @@ int main()
                   find_animation("Armature|Dude.walk")
                };
             }
+
+            static sprite_animations find_indices(glpp::scene_t const & scene, std::string const & child_name) {
+               auto & sprite = scene.default_animation();
+               for (auto idx = 0U; idx < sprite.child_count(); idx++) {
+                  auto & child_sprite = sprite.child(idx);
+                  if (child_name == child_sprite.name()) return{child_sprite, child_sprite};
+               }
+               return{ sprite, sprite};
+            }
          };
          struct scene_info {
-            scene_info(glpp::scene_t const & scene) : scene{ scene }, animations(sprite_animations::find_indices(scene)) {}
+            scene_info(glpp::scene_t const & scene)
+               : scene{ scene }, animations(sprite_animations::find_indices(scene)) {}
+            scene_info(glpp::scene_t const & scene, std::string const & child_name)
+               : scene{ scene }, animations(sprite_animations::find_indices(scene, child_name)) {}
             glpp::scene_t const & scene;
             sprite_animations animations;
          };
@@ -185,6 +197,7 @@ int main()
          {
             scenes_.push_back({ scene_repo.find_scene_by_name("dude")});
             scenes_.push_back({ scene_repo.find_scene_by_name("campfire") });
+            scenes_.push_back({ scene_repo.find_scene_by_name("tree"), "Tree2Trunk" });
          }
 
          glpp::animation_timeline_t find_sprite(game::creature_t const & entity, game::moment_t & moment, game::plan_t const & plan) const override {
@@ -236,6 +249,7 @@ int main()
          scene_info const & scene_info_of(game::prop_t const & entity) const {
             switch (entity.type) {
             case game::prop_t::tree:
+               return scenes_[2];
             case game::prop_t::campfire:
             default:
                return scenes_[1];
@@ -281,6 +295,10 @@ int main()
       }
 
       world.create_prop(game::prop_t::campfire, { game::center_world_location(), {} });
+
+      for (auto i = 0; i < 5; i++) {
+         world.create_prop(game::prop_t::tree, { game::random_world_location(),{} });
+      }
       //world.create_creature(game::creature_t::types::person, { game::center_world_location(), {} });
 
       //

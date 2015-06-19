@@ -356,7 +356,7 @@ namespace game {
    model_repository::model_repository(glpp::archive_t const & archive) {
       scenes.emplace("dude", archive.load_scene("dude-anim.fbx"));
       scenes.emplace("campfire", archive.load_scene("campfire.fbx"));
-      scenes.emplace("trees", archive.load_scene("trees.fbx"));
+      scenes.emplace("tree", archive.load_scene("trees.fbx"));
    }
 
    glpp::scene_t const & model_repository::find_scene_by_name(std::string const & name) const {
@@ -471,7 +471,12 @@ namespace game {
       : context(ctx)
    {
       auto accumulate_scene_renderers = [&](glpp::scene_t const & scene) {
-         mesh_renderers.push_back(make_render_info(context, scene.default_animation(), context.prg_3d, context.prg_3d_shadow));
+         auto & static_animation = scene.default_animation();
+         mesh_renderers.push_back(make_render_info(context, static_animation, context.prg_3d, context.prg_3d_shadow));
+         for (auto idx = 0U; idx < static_animation.child_count(); idx++) {
+            auto & static_animation_child = static_animation.child(idx);
+            mesh_renderers.push_back(make_render_info(context, static_animation_child, context.prg_3d, context.prg_3d_shadow));
+         }
          for (auto anim_name : scene.animation_names()) {
             mesh_renderers.push_back(make_render_info(context, scene.animation(anim_name), context.prg_3d, context.prg_3d_shadow));
          }
@@ -480,6 +485,7 @@ namespace game {
       // render info for all models
       accumulate_scene_renderers(models.find_scene_by_name("dude"));
       accumulate_scene_renderers(models.find_scene_by_name("campfire"));
+      accumulate_scene_renderers(models.find_scene_by_name("tree"));
 
 
       //
