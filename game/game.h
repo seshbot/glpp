@@ -23,6 +23,7 @@ namespace game {
 
    glm::vec2 random_world_location();
    glm::vec2 center_world_location();
+   glm::vec2 random_direction();
 
 
    struct world_t {

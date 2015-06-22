@@ -98,9 +98,9 @@ protected:
    template <typename T>
    void create_particle(T & emitter) {
       auto pos = glm::vec3{
-         (float)(rnd() % 1400) - 300.f, // (float)(std::rand() % 460), // - 230.,
+         (float)(rnd() % 1400) - 700.f, // (float)(std::rand() % 460), // - 230.,
          800.,
-         100.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
+         600.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
 
       emitter.add(pos);
    }

@@ -151,10 +151,10 @@ namespace {
    //
 
    static const float ground_verts[] = {
-      -400.,   0., -1300.,   0., 1., 0.,    0., 5.,
-      1200., 0., -1300.,     0., 1., 0.,    5.f * 1.33f, 5.,
-      -400.,   0.,  500.,    0., 1., 0.,    0., 0.,
-      1200., 0.,  500.,      0., 1., 0.,    5.f * 1.33f, 0.,
+      -800.,   0., -900.,   0., 1., 0.,    0., 5.,
+      800., 0., -900.,     0., 1., 0.,    5.f * 1.33f, 5.,
+      -800.,   0.,  1100.,    0., 1., 0.,    0., 0.,
+      800., 0.,  1100.,      0., 1., 0.,    5.f * 1.33f, 0.,
    };
    static const unsigned short ground_indices[] = {
       0, 2, 1,
@@ -363,7 +363,8 @@ namespace game {
    model_repository::model_repository(glpp::archive_t const & archive) {
       scenes.emplace("dude", archive.load_scene("dude-anim.fbx"));
       scenes.emplace("campfire", archive.load_scene("campfire.fbx"));
-      scenes.emplace("tree", archive.load_scene("trees.fbx"));
+      scenes.emplace("props", archive.load_scene("trees.fbx"));
+      scenes.emplace("weapons", archive.load_scene("weapons.fbx"));
    }
 
    glpp::scene_t const & model_repository::find_scene_by_name(std::string const & name) const {
@@ -476,6 +477,8 @@ namespace game {
 
    renderer::renderer(model_repository const & models, render_context & ctx)
       : context(ctx)
+      , player_light{{ 400., 30., -424. }, { .75, .40, .05 }, .2f * glm::vec3{ .75, .40, .05 }, .0002f}
+      , campfire_light{ { 400., 30., -424. },{ .75, .40, .05 }, .2f * glm::vec3{ .75, .40, .05 }, .00005f }
    {
       auto accumulate_scene_renderers = [&](glpp::scene_t const & scene) {
          auto & static_animation = scene.default_animation();
@@ -492,7 +495,8 @@ namespace game {
       // render info for all models
       accumulate_scene_renderers(models.find_scene_by_name("dude"));
       accumulate_scene_renderers(models.find_scene_by_name("campfire"));
-      accumulate_scene_renderers(models.find_scene_by_name("tree"));
+      accumulate_scene_renderers(models.find_scene_by_name("props"));
+      accumulate_scene_renderers(models.find_scene_by_name("weapons"));
 
 
       //
@@ -672,7 +676,7 @@ namespace game {
          { glpp::frame_buffer_t::NEGATIVE_Z,{ 0., 0., -1. },{ 0., -1., 0. }, "z_neg" },
       };
 
-      const auto light_pos = glm::vec3{ 400., 30., -424. };
+      const auto light_pos = player_light.position;
       const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
 
 #if 1
@@ -716,6 +720,13 @@ namespace game {
 
             return dot > 0;
          };
+
+         context.prg_3d_shadow.use();
+         context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(player_light.position);
+         context.prg_3d_shadow.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
+         context.prg_3d_shadow.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
+         context.prg_3d_shadow.uniform("shadow_lights[0].attenuation").set(player_light.attenuation);
+
          render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
          render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
       }
@@ -727,6 +738,16 @@ namespace game {
       SHADOW_TEXTURE_UNIT.activate();
       context.shadow_tex->bind();
       context.prg_3d.uniform("shadow_texture").set(SHADOW_TEXTURE_UNIT);
+      context.prg_3d.uniform("shadow_lights[0].world_position").set(player_light.position);
+      context.prg_3d.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
+      context.prg_3d.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
+      context.prg_3d.uniform("shadow_lights[0].attenuation").set(player_light.attenuation);
+
+      context.prg_3d.uniform("lights[0].world_position").set(campfire_light.position);
+      context.prg_3d.uniform("lights[0].ambient").set(campfire_light.ambient_colour);
+      context.prg_3d.uniform("lights[0].diffuse").set(campfire_light.diffuse_colour);
+      context.prg_3d.uniform("lights[0].attenuation").set(campfire_light.attenuation);
+
 #endif
 
       //
@@ -761,6 +782,16 @@ namespace game {
          context.prg_3d_particle.uniform("proj").set(glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f));
          context.prg_3d_particle.uniform("view").set(get_view(*this));
          context.prg_3d_particle.uniform("eye").set(get_camera_pos(*this));
+
+         context.prg_3d_particle.uniform("shadow_lights[0].world_position").set(player_light.position);
+         context.prg_3d_particle.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
+         context.prg_3d_particle.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
+         context.prg_3d_particle.uniform("shadow_lights[0].attenuation").set(player_light.attenuation);
+
+         context.prg_3d_particle.uniform("lights[0].world_position").set(campfire_light.position);
+         context.prg_3d_particle.uniform("lights[0].ambient").set(campfire_light.ambient_colour);
+         context.prg_3d_particle.uniform("lights[0].diffuse").set(campfire_light.diffuse_colour);
+         context.prg_3d_particle.uniform("lights[0].attenuation").set(campfire_light.attenuation);
          
          RAIN_TEXTURE_UNIT.activate();
          context.rain_tex.bind();

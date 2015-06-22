@@ -20,6 +20,7 @@ namespace game {
 
       explicit model_repository(glpp::archive_t const & assets);
 
+      // find _animation_ by name?
       glpp::scene_t const & find_scene_by_name(std::string const & name) const;
 
       std::map<std::string, glpp::scene_t> scenes;
@@ -33,6 +34,7 @@ namespace game {
       };
    }
 
+   // rename to render resources? 
    struct render_context : impl::ensure_gl_init {
       render_context(glpp::archive_t const & assets, glpp::context::key_callback_t key_callback);
 
@@ -68,6 +70,8 @@ namespace game {
    struct renderer {
       renderer(model_repository const & models, render_context & ctx);
 
+      void set_player_light_position(glm::vec3 const & pos) { player_light.position = pos; }
+
       void update_and_render(double time_since_last_tick, game::world_view_t const & world_view);
 
       float get_view_height() const { return view_height; }
@@ -79,6 +83,16 @@ namespace game {
       void debug_enable_shadows(bool enabled) { debug_shadows_disabled_ = !enabled; }
 
       render_context & context;
+
+      struct light_info {
+         glm::vec3 position;
+         glm::vec3 diffuse_colour;
+         glm::vec3 ambient_colour;
+         float attenuation;
+      };
+
+      light_info player_light;
+      light_info campfire_light;
 
       struct mesh_render_info {
          glpp::animation_t const & animation;

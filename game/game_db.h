@@ -26,7 +26,9 @@ namespace game {
    struct prop_t {
       enum types {
          tree,
+         rock,
          campfire,
+         torch,
       };
 
       types type;
@@ -42,10 +44,13 @@ namespace game {
    };
 
    // holds geometric (pos, dir) info of a game entity
+   // TODO: remove instance info (scale)
    class moment_t {
    public:
       moment_t();
       moment_t(glm::vec2 const & pos, glm::vec2 const & vel);
+      moment_t(glm::vec2 const & pos, glm::vec2 const & vel, glm::vec2 const & dir);
+      moment_t(glm::vec2 const & pos, glm::vec2 const & vel, glm::vec2 const & dir, float scale);
 
       glm::mat4 sprite_transform() const;
       glm::mat4 mesh_transform() const;
@@ -74,6 +79,7 @@ namespace game {
       glm::vec2 pos_;
       glm::vec2 dir_;
       glm::vec2 vel_;
+      glm::vec3 scale_;
       float speed_ = 0.f;
    };
 

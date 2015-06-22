@@ -197,7 +197,9 @@ int main()
          {
             scenes_.push_back({ scene_repo.find_scene_by_name("dude")});
             scenes_.push_back({ scene_repo.find_scene_by_name("campfire") });
-            scenes_.push_back({ scene_repo.find_scene_by_name("tree"), "Tree2Trunk" });
+            scenes_.push_back({ scene_repo.find_scene_by_name("props"), "Tree2Trunk" });
+            scenes_.push_back({ scene_repo.find_scene_by_name("props"), "Rock1Big" });
+            scenes_.push_back({ scene_repo.find_scene_by_name("weapons"), "torch" });
          }
 
          glpp::animation_timeline_t find_sprite(game::creature_t const & entity, game::moment_t & moment, game::plan_t const & plan) const override {
@@ -250,6 +252,10 @@ int main()
             switch (entity.type) {
             case game::prop_t::tree:
                return scenes_[2];
+            case game::prop_t::rock:
+               return scenes_[3];
+            case game::prop_t::torch:
+               return scenes_[4];
             case game::prop_t::campfire:
             default:
                return scenes_[1];
@@ -296,11 +302,24 @@ int main()
       }
 #endif
 
-      world.create_prop(game::prop_t::campfire, { game::center_world_location(), {} });
+      world.create_prop(game::prop_t::campfire, { { 400., 424. }, {} });
 
-      for (auto i = 0; i < 5; i++) {
-         world.create_prop(game::prop_t::tree, { game::random_world_location(),{} });
-      }
+      auto place_props = [&world](game::prop_t::types prop_type, float scale, unsigned count, float min_dist) {
+         auto planted = 0U;
+         while (planted < count) {
+            auto loc = game::random_world_location();
+            auto dist = glm::distance(loc, game::center_world_location());
+            if (dist < min_dist) continue;
+            float variation = static_cast<float>((float)(std::rand() % 1000) / 1000. - .5) * .5f;
+            float varied_scale = scale + variation * scale;
+            world.create_prop(prop_type, { loc, {}, game::random_direction(), varied_scale });
+            planted++;
+         }
+      };
+
+      place_props(game::prop_t::tree, 3., 15, 250);
+      place_props(game::prop_t::rock, .5, 20, 100);
+
       //world.create_creature(game::creature_t::types::person, { game::center_world_location(), {} });
 
       //
@@ -383,6 +402,10 @@ int main()
          // render
          //
 
+         auto player_moment = creature_db.moment(world.player_id());
+         auto torch_world_pos = player_moment.pos() + 40.f * glm::rotate(player_moment.dir(), -1.4f);
+         auto torch_3d_pos = glm::vec3{ torch_world_pos.x, 100., -torch_world_pos.y };
+         view.set_player_light_position(torch_3d_pos);
          view.update_and_render(time_since_last_tick, world_view);
 
          last_tick = this_tick;

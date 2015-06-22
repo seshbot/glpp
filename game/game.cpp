@@ -19,12 +19,12 @@ namespace {
    //  z: 0 - -600 (north is -z)
 
    const float VIEW_VISIBLE_HEIGHT_SCALING = 1.414213562373f;
-   const float VIEW_DIMENSION_WIDTH = 800.f;
-   const float VIEW_DIMENSION_HEIGHT = 600.f;
-   const float WORLD_MIN_Y = 0.f;
-   const float WORLD_MAX_Y = VIEW_DIMENSION_HEIGHT * VIEW_VISIBLE_HEIGHT_SCALING;
-   const float WORLD_MIN_X = 0.f;
-   const float WORLD_MAX_X = VIEW_DIMENSION_WIDTH;
+   const float VIEW_DIMENSION_WIDTH = 2.f * 800.f;
+   const float VIEW_DIMENSION_HEIGHT = 2.f * 600.f;
+   const float WORLD_MIN_Y = -.5f * VIEW_DIMENSION_HEIGHT * VIEW_VISIBLE_HEIGHT_SCALING;
+   const float WORLD_MAX_Y =  .5f * VIEW_DIMENSION_HEIGHT * VIEW_VISIBLE_HEIGHT_SCALING;
+   const float WORLD_MIN_X = -.5f * VIEW_DIMENSION_WIDTH;
+   const float WORLD_MAX_X =  .5f * VIEW_DIMENSION_WIDTH;
 
    const float CREATURE_SPEED_PER_SECOND = 150.f;
 }
@@ -50,20 +50,41 @@ namespace game {
       };
    }
 
+   glm::vec2 random_direction() {
+      static const float PI = 3.141592653589793238462643383f;
+      static const float TAU = 2 * PI;
+      static const unsigned PRECISION = 10000;
+      static const unsigned TAU_10000 = static_cast<unsigned>(TAU * PRECISION);
+      float rotation = (float)(std::rand() % TAU_10000) / PRECISION;
+      return glm::rotate(glm::vec2{ 1., 0. }, rotation);
+   }
+
    //
    // moment_t
    //
 
    moment_t::moment_t()
-      : dir_(0., 1.) {
+      : dir_(0., 1.)
+      , scale_(32.) {
    }
 
    moment_t::moment_t(glm::vec2 const & pos, glm::vec2 const & vel)
       : moment_t() {
       set_pos(pos);
       set_vel(vel);
+      set_dir(vel);
    }
 
+   moment_t::moment_t(glm::vec2 const & pos, glm::vec2 const & vel, glm::vec2 const & dir)
+      : moment_t(pos, vel) {
+      set_dir(dir);
+   }
+
+   moment_t::moment_t(glm::vec2 const & pos, glm::vec2 const & vel, glm::vec2 const & dir, float scale)
+      : moment_t(pos, vel, dir) {
+      auto factor = static_cast<float>(32. * scale);
+      scale_ = glm::vec3{ factor };
+   }
 
    glm::mat4 moment_t::sprite_transform() const {
       float x = (VIEW_DIMENSION_WIDTH / 2.f) + pos().x;  // 0 - 800
@@ -80,7 +101,7 @@ namespace game {
       float x = pos().x;  // 0 - 800
       float z = -pos().y; // 0 - -600
 
-      auto scale = glm::scale(glm::vec3{ 32. });
+      auto scale = glm::scale(scale_);
       auto rot = glm::rotate(angle(), glm::vec3{ 0., 1., 0. });
       auto trans = glm::translate(glm::vec3{ x, 0., z });
 
