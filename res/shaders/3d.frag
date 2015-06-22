@@ -19,7 +19,7 @@ struct PositionalLight {
 
 const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .00008);
 uniform PositionalLight shadow_lights[1];
-uniform PositionalLight lights[1];
+uniform PositionalLight lights[4];
 
 uniform sampler2D texture;
 uniform mediump vec4 colour;
@@ -101,11 +101,11 @@ mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
 
 mediump vec3 shadowed_light(PositionalLight light) {
    mediump float shadow_factor = calc_shadow_factor(light.world_position);
-   return light_impl(light, shadow_factor);
+   return clamp(light_impl(light, shadow_factor), 0., 1.);
 }
 
 mediump vec3 light(PositionalLight light) {
-	return light_impl(light, 1.);
+	return clamp(light_impl(light, 1.), 0., 1.);
 }
 
 const mediump float LOG2 = 1.442695;
@@ -138,8 +138,12 @@ void main() {
    gl_FragColor = vec4(
 	ambient + 
 	diffuse + 
-	diffuse_colour.rgb * shadowed_light(shadow_lights[0]) +
-	diffuse_colour.rgb * light(lights[0]),
+	diffuse_colour.rgb *
+		(shadowed_light(shadow_lights[0]) +
+		 light(lights[0]) +
+		 light(lights[1]) +
+		 light(lights[2]) +
+		 light(lights[3])),
 	colour.a);
 
    //gl_FragColor = mix(c_fog_colour, gl_FragColor, fog_factor());

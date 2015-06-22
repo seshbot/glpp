@@ -92,7 +92,7 @@ namespace game {
       };
 
       light_info player_light;
-      light_info campfire_light;
+      light_info lights[4];
 
       struct mesh_render_info {
          glpp::animation_t const & animation;
