@@ -15,7 +15,7 @@ namespace utils
 
    template <typename T>
    T lerp(T const & a, T const & b, float t) {
-      return a * (1.f - t) + b * t;
+      return a * (T{ 1.f } -t) + b * t;
    }
 }
 

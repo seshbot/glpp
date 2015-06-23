@@ -228,7 +228,8 @@ namespace game {
       auto & m = entity_db_.moment(player_id_);
       auto target_vel = player_controller_.get_relative_velocity() * CREATURE_SPEED_PER_SECOND;
       if (glm::length(target_vel) > 0.1) {
-         m.set_dir(player_controller_.get_relative_velocity());
+         auto target_dir = player_controller_.get_relative_velocity();
+         m.set_dir(utils::lerp(m.dir(), target_dir, 6.f * static_cast<float>(time_since_last)));
       }
       m.set_vel(utils::lerp(m.vel(), target_vel, 12.f * static_cast<float>(time_since_last)));
    }

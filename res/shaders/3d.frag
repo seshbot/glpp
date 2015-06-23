@@ -111,11 +111,11 @@ mediump vec3 light(PositionalLight light) {
 
 const mediump float LOG2 = 1.442695;
 const mediump float c_fog_density = 0.0008;
-const mediump vec4 c_fog_colour = vec4(1., 1., 1., 1.);
+const mediump vec4 c_fog_colour = vec4(.25, .25, .25, 1.); // vec4(.2, .6, .8, 1.); //
 mediump float fog_factor() {
    // various fog calcs: https://code.google.com/p/gles2-bc/source/browse/trunk/Sources/OpenGLES/OpenGLES20/shaders/fog.glsl?r=4
    // for ortho
-   return clamp(.95 + .0002 * frag_position.y, 0., 1.);
+   return clamp(.97 + .0001 * frag_position.y, 0., 1.);
 
    // for perspective
    //mediump float z = frag_position4.z / frag_position4.w;

@@ -26,7 +26,7 @@ const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_F
 uniform PositionalLight shadow_lights[1];
 uniform PositionalLight lights[1];
 
-const mediump vec4 c_ambient_intensity = vec4(.2, .6, .8, 1.) * .08;
+const mediump vec4 c_ambient_intensity = vec4(.2, .6, .8, 1.) * .03;
 
 
 mediump vec4 light(PositionalLight light) {
