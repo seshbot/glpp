@@ -341,6 +341,10 @@ int main()
          view.debug_do_special_thing();
          return true;
       });
+      controls.register_action_handler(glpp::Key::KEY_P, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
+         view.debug_set_ortho(!view.ortho);
+         return true;
+      });
       controls.register_action_handlers({glpp::Key::KEY_KP_ADD, glpp::Key::KEY_EQUAL}, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          view.set_view_height(view.get_view_height() + .2f);
          return true;

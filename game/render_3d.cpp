@@ -245,11 +245,8 @@ namespace {
    std::vector<glpp::pass_t> make_mesh_passes(game::render_context const & ctx, glpp::program & program, glpp::animation_t const & animation, bool shadow) {
       std::vector<glpp::pass_t> result;
 
-      //auto animation = first_animation(scene);
       auto sprite = animation.create_timeline();
       for (auto & mesh : sprite.meshes()) {
-         // utils::log(utils::LOG_INFO, " - mesh %s: %d bones, %d transforms\n", mesh.name().c_str(), mesh.bone_count(), mesh.bone_transforms().size());
-         // mesh_names.push_back(mesh.name());
 
          auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
             .attrib("p", 3);
@@ -259,8 +256,6 @@ namespace {
             .attrib("bone_indices", 4);
          auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
             .attrib("bone_weights", 4);
-
-         auto set_bones_action = [&](glpp::uniform & u) { u.set(mesh.bone_transforms()); };
 
          if (!shadow) {
             auto set_blank_tex_cb = [&](glpp::uniform & u) { BLANK_TEXTURE_UNIT.activate(); ctx.blank_tex.bind(); u.set(BLANK_TEXTURE_UNIT); };
@@ -272,8 +267,7 @@ namespace {
                .with(bone_indices)
                .with(bone_weights)
                .set_uniform("colour", mesh.material().diffuse_colour)
-               .set_uniform_action("texture", set_blank_tex_cb)
-               //.set_uniform_action("bones[0]", set_bones_action)
+               .set_uniform("use_texture", 0.f)
                );
          }
          else {
@@ -282,7 +276,6 @@ namespace {
                .with(verts)
                .with(bone_indices)
                .with(bone_weights)
-               //.set_uniform_action("bones[0]", set_bones_action)
                );
          }
       }
@@ -324,19 +317,20 @@ namespace {
       return result;
    }
 
-   glm::mat4 get_proj() {
+   glm::mat4 get_proj(bool ortho) {
       // 0, 0 is the bottom left of the lookAt target!
-      return glm::ortho<float>(-800., 800., -600., 600., 100., 2000.);
-      //return glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1000.f);
+      if (ortho)
+         return glm::ortho<float>(-800., 800., -600., 600., 100., 2000.);
+      return glm::perspective<float>(45.f, 800.f / 600.f, 200.f, 2000.f);
    }
 
-   glm::mat4 get_mvp(game::renderer const & view) {
-      return get_proj() * get_view(view);
+   glm::mat4 get_mvp(game::renderer const & view, bool ortho) {
+      return get_proj(ortho) * get_view(view);
    }
 
    namespace callbacks {
       callback_set_uniform set_time() { return [](glpp::uniform & u) {u.set(static_cast<float>(glpp::get_time())); }; }
-      callback_set_uniform set_mvp(game::renderer const & view) { return [&view](glpp::uniform & u) { u.set(get_mvp(view)); }; }
+      callback_set_uniform set_mvp(game::renderer const & view, bool const & ortho) { return [&](glpp::uniform & u) { u.set(get_mvp(view, ortho)); }; }
       callback_set_uniform set_screensize(glpp::context & context) {
          return [&context](glpp::uniform & u) {
             auto dims = context.win().frame_buffer_dims();
@@ -522,7 +516,7 @@ namespace game {
          .with(diamond_normal_buffer())
          .set_uniform("colour", glm::vec4(.1f, .8f, .2f, 1.f))
          .set_uniform_action("model", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); })
-         .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_mvp(*this) * get_diamond_model_matrix()); }));
+         .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_mvp(*this, ortho) * get_diamond_model_matrix()); }));
       //         .set_uniform_action("normal_matrix", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); });
 
 
@@ -546,9 +540,10 @@ namespace game {
          .with(ground_bone_indices_buffer_desc)
          .with(ground_bone_weights_buffer_desc)
          .set_uniform("colour", glm::vec4(.8f, .8f, .16f, 1.f))
+         .set_uniform("use_texture", 1.f)
          .set_uniform_action("texture", set_ground_tex_cb)
          .set_uniform("model", glm::mat4{})
-         .set_uniform_action("mvp", callbacks::set_mvp(*this))
+         .set_uniform_action("mvp", callbacks::set_mvp(*this, ortho))
          //         .set_uniform("normal_matrix", glm::mat4{})
          .set_uniform_action("t", callbacks::set_time())
          .set_uniform("bones[0]", default_bone_transforms));
@@ -689,6 +684,7 @@ namespace game {
       //
       // draw to shadow texture
       //
+#if 1
 
       // const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
       struct face_info {
@@ -710,7 +706,6 @@ namespace game {
       const auto light_pos = player_light.position;
       const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
 
-#if 1
       gl::disable(gl::enable_cap_t::blend);
       gl::cull_face(gl::cull_face_mode_t::front);
       gl::clear_color(1., 1., 1., 1.);
@@ -793,9 +788,24 @@ namespace game {
 
       auto dims = context.context.win().frame_buffer_dims();
       gl::viewport(0, 0, dims.x, dims.y);
+
+#ifdef _MSC_VER
+#  define USE_MSAA_FBO
+#else
+#  define USE_POST_PROCESSING_FBO
+#endif
+
+#if defined(USE_MSAA_FBO)
       context.msaa_fbo->bind();
+#  ifndef USE_POST_PROCESSING_FBO
+#    define USE_POST_PROCESSING_FBO
+#  endif
+#endif
+#if !defined(USE_MSAA_FBO) && defined(USE_POST_PROCESSING_FBO)
+      context.tex_fbo->bind();
+#endif
       {
-         gl::clear_color(1., 1., 1., 1.);
+         gl::clear_color(.1, .1, .1, 1.);
          gl::clear(
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit);
@@ -805,8 +815,8 @@ namespace game {
 #endif
 
 #if 1
-         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, get_view(*this), get_proj(), false);
-         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, get_view(*this), get_proj(), false);
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, get_view(*this), get_proj(ortho), false);
+         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, get_view(*this), get_proj(ortho), false);
 #endif
 
          //debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
@@ -848,6 +858,8 @@ namespace game {
          glpp::unbind(particle_position_buffer);
 #endif
       }
+#if defined(USE_MSAA_FBO)
+      context.msaa_fbo->bind();
       // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
       context.tex_fbo->bind(glpp::frame_buffer_t::Draw);
       context.msaa_fbo->bind(glpp::frame_buffer_t::Read);
@@ -860,8 +872,14 @@ namespace game {
       }
       context.tex_fbo->unbind();
       context.msaa_fbo->unbind();
+#endif
+#if !defined(USE_MSAA_FBO) && defined(USE_POST_PROCESSING_FBO)
+      context.tex_fbo->unbind();
+#endif
 
+#if defined(USE_POST_PROCESSING_FBO)
       post_pass.back().draw(glpp::DrawMode::Triangles);
+#endif
    }
 
 } // namespace game

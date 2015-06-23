@@ -22,6 +22,7 @@ const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_F
 uniform PositionalLight shadow_lights[1];
 uniform PositionalLight lights[4];
 
+uniform lowp float use_texture;
 uniform sampler2D texture;
 uniform mediump vec4 colour;
 uniform samplerCube shadow_texture;
@@ -31,7 +32,7 @@ varying mediump vec3 frag_normal;
 varying mediump vec2 frag_tex_coords;
 
 const mediump vec3 c_sky_light_dir = vec3(-1., -1., -1.);
-const mediump vec3 c_sky_light_intensity = vec3(.5, .5, .8) * .01;
+const mediump vec3 c_sky_light_intensity = vec3(.5, .5, .8) * .001;
 
 const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .0;
 
@@ -129,7 +130,7 @@ void main() {
 
    //mediump vec4 diffuse_colour = vec4(1., 0., 1., 1.);
    mediump vec4 diffuse_colour = texture2D(texture, frag_tex_coords);
-   if (diffuse_colour.rb == vec2(1., 1.)) {
+   if (use_texture < .5) {
       diffuse_colour = colour;
    }
 

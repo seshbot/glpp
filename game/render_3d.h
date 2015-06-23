@@ -77,6 +77,7 @@ namespace game {
       float get_view_height() const { return view_height; }
       void set_view_height(float view_height_in) { view_height = std::max(0.f, std::min(1.f, view_height_in)); }
 
+      void debug_set_ortho(bool set) { ortho = set; }
       void debug_do_special_thing() { debug_do_special_thing_ = true; }
       void debug_show_mesh(int id) { debug_selected_item_ = id; }
       void debug_enable_special_mode(bool enabled) { debug_special_mode_enabled_ = enabled; }
@@ -115,6 +116,7 @@ namespace game {
 
       constant_particle_emitter_buffer_t emitter;
 
+      bool ortho = true;
       float view_height = 1.;
       bool debug_do_special_thing_ = false;
       bool debug_special_mode_enabled_ = false;
