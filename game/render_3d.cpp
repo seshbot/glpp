@@ -477,19 +477,22 @@ namespace game {
 
    renderer::renderer(model_repository const & models, render_context & ctx)
       : context(ctx)
-      , player_light{{ 400., 30., -424. }, { .75, .40, .05 }, .2f * glm::vec3{ .75, .40, .05 }, .0002f}
+      , player_light{{ 400., 40., -424. }, { .75, .40, .05 }, .04f * glm::vec3{ .75, .40, .05 }, .035f, .000005f}
    {
-      lights[0] = { { 400., 30., -424. },{ .75, .40, .05 }, .2f * glm::vec3{ .75, .40, .05 }, .00005f };
+      lights[0] = { { 400., 40., -424. },{ .75, .40, .05 }, .2f * glm::vec3{ .75, .40, .05 }, .0f, .00005f };
 
       lights[1].diffuse_colour = { .05, .45, .05 };
       lights[1].ambient_colour = { .05, .45, .05 };
-      lights[1].attenuation = .001f;
+      lights[1].attenuation_linear = .07f;
+      lights[1].attenuation_square = .000005f;
       lights[2].diffuse_colour = { .45, .05, .05 };
       lights[2].ambient_colour = { .45, .05, .05 };
-      lights[2].attenuation = .001f;
+      lights[2].attenuation_linear = .07f;
+      lights[2].attenuation_square = .000005f;
       lights[3].diffuse_colour = { .05, .05, .45 };
       lights[3].ambient_colour = { .05, .05, .45 };
-      lights[3].attenuation = .001f;
+      lights[3].attenuation_linear = .07f;
+      lights[3].attenuation_square = .000005f;
 
       auto accumulate_scene_renderers = [&](glpp::scene_t const & scene) {
          auto & static_animation = scene.default_animation();
@@ -615,7 +618,7 @@ namespace game {
       static const float TAU = 2 * PI;
       float particle_lifecycles[3] = { 0., 5., 10. };
 
-      glm::vec2 signal(float t) { return glm::rotate(glm::vec2{1.f, 0.f}, t * TAU); }
+      glm::vec2 signal_2d(float t) { return glm::rotate(glm::vec2{1.f, 0.f}, t * TAU); }
    }
 
    void renderer::update_and_render(double time_since_last_tick, game::world_view_t const & world_view) {
@@ -629,10 +632,12 @@ namespace game {
 
       for (auto i = 0U; i < 3; i++) {
          particle_lifecycles[i] += static_cast<float>(time_since_last_tick);
-         auto r = (float)(200. + 100. * (i + 2));
-         auto t = (((i + 4.f) / 5.f) * particle_lifecycles[i]) / PARTICLE_MAX_LIFE;
-         glm::vec2 pos = r * .5f * signal(t) + r * .5f * signal(t + t * .3f) + r * .1f * signal(-t * 11.f) + r * .01f * signal(t * 39.f);
-         lights[i + 1].position = { pos.x, 60., -pos.y };
+         auto r = (float)(200. + 50. * (i + 2));
+         auto t = 2.f * (((i + 4.f) / 5.f) * particle_lifecycles[i]) / PARTICLE_MAX_LIFE;
+         glm::vec2 pos = r * .5f * signal_2d(t) + r * .5f * signal_2d(t + t * .3f) + r * .1f * signal_2d(-t * 11.f) + r * .01f * signal_2d(t * 39.f);
+         pos += glm::vec2{300.f, -500.f};
+         auto height = 60.f + 55.f * std::sin(20.f * t) + 25.f * std::sin(.2f + t * 30.f);
+         lights[i + 1].position = { pos.x, height, -pos.y };
       }
 
       auto default_entity_filter = [](auto const &) { return true; };
@@ -751,7 +756,8 @@ namespace game {
          context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(player_light.position);
          context.prg_3d_shadow.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
          context.prg_3d_shadow.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
-         context.prg_3d_shadow.uniform("shadow_lights[0].attenuation").set(player_light.attenuation);
+         context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
+         context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
 
          render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
          render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
@@ -767,14 +773,16 @@ namespace game {
       context.prg_3d.uniform("shadow_lights[0].world_position").set(player_light.position);
       context.prg_3d.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
       context.prg_3d.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
-      context.prg_3d.uniform("shadow_lights[0].attenuation").set(player_light.attenuation);
+      context.prg_3d.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
+      context.prg_3d.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
 
       for (auto i = 0U; i < 4; i++) {
          auto array_name = std::string{ "lights[" } + std::to_string(i) + "]";
          context.prg_3d.uniform(array_name + ".world_position").set(lights[i].position);
          context.prg_3d.uniform(array_name + ".ambient").set(lights[i].ambient_colour);
          context.prg_3d.uniform(array_name + ".diffuse").set(lights[i].diffuse_colour);
-         context.prg_3d.uniform(array_name + ".attenuation").set(lights[i].attenuation);
+         context.prg_3d.uniform(array_name + ".attenuation_linear").set(lights[i].attenuation_linear);
+         context.prg_3d.uniform(array_name + ".attenuation_square").set(lights[i].attenuation_square);
       }
 
 #endif
@@ -815,12 +823,14 @@ namespace game {
          context.prg_3d_particle.uniform("shadow_lights[0].world_position").set(player_light.position);
          context.prg_3d_particle.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
          context.prg_3d_particle.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
-         context.prg_3d_particle.uniform("shadow_lights[0].attenuation").set(player_light.attenuation);
+         context.prg_3d_particle.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
+         context.prg_3d_particle.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
 
          context.prg_3d_particle.uniform("lights[0].world_position").set(lights[0].position);
          context.prg_3d_particle.uniform("lights[0].ambient").set(lights[0].ambient_colour);
          context.prg_3d_particle.uniform("lights[0].diffuse").set(lights[0].diffuse_colour);
-         context.prg_3d_particle.uniform("lights[0].attenuation").set(lights[0].attenuation);
+         context.prg_3d_particle.uniform("lights[0].attenuation_linear").set(lights[0].attenuation_linear);
+         context.prg_3d_particle.uniform("lights[0].attenuation_square").set(lights[0].attenuation_square);
          
          RAIN_TEXTURE_UNIT.activate();
          context.rain_tex.bind();

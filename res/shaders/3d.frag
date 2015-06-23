@@ -14,10 +14,11 @@ struct PositionalLight {
 	mediump vec3 world_position;
 	mediump vec3 ambient;
 	mediump vec3 diffuse;
-	mediump float attenuation;
+	mediump float attenuation_linear;
+	mediump float attenuation_square;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .00008);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .0, .00008);
 uniform PositionalLight shadow_lights[1];
 uniform PositionalLight lights[4];
 
@@ -80,7 +81,7 @@ mediump float calc_shadow_factor(mediump vec3 world_position) {
 mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
    // calculate attenuation (light strengtht based on inverse square law)
    mediump float dist = distance(frag_position, light.world_position);
-   mediump float att = 1. / (0.25 + light.attenuation * dist * dist) - .05;
+   mediump float att = clamp(1. / (0.25 + light.attenuation_linear * dist + light.attenuation_square * dist * dist) - .05, 0., 1.);
 
    // from http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
    // att = clamp(1.0 - dist*dist/(radius*radius), 0.0, 1.0); att *= att
@@ -96,16 +97,16 @@ mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
    mediump float diffuse_intensity = max(0., dot(n, -dir));
 
    // phong calculation
-   return att * (light.ambient + light.diffuse * diffuse_intensity * shadow_factor);
+   return clamp(att * (light.ambient + light.diffuse * diffuse_intensity * shadow_factor), 0., 1.);
 }
 
 mediump vec3 shadowed_light(PositionalLight light) {
    mediump float shadow_factor = calc_shadow_factor(light.world_position);
-   return clamp(light_impl(light, shadow_factor), 0., 1.);
+   return light_impl(light, shadow_factor);
 }
 
 mediump vec3 light(PositionalLight light) {
-	return clamp(light_impl(light, 1.), 0., 1.);
+	return light_impl(light, 1.);
 }
 
 const mediump float LOG2 = 1.442695;

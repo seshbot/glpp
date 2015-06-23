@@ -403,8 +403,8 @@ int main()
          //
 
          auto player_moment = creature_db.moment(world.player_id());
-         auto torch_world_pos = player_moment.pos() + 40.f * glm::rotate(player_moment.dir(), -1.4f);
-         auto torch_3d_pos = glm::vec3{ torch_world_pos.x, 100., -torch_world_pos.y };
+         auto torch_world_pos = player_moment.pos() + 45.f * glm::rotate(player_moment.dir(), -.5f);
+         auto torch_3d_pos = glm::vec3{ torch_world_pos.x, 45., -torch_world_pos.y };
          view.set_player_light_position(torch_3d_pos);
          view.update_and_render(time_since_last_tick, world_view);
 

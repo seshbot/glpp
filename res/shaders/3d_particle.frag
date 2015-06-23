@@ -18,10 +18,11 @@ struct PositionalLight {
 	mediump vec3 world_position;
 	mediump vec3 ambient;
 	mediump vec3 diffuse;
-	mediump float attenuation;
+	mediump float attenuation_linear;
+	mediump float attenuation_square;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .00008);
+const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .0, .00008);
 uniform PositionalLight shadow_lights[1];
 uniform PositionalLight lights[1];
 
@@ -31,7 +32,7 @@ const mediump vec4 c_ambient_intensity = vec4(.2, .6, .8, 1.) * .08;
 mediump vec4 light(PositionalLight light) {
    // calculate attenuation (light strengtht based on inverse square law)
    mediump float dist = distance(frag_position, light.world_position);
-   mediump float att = 1. / (0.25 + light.attenuation * dist * dist) - .05;
+   mediump float att = 1. / (0.25 + light.attenuation_linear * dist + light.attenuation_square * dist * dist) - .05;
 
    // phong calculation
    return att * vec4(light.diffuse, 1.);

@@ -88,7 +88,8 @@ namespace game {
          glm::vec3 position;
          glm::vec3 diffuse_colour;
          glm::vec3 ambient_colour;
-         float attenuation;
+         float attenuation_linear;
+         float attenuation_square;
       };
 
       light_info player_light;
