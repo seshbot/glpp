@@ -149,12 +149,13 @@ namespace {
    //
    // ground data
    //
-
+   const float G_VERT_SCALE = 2.5f;
+   const float G_TEX_SCALE = 2.5f * 7.5f;
    static const float ground_verts[] = {
-      -800.,   0., -900.,   0., 1., 0.,    0., 5.,
-      800., 0., -900.,     0., 1., 0.,    5.f * 1.33f, 5.,
-      -800.,   0.,  1100.,    0., 1., 0.,    0., 0.,
-      800., 0.,  1100.,      0., 1., 0.,    5.f * 1.33f, 0.,
+      G_VERT_SCALE * -800., 0., G_VERT_SCALE * -900.,     0., 1., 0.,    0.,                  G_TEX_SCALE,
+      G_VERT_SCALE *  800., 0., G_VERT_SCALE * -900.,     0., 1., 0.,    G_TEX_SCALE * 1.33f, G_TEX_SCALE,
+      G_VERT_SCALE * -800., 0., G_VERT_SCALE * 1100.,     0., 1., 0.,    0.,                  0.,
+      G_VERT_SCALE *  800., 0., G_VERT_SCALE * 1100.,     0., 1., 0.,    G_TEX_SCALE * 1.33f, 0.,
    };
    static const unsigned short ground_indices[] = {
       0, 2, 1,
@@ -305,7 +306,7 @@ namespace {
    glm::vec3 get_camera_pos(game::renderer const & view) {
       auto center_2d = game::center_world_location();
       auto center = glm::vec3{ center_2d.x, 0.f, -center_2d.y };
-      auto eye = center + glm::vec3{ 0.f, 800.f * view.get_view_height(), 800.f };
+      auto eye = center + glm::vec3{ 0.f, 1000.f * view.get_view_height(), 800.f };
       return eye;
    }
 
@@ -320,8 +321,8 @@ namespace {
    glm::mat4 get_proj(bool ortho) {
       // 0, 0 is the bottom left of the lookAt target!
       if (ortho)
-         return glm::ortho<float>(-800., 800., -600., 600., 100., 2000.);
-      return glm::perspective<float>(45.f, 800.f / 600.f, 200.f, 2000.f);
+         return glm::ortho<float>(-800., 800., -600., 600., 500., 3000.);
+      return glm::perspective<float>(45.f, 800.f / 600.f, 500.f, 3000.f);
    }
 
    glm::mat4 get_mvp(game::renderer const & view, bool ortho) {
@@ -617,6 +618,7 @@ namespace game {
    }
 
    void renderer::update_and_render(double time_since_last_tick, game::world_view_t const & world_view) {
+
       context.reload_framebuffers();
 
       //
@@ -805,7 +807,7 @@ namespace game {
       context.tex_fbo->bind();
 #endif
       {
-         gl::clear_color(.1, .1, .1, 1.);
+         gl::clear_color(.01f, .01f, .1f, 1.f);
          gl::clear(
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit);
@@ -826,7 +828,7 @@ namespace game {
 
          context.prg_3d_particle.use();
          context.prg_3d_particle.uniform("screen_size").set(glm::vec2{ dims.x, dims.y });
-         context.prg_3d_particle.uniform("proj").set(glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f));
+         context.prg_3d_particle.uniform("proj").set(get_proj(false)); // glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f));
          context.prg_3d_particle.uniform("view").set(get_view(*this));
          context.prg_3d_particle.uniform("eye").set(get_camera_pos(*this));
 

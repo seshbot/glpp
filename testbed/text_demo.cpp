@@ -8,6 +8,11 @@
    namespace gl { using namespace gl2; }
 #endif
 
+#include <glm/gtx/transform.hpp>
+
+#include <glpp/utils.h>
+
+#ifdef DRAW_MANUALLY
 
 static auto VERT_SHADER_SOURCE = R"(
 #ifndef GL_ES
@@ -42,9 +47,11 @@ void main() {
 }
 )";
 
+#endif
+
 static auto SAMPLE_TEXT = R"(a line of text
 another line of text with some data
-whats going on another line of text with some data
+whats going on another line of text with some data that forms a really really long sentence yeah? yeah!
 another line but something
 what is going on here
 something should really happen here
@@ -60,12 +67,13 @@ void text_demo() {
    glpp::init();
    glpp::context context(key_handler);
 
+#ifdef DRAW_MANUALLY
    glpp::program prg(
       glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::Vertex),
       glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::Fragment)
       );
 
-   auto text_buffer = glpp::describe_debug_text_buffer(SAMPLE_TEXT, -.95f, .95f, .0025f)
+   auto text_buffer = glpp::describe_debug_text_buffer(SAMPLE_TEXT)
       .attrib("pos", 2)
       .skip_bytes(4 * 2) // skip [z, col] words
       .build(prg);
@@ -74,8 +82,37 @@ void text_demo() {
       prg.use();
       gl::vertex_attrib_4f(prg.attrib("col").location(), .8f, .8f, .8f, 1.f);
       glpp::draw(text_buffer, glpp::DrawMode::Triangles);
+
       context.win().swap();
    }
 
-   glpp::shutdown();
+#else
+
+   auto ui_transform = [&] {
+      auto xres = (float)context.win().frame_buffer_dims().x / 2.f;
+      auto yres = (float)context.win().frame_buffer_dims().y / 2.f;
+
+      utils::log(utils::LOG_INFO, "x: %d y: %d\n", (int)xres, (int)yres);
+      auto xpad = xres / 100.f;
+      auto ypad = xpad * .75f;
+      auto mvp = glm::ortho(0.f, xres, yres, 0.f);
+      auto m = glm::translate(glm::vec3{ xpad, ypad, 0.f });
+
+      return mvp * m;
+   };
+
+   glpp::program ui_prg = glpp::make_debug_ui_program(); // create_program(context.assets, "ui");
+   glpp::pass_t ui_pass = glpp::make_debug_text_pass(SAMPLE_TEXT, ui_prg, ui_transform());
+
+   int count = 100;
+   while (!context.win().closing()) {
+      gl::clear(gl::clear_buffer_flags_t::color_buffer_bit | gl::clear_buffer_flags_t::depth_buffer_bit);
+
+      ui_pass.draw(glpp::DrawMode::Triangles);
+
+      context.win().swap();
+   }
+#endif
+
+   //glpp::shutdown();
 }

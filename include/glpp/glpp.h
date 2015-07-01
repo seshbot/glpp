@@ -493,11 +493,6 @@ namespace glpp {
 
    buffer_spec_builder_t describe_buffer(buffer_t buffer);
 
-   // buffer [x:float, y:float, z:float, r:ubyte, g: ubyte, b: ubyte, a: ubyte]
-   // hint: render using orthographic projection of screen size
-   buffer_spec_builder_t describe_debug_text_buffer(
-      std::string const & text, float leftmost = 0., float topmost = 0., float scale_factor = 1.);
-
    enum class DrawMode {
       Points,
       Lines, LineLoop,
@@ -770,6 +765,24 @@ namespace glpp {
       std::size_t current_frame_idx_;
       sprite_animation_t const * current_animation_;
    };
+
+   //
+   // debug UI
+   //
+
+   program make_debug_ui_program();
+
+   // buffer [x:float, y:float, z:float, r:ubyte, g: ubyte, b: ubyte, a: ubyte]
+   // hint: render using orthographic projection of screen size
+   buffer_spec_builder_t describe_debug_text_buffer(
+      std::string const & text, float leftmost = 0., float topmost = 0., float scale_factor = 1.);
+
+   // e.g.: 
+   // auto proj_tx = glm::ortho(0.f, 800.f, 600.f, 0.);
+   // auto model_tx = glm::translate(glm::vec3{30.f, 20.f, 0.});
+   // auto pass = make_debug_text_pass("xxx", prg, proj_tx * model_tx);
+   // pass.draw(glpp::DrawMode::Triangles);
+   pass_t make_debug_text_pass(std::string const & text, program & prg, glm::mat4 const & mvp);
 }
 
 

@@ -335,13 +335,17 @@ namespace glpp
       void set_optimistic(bool value) { optimistic_ = value; }
 
       void use_program(gl::uint_t id);
+      void unuse_program_if_using(gl::uint_t id);
 
       void bind_framebuffer(gl_::framebuffer_target_t target, gl::uint_t framebuffer);
+      void unbind_framebuffer_if_used(gl::uint_t framebuffer);
 
       void active_texture(gl_::texture_unit_t id);
       void bind_texture(gl_::texture_target_t target, gl::uint_t id);
+      void unbind_texture_if_bound(gl::uint_t id);
 
       void bind_buffer(gl_::buffer_target_arb_t target, gl::uint_t id);
+      void unbind_buffer_if_bound(gl::uint_t id);
 
       void debug_verify_state_COSTLY() const;
 
@@ -382,6 +386,10 @@ namespace glpp
       bound_program_ = id;
    }
 
+   void context_state::unuse_program_if_using(gl::uint_t id) {
+      if (bound_program_ == id) bound_program_ = 0;
+   }
+
    void context_state::bind_framebuffer(gl_::framebuffer_target_t target, gl::uint_t id) {
       bound_framebuffer_info_.calls++;
       if (target == gl_::framebuffer_target_t::framebuffer) {
@@ -403,6 +411,11 @@ namespace glpp
 #else
       GL_VERIFY(gl_::osx::bind_framebuffer(target, id));
 #endif
+   }
+
+   void context_state::unbind_framebuffer_if_used(gl::uint_t id) {
+      if (bound_read_framebuffer_ == id) bound_read_framebuffer_ = 0;
+      if (bound_draw_framebuffer_ == id) bound_draw_framebuffer_ = 0;
    }
 
    static const unsigned TEXTURE0 = static_cast<unsigned>(gl_::texture_unit_t::texture0);
@@ -432,6 +445,10 @@ namespace glpp
       texture_unit_texture_ids_[active_texture_unit_idx_] = id;
    }
 
+   void context_state::unbind_texture_if_bound(gl::uint_t id) {
+      // TODO: update texture_unit_texture_targets_ when we've decided how we're going to use it
+   }
+
    void context_state::bind_buffer(gl_::buffer_target_arb_t target, gl::uint_t id) {
       if (target == gl_::buffer_target_arb_t::element_array_buffer) {
          bound_index_buffer_info_.calls++;
@@ -445,6 +462,11 @@ namespace glpp
       }
       
       GL_VERIFY(gl_::bind_buffer(target, id));
+   }
+
+   void context_state::unbind_buffer_if_bound(gl::uint_t id) {
+      if (bound_index_buffer_ == id) bound_index_buffer_ = 0;
+      if (bound_vertex_buffer_ == id) bound_vertex_buffer_ = 0;
    }
 
    namespace {
@@ -520,14 +542,14 @@ namespace glpp
    {
       auto err = gl_::get_error(); if (err == gl_::error_code_t::no_error) return;
 
-      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) called from %s in file %s line %d\n", openGlErrorString(err), err, function, file, line);
+      utils::log(utils::LOG_ERROR, "%s(%d) : OpenGL error '%s' (0x%04x) called from %s\n", file, line, openGlErrorString(err), err, function);
    }
 
    void checkOpenGLError(const char* stmt, const char* function, const char* file, int line)
    {
       auto err = gl_::get_error(); if (err == gl_::error_code_t::no_error) return;
 
-      utils::log(utils::LOG_ERROR, "OpenGL error '%s' (0x%04x) at %s called from %s in file %s line %d\n", openGlErrorString(err), err, stmt, function, file, line);
+      utils::log(utils::LOG_ERROR, "%s(%d) : OpenGL error '%s' (0x%04x) at %s called from %s\n", file, line, openGlErrorString(err), err, stmt, function);
    }
 
 
@@ -725,6 +747,7 @@ namespace glpp
    }
 
    texture_t::state::~state() {
+      gl_ctx_.unbind_texture_if_bound(id_);
       glDeleteTextures(1, &id_);
    }
 
@@ -916,6 +939,7 @@ namespace glpp
    frame_buffer_t::~frame_buffer_t() {
       if (0 != depth_rbo_id_) GL_VERIFY(gl_::delete_renderbuffers(1, &depth_rbo_id_));
       if (0 != colour_rbo_id_) GL_VERIFY(gl_::delete_renderbuffers(1, &colour_rbo_id_));
+      gl_ctx_.unbind_framebuffer_if_used(fbo_id_);
       GL_VERIFY(gl_::delete_framebuffers(1, &fbo_id_));
    }
 
@@ -1355,7 +1379,10 @@ namespace glpp
       vertex_buffer_size_ = vertex_byte_size;
 
       if (vertex_data == nullptr) {
-         if (vertex_id_) gl_::delete_buffers(1, &vertex_id_);
+         if (vertex_id_) {
+            gl_ctx_.unbind_buffer_if_bound(vertex_id_);
+            gl_::delete_buffers(1, &vertex_id_);
+         }
          vertex_id_ = 0;
          return;
       }
@@ -1367,13 +1394,17 @@ namespace glpp
          : gl_::buffer_usage_arb_t::stream_draw;
       gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::array_buffer, vertex_id_);
       gl_::buffer_data(gl_::buffer_target_arb_t::array_buffer, vertex_byte_size, vertex_data, usage);
+      GL_CHECK();
    }
 
    void buffer_t::state::assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type) {
       assign(vertex_data, vertex_count, vertex_byte_size);
 
       if (index_data == nullptr) {
-         if (index_id_) gl_::delete_buffers(1, &index_id_);
+         if (index_id_) {
+            gl_ctx_.unbind_buffer_if_bound(index_id_);
+            gl_::delete_buffers(1, &index_id_);
+         }
          index_id_ = 0;
          return;
       }
@@ -1620,6 +1651,46 @@ namespace glpp
       return{ buffer };
    }
 
+   program make_debug_ui_program() {
+      static const char * vert_src = R"(
+#ifndef GL_ES
+#define highp
+#define mediump
+#define lowp
+#endif
+
+uniform mediump mat4 mvp;
+
+attribute mediump vec3 position;
+//attribute lowp vec4 colour;
+
+varying lowp vec4 frag_colour;
+
+void main() {
+   gl_Position = mvp * vec4(vec2(position), 0., 1.);
+   frag_colour = vec4(1.); // colour;
+}
+)";
+      static const char * frag_src = R"(
+#ifndef GL_ES
+#define highp
+#define mediump
+#define lowp
+#endif
+
+varying lowp vec4 frag_colour;
+
+void main() {
+   gl_FragColor = frag_colour;
+}
+)";
+
+      return{
+         glpp::shader::create_from_source(vert_src, glpp::shader::Vertex),
+         glpp::shader::create_from_source(frag_src, glpp::shader::Fragment)
+      };
+   }
+
    buffer_spec_builder_t describe_debug_text_buffer(
       std::string const & text, float leftmost, float topmost, float scale_factor) {
 #if 0
@@ -1656,11 +1727,15 @@ namespace glpp
 #define VERTEX_SPAN_IN_FLOATS 4
 #define QUAD_SPAN_IN_FLOATS 4 * VERTEX_SPAN_IN_FLOATS
          auto * quad_verts = ((float*)text_data_buffer) + (quad_idx * QUAD_SPAN_IN_FLOATS);
+
+#if 0 
+         // transform
          for (auto vert_idx = 0U; vert_idx < 4; vert_idx++) {
             auto * quad_vert = quad_verts + vert_idx * 4;
             quad_vert[0] = scale_factor * quad_vert[0] + leftmost;
             quad_vert[1] = -scale_factor * quad_vert[1] + topmost;
          }
+#endif
 
          auto * quad_indices = text_indices.data() + quad_idx * 6;
          // indices tri1: 0, 1, 2 tri2: 0, 2, 3 (6 indices per quad)
@@ -1678,6 +1753,15 @@ namespace glpp
       });
    }
 
+   pass_t make_debug_text_pass(std::string const & text, program & prg, glm::mat4 const & mvp) {
+      auto text_buffer = describe_debug_text_buffer(text)
+         .attrib("position", 3)
+         .skip_bytes(4) // skip r, g, b, a
+         .build(prg);
+
+      return prg.pass()
+         .set_uniform("mvp", mvp).with(text_buffer);
+   }
 
    //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_info> attribs) {
    //   return{ b, { std::begin(attribs), std::end(attribs) } };
@@ -1996,6 +2080,7 @@ namespace glpp
       for (auto & u : uniforms_) { u.reset(); }
       for (auto & a : attribs_) { a.reset(); }
 
+      gl_ctx_.unuse_program_if_using(id_);
       gl_::delete_program(id_);
       id_ = 0;
    }
@@ -2373,6 +2458,11 @@ namespace glpp
       }
 
       glfwMakeContextCurrent(win);
+
+      auto cb = [](GLFWwindow*, int x, int y) {
+         utils::log(utils::LOG_INFO, "window resized: %d %d\n", x, y);
+      };
+      glfwSetFramebufferSizeCallback(win, cb);
 
       if (impl_) window_key_callbacks_.remove(impl_->window_);
       window_key_callbacks_.set(win, *this, key_handler_);

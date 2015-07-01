@@ -102,5 +102,5 @@ void triangle_demo() {
       context.win().swap();
    }
 
-   glpp::shutdown();
+   //glpp::shutdown();
 }

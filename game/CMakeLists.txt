@@ -10,6 +10,7 @@ set(SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/render_3d.cpp ${CMAKE_CURRENT_SOURCE_DIR}/render_3d.h)
 
 set(SHADERS
+  ${ASSET_DIR}/shaders/ui.vert ${ASSET_DIR}/shaders/ui.frag
   ${ASSET_DIR}/shaders/2d.vert ${ASSET_DIR}/shaders/2d.frag
   ${ASSET_DIR}/shaders/3d.vert ${ASSET_DIR}/shaders/3d.frag
   ${ASSET_DIR}/shaders/3d_particle.vert ${ASSET_DIR}/shaders/3d_particle.frag
