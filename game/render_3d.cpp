@@ -380,6 +380,7 @@ namespace game {
       , prg_3d_shadow{ create_program(assets, "3d_shadow") }
       , prg_3d_particle{ create_program(assets, "3d_particle") }
       , prg_post{ create_program(assets, "post") }
+      , prg_ui{ glpp::make_debug_ui_program() }
       , blank_tex(assets.load_image("blank-1x1.png"))
       , test_tex(assets.load_image("test-100x100.png"))
       , ground_tex(assets.load_image("ground-64x64.png"))
@@ -615,6 +616,17 @@ namespace game {
       float particle_lifecycles[3] = { 0., 5., 10. };
 
       glm::vec2 signal_2d(float t) { return glm::rotate(glm::vec2{1.f, 0.f}, t * TAU); }
+
+
+
+
+      static auto SAMPLE_TEXT = R"(a line of text
+another line of text with some data
+whats going on another line of text with some data
+another line but something
+what is going on here
+something should really happen here
+this is weird)";
    }
 
    void renderer::update_and_render(double time_since_last_tick, game::world_view_t const & world_view) {
@@ -882,6 +894,12 @@ namespace game {
 #if defined(USE_POST_PROCESSING_FBO)
       post_pass.back().draw(glpp::DrawMode::Triangles);
 #endif
+      
+      gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+      auto win_dims = context.context.win().frame_buffer_dims();
+      auto text_mvp = glpp::make_debug_text_projection(win_dims.x, win_dims.y, 100, 30, 2.);
+      auto text_pass = glpp::make_debug_text_pass(SAMPLE_TEXT, context.prg_ui, text_mvp);
+      text_pass.draw(glpp::DrawMode::Triangles);
    }
 
 } // namespace game

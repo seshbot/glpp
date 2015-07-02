@@ -55,6 +55,7 @@ namespace game {
       glpp::program prg_3d_shadow;
       glpp::program prg_3d_particle;
       glpp::program prg_post;
+      glpp::program prg_ui;
 
       glpp::texture_t blank_tex;
       glpp::texture_t test_tex;

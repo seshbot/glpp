@@ -7,6 +7,7 @@ set(SOURCE
   glpp.cpp    ${PROJECT_SOURCE_DIR}/include/glpp/glpp.h
   scene.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/scene.h
   assets.cpp  ${PROJECT_SOURCE_DIR}/include/glpp/assets.h
+  ui.cpp      ${PROJECT_SOURCE_DIR}/include/glpp/ui.h
   detail/stb/stb_easy_font.h
   detail/ai_helpers.cpp detail/ai_helpers.h
   detail/ai_structures.cpp detail/ai_structures.h)

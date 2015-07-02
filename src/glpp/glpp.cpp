@@ -22,6 +22,8 @@
    }
 #endif
 
+#include <glm/gtx/transform.hpp>
+
 /**
 INITIALIZATION: 
  #include <glad.h>   https://github.com/Dav1dde/glad
@@ -1751,6 +1753,21 @@ void main() {
          { (float*)text_data_buffer, (unsigned)(quad_count * QUAD_SPAN_IN_FLOATS) },
          { text_indices.data(), text_indices.size() }
       });
+   }
+
+   glm::mat4 make_debug_text_projection(int viewport_width, int viewport_height, int left_pad, int top_pad, float scale) {
+      auto xres = (float)viewport_width / scale;
+      auto yres = (float)viewport_height / scale;
+
+      auto xpad_perc = (float)left_pad / (float)viewport_width;
+      auto ypad_perc = (float)top_pad / (float)viewport_height;
+      auto xpad = xres * xpad_perc;
+      auto ypad = yres * ypad_perc;
+
+      auto proj = glm::ortho(0.f, xres, yres, 0.f);
+      auto model = glm::translate(glm::vec3{ xpad, ypad, 0.f });
+
+      return proj * model;
    }
 
    pass_t make_debug_text_pass(std::string const & text, program & prg, glm::mat4 const & mvp) {

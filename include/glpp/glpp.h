@@ -2,8 +2,7 @@
 #define PCX_GL__H
 
 // TODO:
-// - move to dedicated library
-//   - how to resolve GLM dependencies?
+// - create VAO abstraction that simulates VAOs where not available
 // - allow multiple contexts
 //   - allow glpp:: invocations via contexts? context.functions()?
 // - thread safety (use TLS?)
@@ -776,6 +775,9 @@ namespace glpp {
    // hint: render using orthographic projection of screen size
    buffer_spec_builder_t describe_debug_text_buffer(
       std::string const & text, float leftmost = 0., float topmost = 0., float scale_factor = 1.);
+
+
+   glm::mat4 make_debug_text_projection(int viewport_width, int viewport_height, int left_pad = 0, int top_pad = 0, float scale = 1.f);
 
    // e.g.: 
    // auto proj_tx = glm::ortho(0.f, 800.f, 600.f, 0.);
