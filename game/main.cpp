@@ -336,7 +336,7 @@ int main()
 
          return true;
       });
-      
+
       controls.register_action_handler(glpp::Key::KEY_X, glpp::KeyAction::KEY_ACTION_PRESS, [&](glpp::Key, glpp::KeyAction){
          view.debug_do_special_thing();
          return true;
@@ -375,6 +375,31 @@ int main()
       // TODO: create 'config' files for controls, game creatures and repository models
 
 
+      static auto SAMPLE_TEXT = R"(a line of text
+another line of text with some data
+whats going on another line of text with some data
+another line but something
+what is going on here
+something should really happen here
+this is weird)";
+
+
+
+      auto ui_transform = [&] {
+         auto xres = (float)context.context.win().frame_buffer_dims().x / 2.f;
+         auto yres = (float)context.context.win().frame_buffer_dims().y / 2.f;
+
+         auto xpad = xres / 100.f;
+         auto ypad = xpad * .75f;
+         auto mvp = glm::ortho(0.f, xres, yres, 0.f);
+         auto m = glm::translate(glm::vec3{ xpad, ypad, 0.f });
+
+         return mvp * m;
+      };
+      glpp::program ui_prg = glpp::make_debug_ui_program(); // create_program(context.assets, "ui");
+      glpp::pass_t ui_pass = glpp::make_debug_text_pass(SAMPLE_TEXT, ui_prg, ui_transform());
+
+
       //
       // game loop
       //
@@ -411,6 +436,9 @@ int main()
          auto torch_3d_pos = glm::vec3{ torch_world_pos.x, 45., -torch_world_pos.y };
          view.set_player_light_position(torch_3d_pos);
          view.update_and_render(time_since_last_tick, world_view);
+
+         gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+         ui_pass.draw(glpp::DrawMode::Triangles);
 
          last_tick = this_tick;
 

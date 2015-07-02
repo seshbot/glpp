@@ -1739,12 +1739,12 @@ void main() {
 
          auto * quad_indices = text_indices.data() + quad_idx * 6;
          // indices tri1: 0, 1, 2 tri2: 0, 2, 3 (6 indices per quad)
-         quad_indices[0] = quad_idx * 4 + 0;
+         quad_indices[0] = quad_idx * 4 + 2;
          quad_indices[1] = quad_idx * 4 + 1;
-         quad_indices[2] = quad_idx * 4 + 2;
-         quad_indices[3] = quad_idx * 4 + 0;
+         quad_indices[2] = quad_idx * 4 + 0;
+         quad_indices[3] = quad_idx * 4 + 3;
          quad_indices[4] = quad_idx * 4 + 2;
-         quad_indices[5] = quad_idx * 4 + 3;
+         quad_indices[5] = quad_idx * 4 + 0;
       }
 
       return describe_buffer({
