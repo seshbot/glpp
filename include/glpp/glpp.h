@@ -84,6 +84,7 @@ namespace glpp {
       image_t(image_t &&) = default;
       image_t & operator=(image_t &&) = default;
       explicit image_t(std::string const & filename);
+      image_t(unsigned char * data, int width, int height);
       ~image_t();
 
       int width() const;
@@ -100,7 +101,7 @@ namespace glpp {
    public:
       using id_type = uint32_t;
 
-      texture_t(image_t image);
+      texture_t(image_t image, bool invert_y = true);
       texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
 
       id_type id() const { return state_->id_; }
@@ -122,7 +123,7 @@ namespace glpp {
       static unsigned int to_gl(Target target);
 
       struct state {
-         state(image_t image, Target target);
+         state(image_t image, Target target, bool invert_y);
          state(dim_t const & dims, Target target, texture_format_t format);
          ~state();
          id_type id_;
@@ -447,13 +448,14 @@ namespace glpp {
 
 
    struct attrib_info {
-      attrib_info(attrib attrib, unsigned count, unsigned stride_bytes = 0, unsigned offset_bytes = 0)
-         : attrib(std::move(attrib)), count(count), stride_bytes(stride_bytes), offset_bytes(offset_bytes) {}
+      attrib_info(attrib attrib, ValueType override_type, unsigned count, unsigned stride_bytes = 0, unsigned offset_bytes = 0)
+         : attrib(std::move(attrib)), override_type(override_type), count(count), stride_bytes(stride_bytes), offset_bytes(offset_bytes) {}
 
       // estimate block size (stride) based on attrib specifications
       unsigned calc_stride_bytes() const;
 
       attrib attrib;
+      ValueType override_type;
       unsigned count;
       unsigned stride_bytes;
       unsigned offset_bytes;
@@ -471,16 +473,22 @@ namespace glpp {
    public:
       buffer_attrib_mappings_t();
 
-      buffer_attrib_mappings_t push_attrib(std::string attrib_name, unsigned count);
+      buffer_attrib_mappings_t push_attrib(std::string attrib_name, unsigned elem_count);
+      template <typename ElemT>
+      buffer_attrib_mappings_t push_attrib_typed(std::string attrib_name, unsigned elem_count);
+
       buffer_attrib_mappings_t skip_bytes(unsigned bytes);
 
       mapped_buffer_t map_buffer(program & prg, buffer_t buffer) const;
 
    private:
+      buffer_attrib_mappings_t push_attrib(std::string attrib_name, ValueType type, unsigned elem_count);
+
       struct slice_info {
-         slice_info(std::string const & n, int elem_sz, unsigned elem_cnt) : attrib_name(n), elem_size(elem_sz), count(elem_cnt) {}
+         slice_info(std::string const & n, ValueType type, unsigned elem_sz, unsigned elem_cnt) : attrib_name(n), type(type), elem_size(elem_sz), count(elem_cnt) {}
          std::string attrib_name; // "" means skip count bytes
-         int elem_size;
+         ValueType type;
+         unsigned elem_size;
          unsigned count;
       };
 
@@ -490,6 +498,11 @@ namespace glpp {
 
       std::shared_ptr<state> state_;
    };
+
+   template <typename ElemT>
+   buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib_typed(std::string attrib_name, unsigned elem_count) {
+      return push_attrib(attrib_name, value_type<ElemT>(), elem_count);
+   }
 
    mapped_buffer_t map_buffer(program & prg, buffer_t buffer, buffer_attrib_mappings_t const & spec);
 

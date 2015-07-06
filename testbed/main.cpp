@@ -36,9 +36,10 @@ namespace gl {
 
 // forward declarations
 void buffer_demo();
-void text_demo();
 void texture_batches_demo();
 void triangle_demo();
+void text_demo();
+void ui_demo();
 
 
 #ifdef _MSC_VER
@@ -55,7 +56,7 @@ int main()
    utils::log(utils::LOG_INFO, "starting (cwd: %s)\n", utils::getcwd().c_str());
 
    try {
-      buffer_demo();
+      ui_demo();
    }
    catch (glpp::shader_compile_error const & ex) {
       utils::log(utils::LOG_ERROR, "%s\n", ex.what());

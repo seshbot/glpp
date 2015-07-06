@@ -2,11 +2,32 @@
 #define GLPP_UI__H
 
 #include <string>
+#include <memory>
 #include <glpp/glpp.h>
+#include <glpp/imgui.h>
 
 namespace glpp {
-namespace ui {
+namespace imgui {
+   struct ui_context_t {
+   public:
+      ui_context_t(ui_context_t &&) = default;
+      ui_context_t & operator=(ui_context_t &&) = default;
+      ~ui_context_t();
 
+   private:
+      struct impl;
+      std::unique_ptr<impl> impl_;
+
+      ui_context_t(std::unique_ptr<impl> i);
+
+      friend ui_context_t init(context & ctx);
+      friend void new_frame(ui_context_t & ui_context);
+      friend void render(ui_context_t & ui_context);
+   };
+
+   ui_context_t init(glpp::context & ctx);
+   void new_frame(ui_context_t & ui_context);
+   void render(ui_context_t & ui_context);
 }
 }
 

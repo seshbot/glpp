@@ -572,6 +572,10 @@ namespace glpp
          // TODO: allow SOIL_LOAD_LA (greyscale w/ alpha)
       }
 
+      impl(unsigned char * data, int width, int height, int channels = 4)
+         : width(width), height(height), channels(channels), data(data) {
+      }
+
       ~impl() {
          //SOIL_free_image_data(data);
       }
@@ -588,6 +592,12 @@ namespace glpp
 
    image_t::image_t(std::string const & filename)
       : impl_(std::unique_ptr<impl>(new impl(filename))) {
+      // TODO: allow SOIL_LOAD_LA (greyscale w/ alpha)
+   }
+
+
+   image_t::image_t(unsigned char * data, int width, int height)
+      : impl_(std::unique_ptr<impl>(new impl(data, width, height))) {
       // TODO: allow SOIL_LOAD_LA (greyscale w/ alpha)
    }
 
@@ -619,14 +629,14 @@ namespace glpp
       return static_cast<unsigned int>(tgt);
    }
 
-   texture_t::state::state(image_t image, Target target)
+   texture_t::state::state(image_t image, Target target, bool invert_y)
    : format_(texture_format_t::RGBA) { // TODO: this may not be right?
       dims_.x = image.width();
       dims_.y = image.height();
 
       int width = image.width();
       int height = image.height();
-      id_ = SOIL_create_OGL_texture(image.data(), &width, &height, image.channels(), 0, SOIL_FLAG_INVERT_Y);
+      id_ = SOIL_create_OGL_texture(image.data(), &width, &height, image.channels(), 0, invert_y ? SOIL_FLAG_INVERT_Y : 0);
 
       if (!id_) {
          throw glpp::error(std::string("Could not load texture from image: ") + SOIL_last_result());
@@ -759,8 +769,8 @@ namespace glpp
       glDeleteTextures(1, &id_);
    }
 
-   texture_t::texture_t(image_t image)
-      : state_(std::make_shared<state>(image, TEXTURE_2D)) {
+   texture_t::texture_t(image_t image, bool invert_y)
+      : state_(std::make_shared<state>(image, TEXTURE_2D, invert_y)) {
    }
 
    texture_t::texture_t(dim_t const & dims, texture_format_t format)
@@ -1552,11 +1562,14 @@ namespace glpp
    void bind(mapped_buffer_t const & packed) {
       packed.buffer.bind();
       for (auto & attrib_info : packed.attribs) {
-         auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
-
+         auto type_to_use = attrib_info.override_type != ValueType::Unknown
+            ? attrib_info.override_type
+            : attrib_info.attrib.type();
+         auto gl_type = attrib_atomic_gl_type(type_to_use);
+         auto normalise = type_to_use == ValueType::UByte;
          GL_VERIFY(gl_::vertex_attrib_pointer(
             attrib_info.attrib.location(), attrib_info.count, gl_type,
-            false, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
+            normalise, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
 
          GL_VERIFY(gl_::enable_vertex_attrib_array(attrib_info.attrib.location()));
       }
@@ -1617,14 +1630,20 @@ namespace glpp
       : state_(std::make_shared<state>()) {
    }
 
-   buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, unsigned count) {
-      state_->slices_.push_back({ attrib_name, 0, count });
+   buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, unsigned elem_count) {
+      state_->slices_.push_back({ attrib_name, ValueType::Unknown, 0, elem_count });
+
+      return *this;
+   }
+
+   buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, ValueType type, unsigned elem_count) {
+      state_->slices_.push_back({ attrib_name, type, attrib_atomic_val_bytes(type), elem_count });
 
       return *this;
    }
 
    buffer_attrib_mappings_t buffer_attrib_mappings_t::skip_bytes(unsigned bytes) {
-      state_->slices_.push_back({ "", 1, bytes });
+      state_->slices_.push_back({ "", ValueType::Unknown, 1, bytes });
 
       return *this;
    }
@@ -1639,6 +1658,7 @@ namespace glpp
       for (auto & s : state_->slices_) {
          // process 'skip bytes' requests
          if (s.attrib_name == "") {
+            assert(s.elem_size > 0 && "buffer 'skip-bytes' attrib mappings should only be used with non-zero element sizes");
             // count is in bytes in this case
             pos_bytes += s.elem_size * s.count;
             continue;
@@ -1668,14 +1688,14 @@ namespace glpp
 
          // assume slice is valid
          auto slice_size = s.count * elem_size;
-         attribs_sans_stride.push_back({ std::move(attrib), s.count, 0, pos_bytes });
+         attribs_sans_stride.push_back({ std::move(attrib), s.type, s.count, 0, pos_bytes });
          pos_bytes += slice_size;
       }
 
       mapped_buffer_t::attrib_container attribs;
       // prototype doesnt have correct stride
       for (auto & a : attribs_sans_stride) {
-         attribs.push_back({ a.attrib, a.count, pos_bytes, a.offset_bytes });
+         attribs.push_back({ a.attrib, a.override_type, a.count, pos_bytes, a.offset_bytes });
       }
 
       // validate span divides into buffer nicely, warn if not

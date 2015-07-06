@@ -3,7 +3,7 @@ add_definitions(-DGL_GLEXT_PROTOTYPES)
 
 set(SOURCE_IMPL
   detail/stb/stb_easy_font.h
-  detail/imgui/imgui.h detail/imgui/imgui.cpp
+  detail/imgui/imgui.cpp
   detail/ai_helpers.cpp detail/ai_helpers.h
   detail/ai_structures.cpp detail/ai_structures.h)
 
@@ -14,6 +14,7 @@ set(SOURCE
   scene.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/scene.h
   assets.cpp  ${PROJECT_SOURCE_DIR}/include/glpp/assets.h
   ui.cpp      ${PROJECT_SOURCE_DIR}/include/glpp/ui.h
+  ${PROJECT_SOURCE_DIR}/include/glpp/imgui.h
   ${SOURCE_IMPL})
 
 add_library(glpp ${SOURCE})

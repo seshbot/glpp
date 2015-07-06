@@ -427,7 +427,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "imgui.h"
+#include <glpp/imgui.h>
 #include <ctype.h>      // toupper, isprint
 #include <math.h>       // sqrtf, fabsf, fmodf, powf, cosf, sinf, floorf, ceilf
 #include <stdio.h>      // vsnprintf, sscanf, printf
@@ -584,8 +584,8 @@ static int          ImTextCountUtf8BytesFromStr(const ImWchar* in_text, const Im
 // Platform dependent default implementations
 //-----------------------------------------------------------------------------
 
-static const char*  GetClipboardTextFn_DefaultImpl();
-static void         SetClipboardTextFn_DefaultImpl(const char* text);
+static const char*  GetClipboardTextFn_DefaultImpl(void *);
+static void         SetClipboardTextFn_DefaultImpl(void *, const char* text);
 static void         ImeSetInputScreenPosFn_DefaultImpl(int x, int y);
 
 //-----------------------------------------------------------------------------
@@ -685,7 +685,7 @@ ImGuiIO::ImGuiIO()
     UserData = NULL;
 
     // User functions
-    RenderDrawListsContext = NULL;
+    CallbackContext = NULL;
     RenderDrawListsFn = NULL;
     MemAllocFn = malloc;
     MemFreeFn = free;
@@ -2493,7 +2493,7 @@ void ImGui::Render()
 
         // Render
         if (!g.RenderDrawLists[0].empty())
-            g.IO.RenderDrawListsFn(g.IO.RenderDrawListsContext, &g.RenderDrawLists[0][0], (int)g.RenderDrawLists[0].size());
+            g.IO.RenderDrawListsFn(g.IO.CallbackContext, &g.RenderDrawLists[0][0], (int)g.RenderDrawLists[0].size());
     }
 }
 
@@ -5378,7 +5378,7 @@ void ImGui::LogFinish()
     if (g.LogClipboard->size() > 1)
     {
         if (g.IO.SetClipboardTextFn)
-            g.IO.SetClipboardTextFn(g.LogClipboard->begin());
+            g.IO.SetClipboardTextFn(g.IO.CallbackContext, g.LogClipboard->begin());
         g.LogClipboard->clear();
     }
 }
@@ -7134,7 +7134,7 @@ static bool InputTextEx(const char* label, char* buf, size_t buf_size, const ImV
                 const int ie = edit_state.HasSelection() ? ImMax(edit_state.StbState.select_start, edit_state.StbState.select_end) : (int)edit_state.CurLenW;
                 edit_state.TempTextBuffer.resize((ie-ib) * 4 + 1);
                 ImTextStrToUtf8(edit_state.TempTextBuffer.begin(), edit_state.TempTextBuffer.size(), edit_state.Text.begin()+ib, edit_state.Text.begin()+ie);
-                g.IO.SetClipboardTextFn(edit_state.TempTextBuffer.begin());
+                g.IO.SetClipboardTextFn(g.IO.CallbackContext, edit_state.TempTextBuffer.begin());
             }
 
             if (cut)
@@ -7148,7 +7148,7 @@ static bool InputTextEx(const char* label, char* buf, size_t buf_size, const ImV
             // Paste
             if (g.IO.GetClipboardTextFn)
             {
-                if (const char* clipboard = g.IO.GetClipboardTextFn())
+                if (const char* clipboard = g.IO.GetClipboardTextFn(g.IO.CallbackContext))
                 {
                     // Remove new-line from pasted buffer
                     const size_t clipboard_len = strlen(clipboard);
@@ -10417,7 +10417,7 @@ void ImFont::RenderText(float size, ImVec2 pos, ImU32 col, const ImVec4& clip_re
 #pragma comment(lib, "user32")
 
 // Win32 API clipboard implementation
-static const char* GetClipboardTextFn_DefaultImpl()
+static const char* GetClipboardTextFn_DefaultImpl(void *)
 {
     static char* buf_local = NULL;
     if (buf_local)
@@ -10442,7 +10442,7 @@ static const char* GetClipboardTextFn_DefaultImpl()
 }
 
 // Win32 API clipboard implementation
-static void SetClipboardTextFn_DefaultImpl(const char* text)
+static void SetClipboardTextFn_DefaultImpl(void *, const char* text)
 {
     if (!OpenClipboard(NULL))
         return;
@@ -10462,13 +10462,13 @@ static void SetClipboardTextFn_DefaultImpl(const char* text)
 #else
 
 // Local ImGui-only clipboard implementation, if user hasn't defined better clipboard handlers
-static const char* GetClipboardTextFn_DefaultImpl()
+static const char* GetClipboardTextFn_DefaultImpl(void *)
 {
     return GImGui->PrivateClipboard;
 }
 
 // Local ImGui-only clipboard implementation, if user hasn't defined better clipboard handlers
-static void SetClipboardTextFn_DefaultImpl(const char* text)
+static void SetClipboardTextFn_DefaultImpl(void *, const char* text)
 {
     ImGuiState& g = *GImGui;
     if (g.PrivateClipboard)

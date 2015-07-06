@@ -4,7 +4,8 @@ set(SOURCE
 	${CMAKE_CURRENT_SOURCE_DIR}/texture_batches_demo.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/triangle_demo.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/buffer_demo.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/text_demo.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/text_demo.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ui_demo.cpp)
 
 add_executable(gltestbed WIN32 CMakeLists.txt ${SOURCE})
 

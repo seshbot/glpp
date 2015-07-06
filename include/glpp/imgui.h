@@ -653,13 +653,13 @@ struct ImGuiIO
 
     // REQUIRED: rendering function. 
     // See example code if you are unsure of how to implement this.
-    void        *RenderDrawListsContext;
+    void        *CallbackContext;
     void        (*RenderDrawListsFn)(void * context, ImDrawList** const draw_lists, int count);      
 
     // Optional: access OS clipboard
     // (default to use native Win32 clipboard on Windows, otherwise uses a private clipboard. Override to access OS clipboard on other architectures)
-    const char* (*GetClipboardTextFn)();
-    void        (*SetClipboardTextFn)(const char* text);
+    const char* (*GetClipboardTextFn)(void * context);
+    void        (*SetClipboardTextFn)(void * context, const char* text);
 
     // Optional: override memory allocations. MemFreeFn() may be called with a NULL pointer.
     // (default to posix malloc/free)
