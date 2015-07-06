@@ -354,6 +354,8 @@ namespace glpp {
       std::shared_ptr<state> state_;
    };
 
+   // TODO: specify buffers as arrays of user-defined structures
+
    class static_array_t {
    public:
       template <typename T, unsigned N>
@@ -457,40 +459,39 @@ namespace glpp {
       unsigned offset_bytes;
    };
 
-   struct buffer_spec_t {
-      using attribs_type = std::vector<attrib_info>;
+   struct mapped_buffer_t {
+      using attrib_container = std::vector<attrib_info>;
 
       buffer_t buffer;
-      attribs_type attribs;
+      attrib_container attribs;
    };
 
    class program;
-   class buffer_spec_builder_t {
+   class buffer_attrib_mappings_t {
    public:
-      buffer_spec_builder_t(buffer_t buffer);
+      buffer_attrib_mappings_t();
 
-      buffer_spec_builder_t attrib(std::string attrib_name, unsigned count);
-      buffer_spec_builder_t skip_bytes(unsigned bytes);
+      buffer_attrib_mappings_t push_attrib(std::string attrib_name, unsigned count);
+      buffer_attrib_mappings_t skip_bytes(unsigned bytes);
 
-      buffer_spec_t build(program & prg) const;
+      mapped_buffer_t map_buffer(program & prg, buffer_t buffer) const;
 
    private:
       struct slice_info {
+         slice_info(std::string const & n, int elem_sz, unsigned elem_cnt) : attrib_name(n), elem_size(elem_sz), count(elem_cnt) {}
          std::string attrib_name; // "" means skip count bytes
+         int elem_size;
          unsigned count;
       };
 
       struct state {
-         state(buffer_t buffer) : buffer_(std::move(buffer)) {}
-
-         buffer_t buffer_;
          std::vector<slice_info> slices_;
       };
 
       std::shared_ptr<state> state_;
    };
 
-   buffer_spec_builder_t describe_buffer(buffer_t buffer);
+   mapped_buffer_t map_buffer(program & prg, buffer_t buffer, buffer_attrib_mappings_t const & spec);
 
    enum class DrawMode {
       Points,
@@ -498,11 +499,11 @@ namespace glpp {
       Triangles, TriangleStrip, TriangleFan,
    };
 
-   unsigned num_vertices(buffer_spec_t const & b);
-   void bind(buffer_spec_t const & b);
-   void unbind(buffer_spec_t const & b);
-   void draw(buffer_spec_t const & b, DrawMode mode);
-   void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count);
+   unsigned num_vertices(mapped_buffer_t const & b);
+   void bind(mapped_buffer_t const & b);
+   void unbind(mapped_buffer_t const & b);
+   void draw(mapped_buffer_t const & b, DrawMode mode);
+   void draw(mapped_buffer_t const & b, DrawMode mode, unsigned first, unsigned count);
 
    class program;
    class pass_t {
@@ -531,8 +532,8 @@ namespace glpp {
 
       pass_t & set_texture_unit(texture_unit_t u, texture_t tex);
 
-      pass_t & with(buffer_spec_t buffer_spec);
-      pass_t & with(buffer_spec_builder_t const & buffer_spec_builder);
+      pass_t & with(mapped_buffer_t buffer_desc);
+      pass_t & with(buffer_t buffer, buffer_attrib_mappings_t const & buffer_spec);
 
       //pass_t & validate_attribs(bool validate = true);
 
@@ -647,6 +648,8 @@ namespace glpp {
 
       window const & win() const { return *win_; }
       window & win() { return *win_; }
+
+      void * platform_handle() const;
 
    private:
       void recreate_window(bool fullscreen);
@@ -773,7 +776,7 @@ namespace glpp {
 
    // buffer [x:float, y:float, z:float, r:ubyte, g: ubyte, b: ubyte, a: ubyte]
    // hint: render using orthographic projection of screen size
-   buffer_spec_builder_t describe_debug_text_buffer(
+   buffer_t build_debug_text_buffer(
       std::string const & text, float leftmost = 0., float topmost = 0., float scale_factor = 1.);
 
 

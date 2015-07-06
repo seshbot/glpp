@@ -296,8 +296,8 @@ int main()
       game::world_t world(creature_db, prop_db, particle_db, controller);
       game::world_view_t world_view(creature_db, prop_db, particle_db, sprite_repository);
 
-#if 0
-      for (auto i = 0; i < 5; i++) {
+#if 1
+      for (auto i = 0; i < 30; i++) {
          world.create_creature(game::creature_t::types::person, { game::random_world_location(), {} });
       }
 #endif

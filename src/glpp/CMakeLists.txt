@@ -1,6 +1,12 @@
 
 add_definitions(-DGL_GLEXT_PROTOTYPES)
 
+set(SOURCE_IMPL
+  detail/stb/stb_easy_font.h
+  detail/imgui/imgui.h detail/imgui/imgui.cpp
+  detail/ai_helpers.cpp detail/ai_helpers.h
+  detail/ai_structures.cpp detail/ai_structures.h)
+
 set(SOURCE
   utils.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/utils.h
   input.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/input.h
@@ -8,11 +14,11 @@ set(SOURCE
   scene.cpp   ${PROJECT_SOURCE_DIR}/include/glpp/scene.h
   assets.cpp  ${PROJECT_SOURCE_DIR}/include/glpp/assets.h
   ui.cpp      ${PROJECT_SOURCE_DIR}/include/glpp/ui.h
-  detail/stb/stb_easy_font.h
-  detail/ai_helpers.cpp detail/ai_helpers.h
-  detail/ai_structures.cpp detail/ai_structures.h)
+  ${SOURCE_IMPL})
 
 add_library(glpp ${SOURCE})
+
+source_group(Details FILES ${SOURCE_IMPL})
 
 target_include_directories(glpp SYSTEM PUBLIC ${GLFW_SOURCE_DIR}/include ${GLFW_SOURCE_DIR}/deps)
 target_include_directories(glpp SYSTEM PUBLIC ${GLM_INCLUDES})

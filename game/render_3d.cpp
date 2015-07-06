@@ -100,10 +100,12 @@ namespace {
    // screen coords
    //
 
-   glpp::buffer_spec_builder_t screen_vertices_spec() {
-      return glpp::describe_buffer({ unit_square_verts, unit_square_indices })
-         .attrib("p", 2)
-         .attrib("tex_coords", 2);
+   glpp::mapped_buffer_t screen_vertices_buffer(glpp::program & prg) {
+      auto buffer = glpp::buffer_t{ unit_square_verts, unit_square_indices };
+      return glpp::buffer_attrib_mappings_t()
+         .push_attrib("p", 2)
+         .push_attrib("tex_coords", 2)
+         .map_buffer(prg, buffer);
    }
 
    //
@@ -135,15 +137,17 @@ namespace {
       1, 5, 2,   2, 5, 3,   3, 5, 4,   4, 5, 1, // bottom
    };
 
-   glpp::buffer_spec_builder_t diamond_vert_buffer() {
-      return glpp::describe_buffer({ diamond_mesh_verts, diamond_mesh_indices })
-         .attrib("p", 3)
-         .attrib("tex_coords", 2);
+   glpp::mapped_buffer_t diamond_vert_buffer(glpp::program & prg) {
+      return glpp::buffer_attrib_mappings_t()
+         .push_attrib("p", 3)
+         .push_attrib("tex_coords", 2)
+         .map_buffer(prg, { diamond_mesh_verts, diamond_mesh_indices });
    }
 
-   glpp::buffer_spec_builder_t diamond_normal_buffer() {
-      return glpp::describe_buffer({ diamond_mesh_verts })
-         .attrib("normal", 3);
+   glpp::mapped_buffer_t diamond_normal_buffer(glpp::program & prg) {
+      return glpp::buffer_attrib_mappings_t()
+         .push_attrib("normal", 3)
+         .map_buffer(prg, { diamond_mesh_verts });
    }
 
    //
@@ -249,14 +253,18 @@ namespace {
       auto sprite = animation.create_timeline();
       for (auto & mesh : sprite.meshes()) {
 
-         auto verts = glpp::describe_buffer({ { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } })
-            .attrib("p", 3);
-         auto normals = glpp::describe_buffer({ { mesh.normals().buffer, mesh.normals().count } })
-            .attrib("normal", 3);
-         auto bone_indices = glpp::describe_buffer({ { mesh.bone_indices().buffer, mesh.bone_indices().count } })
-            .attrib("bone_indices", 4);
-         auto bone_weights = glpp::describe_buffer({ { mesh.bone_weights().buffer, mesh.bone_weights().count } })
-            .attrib("bone_weights", 4);
+         auto verts = glpp::buffer_attrib_mappings_t()
+            .push_attrib("p", 3)
+            .map_buffer(program, { { mesh.vertices().buffer, mesh.vertices().count },{ mesh.indices().buffer, mesh.indices().count } });
+         auto normals = glpp::buffer_attrib_mappings_t()
+            .push_attrib("normal", 3)
+            .map_buffer(program, { { mesh.normals().buffer, mesh.normals().count } });
+         auto bone_indices = glpp::buffer_attrib_mappings_t()
+            .push_attrib("bone_indices", 4)
+            .map_buffer(program, { { mesh.bone_indices().buffer, mesh.bone_indices().count } });
+         auto bone_weights = glpp::buffer_attrib_mappings_t()
+            .push_attrib("bone_weights", 4)
+            .map_buffer(program, { { mesh.bone_weights().buffer, mesh.bone_weights().count } });
 
          if (!shadow) {
             auto set_blank_tex_cb = [&](glpp::uniform & u) { BLANK_TEXTURE_UNIT.activate(); ctx.blank_tex.bind(); u.set(BLANK_TEXTURE_UNIT); };
@@ -514,8 +522,8 @@ namespace game {
       //
 
       debug_diamond_pass.push_back(context.prg_3d.pass()
-         .with(diamond_vert_buffer())
-         .with(diamond_normal_buffer())
+         .with(diamond_vert_buffer(context.prg_3d))
+         .with(diamond_normal_buffer(context.prg_3d))
          .set_uniform("colour", glm::vec4(.1f, .8f, .2f, 1.f))
          .set_uniform_action("model", [&](glpp::uniform & u) { u.set(get_diamond_model_matrix()); })
          .set_uniform_action("mvp", [&](glpp::uniform & u) { u.set(get_mvp(*this, ortho) * get_diamond_model_matrix()); }));
@@ -527,14 +535,17 @@ namespace game {
       // ground pass
       //
 
-      auto ground_buffer_desc = glpp::describe_buffer({ ground_verts, ground_indices })
-         .attrib("p", 3)
-         .attrib("normal", 3)
-         .attrib("tex_coords", 2);
-      auto ground_bone_indices_buffer_desc = glpp::describe_buffer(glpp::static_array_t{ default_bone_indices })
-         .attrib("bone_indices", 4);
-      auto ground_bone_weights_buffer_desc = glpp::describe_buffer(glpp::static_array_t{ default_bone_weights })
-         .attrib("bone_weights", 4);
+      auto ground_buffer_desc = glpp::buffer_attrib_mappings_t()
+         .push_attrib("p", 3)
+         .push_attrib("normal", 3)
+         .push_attrib("tex_coords", 2)
+         .map_buffer(context.prg_3d, { ground_verts, ground_indices });
+      auto ground_bone_indices_buffer_desc = glpp::buffer_attrib_mappings_t()
+         .push_attrib("bone_indices", 4)
+         .map_buffer(context.prg_3d, glpp::static_array_t{ default_bone_indices });
+      auto ground_bone_weights_buffer_desc = glpp::buffer_attrib_mappings_t()
+         .push_attrib("bone_weights", 4)
+         .map_buffer(context.prg_3d, glpp::static_array_t{ default_bone_weights });
 
       auto set_ground_tex_cb = [this](glpp::uniform & u) { GROUND_TEXTURE_UNIT.activate(); context.ground_tex.bind();  u.set(GROUND_TEXTURE_UNIT); };
       ground_pass.push_back(context.prg_3d.pass()
@@ -573,13 +584,13 @@ namespace game {
          2., -90.,  1., 0.,  // x, y,   s, t
       };
 
-      particle_position_buffer = glpp::describe_buffer(emitter.buffer())
-         .attrib("position", 3)
-         .build(context.prg_3d_particle);
-      particle_mesh_buffer = glpp::describe_buffer({ particle_static_data })
-         .attrib("offset_coords", 2)
-         .attrib("tex_coords", 2)
-         .build(context.prg_3d_particle);
+      particle_position_buffer = glpp::buffer_attrib_mappings_t()
+         .push_attrib("position", 3)
+         .map_buffer(context.prg_3d_particle, emitter.buffer());
+      particle_mesh_buffer = glpp::buffer_attrib_mappings_t()
+         .push_attrib("offset_coords", 2)
+         .push_attrib("tex_coords", 2)
+         .map_buffer(context.prg_3d_particle, { particle_static_data });
 
       //
       // post-processing pass
@@ -588,7 +599,7 @@ namespace game {
       // TODO: dont hard-code the texture unit
       auto set_post_tex_cb = [this](glpp::uniform & u) { POST_TEXTURE_UNIT.activate(); context.post_tex->bind();  u.set(POST_TEXTURE_UNIT); };
       post_pass.push_back(context.prg_post.pass()
-         .with(screen_vertices_spec())
+         .with(screen_vertices_buffer(context.prg_post))
          .set_uniform_action("texture", set_post_tex_cb)
          .set_uniform_action("t", callbacks::set_time()));
 

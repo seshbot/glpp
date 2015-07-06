@@ -65,10 +65,10 @@ void triangle_demo() {
       -.5f, -.5f,  1.f, 1.f, 0.f,
       .5f, -.5f,   0.f, 0.f, 1.f,
    };
-   auto vert_buffer = glpp::describe_buffer({ verts })
-      .attrib("pos", 2)
-      .attrib("col", 3)
-      .build(prg);
+   auto vert_buffer = glpp::buffer_attrib_mappings_t()
+      .push_attrib("pos", 2)
+      .push_attrib("col", 3)
+      .map_buffer(prg, { verts });
 
    gl::clear_color(1.f, 1.f, 1.f, 1.f);
 

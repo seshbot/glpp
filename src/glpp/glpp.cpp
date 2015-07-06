@@ -2,23 +2,29 @@
 
 #ifdef _MSC_VER
 #  include <glpp/gles2.h>
-   namespace gl_ = gles2;
+   namespace gl_ {
+      using namespace gles2;
+      using angle::map_buffer;
+      using angle::unmap_buffer;
+   }
 #else
 #  include <glpp/gl2.h>
    namespace gl_ {
       using namespace gl2;
-      using gl2::osx::gen_framebuffers;
-      using gl2::osx::delete_framebuffers;
-      using gl2::osx::bind_framebuffer;
-      using gl2::osx::blit_framebuffer;
-      using gl2::osx::check_framebuffer_status;
-      using gl2::osx::framebuffer_texture_2d;
-      using gl2::osx::framebuffer_renderbuffer;
-      using gl2::osx::gen_renderbuffers;
-      using gl2::osx::delete_renderbuffers;
-      using gl2::osx::bind_renderbuffer;
-      using gl2::osx::renderbuffer_storage;
-      using gl2::osx::renderbuffer_storage_multisample;
+      using osx::gen_framebuffers;
+      using osx::delete_framebuffers;
+      using osx::bind_framebuffer;
+      using osx::blit_framebuffer;
+      using osx::check_framebuffer_status;
+      using osx::framebuffer_texture_2d;
+      using osx::framebuffer_renderbuffer;
+      using osx::gen_renderbuffers;
+      using osx::delete_renderbuffers;
+      using osx::bind_renderbuffer;
+      using osx::renderbuffer_storage;
+      using osx::renderbuffer_storage_multisample;
+      using osx::map_buffer;
+      using osx::unmap_buffer;
    }
 #endif
 
@@ -1380,7 +1386,7 @@ namespace glpp
       vertex_count_ = vertex_count;
       vertex_buffer_size_ = vertex_byte_size;
 
-      if (vertex_data == nullptr) {
+      if (0 == vertex_byte_size) {
          if (vertex_id_) {
             gl_ctx_.unbind_buffer_if_bound(vertex_id_);
             gl_::delete_buffers(1, &vertex_id_);
@@ -1399,10 +1405,12 @@ namespace glpp
       GL_CHECK();
    }
 
-   void buffer_t::state::assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type) {
+   void buffer_t::state::assign(
+      void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size,
+      void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type) {
       assign(vertex_data, vertex_count, vertex_byte_size);
 
-      if (index_data == nullptr) {
+      if (0 == index_byte_size) {
          if (index_id_) {
             gl_ctx_.unbind_buffer_if_bound(index_id_);
             gl_::delete_buffers(1, &index_id_);
@@ -1420,6 +1428,31 @@ namespace glpp
       gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::element_array_buffer, index_id_);
       gl_::buffer_data(gl_::buffer_target_arb_t::element_array_buffer, index_byte_size, index_data, gl_::buffer_usage_arb_t::static_draw);
    }
+
+#if 0
+   void buffer_t::state::update(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size) {
+      gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::array_buffer, state_->vertex_id_);
+
+      size_t needed_buffer_size = total_vtx_count * sizeof(ImDrawVert);
+      if (current_buffer_size < needed_buffer_size)
+      {
+         // Grow buffer
+         current_buffer_size = needed_buffer_size + 5000 * sizeof(ImDrawVert);
+         gl_::buffer_data(gl_::buffer_target_arb_t::array_buffer, current_buffer_size, nullptr, GL_STREAM_DRAW);
+      }
+
+      // Copy and convert all vertices into a single contiguous buffer
+      unsigned char* buffer_data = (unsigned char*)gl_::map_buffer(gl_::buffer_target_arb_t::array_buffer, GL_WRITE_ONLY);
+      if (!buffer_data)
+         return;
+
+      memcpy(buffer_data, &cmd_list->vtx_buffer[0], cmd_list->vtx_buffer.size() * sizeof(ImDrawVert));
+      buffer_data += cmd_list->vtx_buffer.size() * sizeof(ImDrawVert);
+
+      gl_::unmap_buffer(GL_ARRAY_BUFFER);
+      //glBindBuffer(GL_ARRAY_BUFFER, 0);
+   }
+#endif
 
    void buffer_t::state::assign(void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type) {
       assign(nullptr, 0, 0, index_data, index_count, index_byte_size, index_data_type);
@@ -1441,6 +1474,7 @@ namespace glpp
 
    buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data, Usage usage)
       : buffer_t(usage) {
+      // TODO: verify all index data elements are within range of vertex_data element count
       update(vertex_data, index_data);
    }
 
@@ -1495,7 +1529,7 @@ namespace glpp
          : attrib_atomic_val_bytes(attrib.type()) * count;
    }
 
-   unsigned num_vertices(buffer_spec_t const & packed) {
+   unsigned num_vertices(mapped_buffer_t const & packed) {
       auto block_count = [&](attrib_info const & b) {
          auto stride_bytes = b.calc_stride_bytes();
          assert(packed.buffer.vertex_buffer_size() % stride_bytes == 0);
@@ -1515,7 +1549,7 @@ namespace glpp
       return min_block_count;
    }
 
-   void bind(buffer_spec_t const & packed) {
+   void bind(mapped_buffer_t const & packed) {
       packed.buffer.bind();
       for (auto & attrib_info : packed.attribs) {
          auto gl_type = attrib_atomic_gl_type(attrib_info.attrib.type());
@@ -1528,7 +1562,7 @@ namespace glpp
       }
    }
 
-   void unbind(buffer_spec_t const & packed) {
+   void unbind(mapped_buffer_t const & packed) {
       for (auto & attrib_info : packed.attribs) {
          GL_VERIFY(gl_::disable_vertex_attrib_array(attrib_info.attrib.location()));
       }
@@ -1536,7 +1570,7 @@ namespace glpp
       packed.buffer.unbind();
    }
 
-   void draw(buffer_spec_t const & b, DrawMode mode) {
+   void draw(mapped_buffer_t const & b, DrawMode mode) {
       unsigned count = b.buffer.has_index_data() ? b.buffer.index_count() : num_vertices(b);
       return draw(b, mode, 0, count);
    }
@@ -1555,7 +1589,7 @@ namespace glpp
       }
    }
 
-   void draw(buffer_spec_t const & b, DrawMode mode, unsigned first, unsigned count) {
+   void draw(mapped_buffer_t const & b, DrawMode mode, unsigned first, unsigned count) {
       bind(b);
 
       if (b.buffer.has_index_data()) {
@@ -1579,26 +1613,26 @@ namespace glpp
 
 
 
-   buffer_spec_builder_t::buffer_spec_builder_t(buffer_t buffer)
-      : state_(std::make_shared<state>(std::move(buffer))) {
+   buffer_attrib_mappings_t::buffer_attrib_mappings_t()
+      : state_(std::make_shared<state>()) {
    }
 
-   buffer_spec_builder_t buffer_spec_builder_t::attrib(std::string attrib_name, unsigned count) {
-      state_->slices_.push_back({ attrib_name, count });
+   buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, unsigned count) {
+      state_->slices_.push_back({ attrib_name, 0, count });
 
       return *this;
    }
 
-   buffer_spec_builder_t buffer_spec_builder_t::skip_bytes(unsigned bytes) {
-      state_->slices_.push_back({ "", bytes });
+   buffer_attrib_mappings_t buffer_attrib_mappings_t::skip_bytes(unsigned bytes) {
+      state_->slices_.push_back({ "", 1, bytes });
 
       return *this;
    }
 
-   buffer_spec_t buffer_spec_builder_t::build(program & prg) const {
+   mapped_buffer_t buffer_attrib_mappings_t::map_buffer(program & prg, buffer_t buffer) const {
       assert(state_->slices_.size() != 0 && "cannot build buffer spec without any attributes");
 
-      buffer_spec_t::attribs_type attribs_sans_stride;
+      mapped_buffer_t::attrib_container attribs_sans_stride;
 
       unsigned pos_bytes = 0;
 
@@ -1606,7 +1640,7 @@ namespace glpp
          // process 'skip bytes' requests
          if (s.attrib_name == "") {
             // count is in bytes in this case
-            pos_bytes += s.count;
+            pos_bytes += s.elem_size * s.count;
             continue;
          }
 
@@ -1620,20 +1654,25 @@ namespace glpp
 
             // guess how big it is
             auto elem_size_guess
-               = attrib.type() == ValueType::Unknown ? 4
-               : attrib_atomic_val_bytes(attrib.type());
+               = s.elem_size > 0 ? s.elem_size             // size specified in slice info
+               : attrib.type() == ValueType::Unknown ? 4   // size is probably float or int if type unknown
+               : attrib_atomic_val_bytes(attrib.type());   // derive size from known type
 
             pos_bytes += s.count * elem_size_guess;
             continue;
          }
 
+         auto elem_size = s.elem_size > 0 
+            ? s.elem_size 
+            : attrib_atomic_val_bytes(attrib.type());
+
          // assume slice is valid
-         auto slice_size = s.count * attrib_atomic_val_bytes(attrib.type());
+         auto slice_size = s.count * elem_size;
          attribs_sans_stride.push_back({ std::move(attrib), s.count, 0, pos_bytes });
          pos_bytes += slice_size;
       }
 
-      buffer_spec_t::attribs_type attribs;
+      mapped_buffer_t::attrib_container attribs;
       // prototype doesnt have correct stride
       for (auto & a : attribs_sans_stride) {
          attribs.push_back({ a.attrib, a.count, pos_bytes, a.offset_bytes });
@@ -1641,16 +1680,16 @@ namespace glpp
 
       // validate span divides into buffer nicely, warn if not
 
-      if (0 != state_->buffer_.vertex_buffer_size() % pos_bytes) {
+      if (0 != buffer.vertex_buffer_size() % pos_bytes) {
          utils::log(utils::LOG_WARN, "vertex buffer is not a multiple of the vertex data size!");
          assert(false && "vertex buffer is not a multiple of the vertex data size!");
       }
 
-      return{ state_->buffer_, std::move(attribs) };
+      return{ buffer, std::move(attribs) };
    }
 
-   buffer_spec_builder_t describe_buffer(buffer_t buffer) {
-      return{ buffer };
+   mapped_buffer_t map_buffer(program & prg, buffer_t buffer, buffer_attrib_mappings_t const & spec) {
+      return spec.map_buffer(prg, buffer);
    }
 
    program make_debug_ui_program() {
@@ -1693,7 +1732,7 @@ void main() {
       };
    }
 
-   buffer_spec_builder_t describe_debug_text_buffer(
+   buffer_t build_debug_text_buffer(
       std::string const & text, float leftmost, float topmost, float scale_factor) {
 #if 0
       auto text_width = [&text] {
@@ -1749,10 +1788,10 @@ void main() {
          quad_indices[5] = quad_idx * 4 + 0;
       }
 
-      return describe_buffer({
+      return {
          { (float*)text_data_buffer, (unsigned)(quad_count * QUAD_SPAN_IN_FLOATS) },
          { text_indices.data(), text_indices.size() }
-      });
+      };
    }
 
    glm::mat4 make_debug_text_projection(int viewport_width, int viewport_height, int left_pad, int top_pad, float scale) {
@@ -1771,20 +1810,21 @@ void main() {
    }
 
    pass_t make_debug_text_pass(std::string const & text, program & prg, glm::mat4 const & mvp) {
-      auto text_buffer = describe_debug_text_buffer(text)
-         .attrib("position", 3)
+      auto text_buffer = build_debug_text_buffer(text);
+      auto text_buffer_description = buffer_attrib_mappings_t()
+         .push_attrib("position", 3)
          .skip_bytes(4) // skip r, g, b, a
-         .build(prg);
+         .map_buffer(prg, text_buffer);
 
       return prg.pass()
-         .set_uniform("mvp", mvp).with(text_buffer);
+         .set_uniform("mvp", mvp).with(text_buffer_description);
    }
 
-   //buffer_spec_t buffer(buffer_t b, std::initializer_list<attrib_info> attribs) {
+   //mapped_buffer_t buffer(buffer_t b, std::initializer_list<attrib_info> attribs) {
    //   return{ b, { std::begin(attribs), std::end(attribs) } };
    //}
 
-   //buffer_spec_t buffer(std::initializer_list<attrib_info> attribs) {
+   //mapped_buffer_t buffer(std::initializer_list<attrib_info> attribs) {
    //   return{ {}, { std::begin(attribs), std::end(attribs) } };
    //}
 
@@ -1803,7 +1843,7 @@ void main() {
 
       program prg_;
       std::unique_ptr<pass_t> parent_;
-      std::vector<buffer_spec_t> vertex_buffers_;
+      std::vector<mapped_buffer_t> vertex_buffers_;
       int index_buffer_idx_ = -1;
       std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
       std::vector<std::pair<glpp::uniform, texture_t>> texture_bindings_without_tex_units_;
@@ -1825,8 +1865,8 @@ void main() {
       return{ extend_tag(), *this };
    }
 
-   pass_t & pass_t::with(buffer_spec_t buffer_spec) {
-      state_->vertex_buffers_.push_back(std::move(buffer_spec));
+   pass_t & pass_t::with(mapped_buffer_t buffer_desc) {
+      state_->vertex_buffers_.push_back(std::move(buffer_desc));
       auto & b = state_->vertex_buffers_.back();
 
       // keep track of which buffer has the index data
@@ -1837,8 +1877,8 @@ void main() {
       return *this;
    }
 
-   pass_t & pass_t::with(buffer_spec_builder_t const & builder) {
-      return with(builder.build(state_->prg_));
+   pass_t & pass_t::with(buffer_t buffer, buffer_attrib_mappings_t const & builder) {
+      return with(builder.map_buffer(state_->prg_, buffer));
    }
 
    template <>
@@ -2529,6 +2569,9 @@ void main() {
       if (impl_ && impl_->window_) glfwDestroyWindow(impl_->window_);
    }
 
+   void * context::platform_handle() const {
+      return impl_->window_;
+   }
 
    //
    // class sprite_sheet
@@ -2800,7 +2843,7 @@ void main() {
       1, 2, 3,
    };
 
-   auto screen_vertices_spec = [&]() -> glpp::buffer_spec_builder_t {
+   auto screen_vertices_spec = [&]() -> glpp::buffer_attrib_mappings_t {
       return glpp::describe_buffer({ unit_square_verts, unit_square_indices })
          .attrib("p", 2)
          .attrib("tex_coords", 2);

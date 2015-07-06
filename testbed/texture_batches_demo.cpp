@@ -94,15 +94,15 @@ void texture_batches_demo() {
    tex2_unit.activate();
    tex2.bind();
 
-   auto screen_vert_buffer = glpp::describe_buffer({ screen_vertices })
-      .attrib("pos", 2)
-      .attrib("tex_coords", 2)
-      .build(prg);
+   auto screen_vert_buffer = glpp::buffer_attrib_mappings_t()
+      .push_attrib("pos", 2)
+      .push_attrib("tex_coords", 2)
+      .map_buffer(prg, { screen_vertices });
 
-   auto half_screen_vert_buffer = glpp::describe_buffer({ half_screen_vertices })
-      .attrib("pos", 2)
-      .attrib("tex_coords", 2)
-      .build(prg);
+   auto half_screen_vert_buffer = glpp::buffer_attrib_mappings_t()
+      .push_attrib("pos", 2)
+      .push_attrib("tex_coords", 2)
+      .map_buffer(prg, { half_screen_vertices });
 
    auto set_tex1_cb = [&](glpp::uniform & u) { tex1_unit.activate(); tex1.bind();  u.set(tex1_unit); };
    auto set_tex2_cb = [&](glpp::uniform & u) { tex2_unit.activate(); tex2.bind();  u.set(tex2_unit); };
