@@ -90,18 +90,23 @@ namespace game {
 
       const_iterator creatures_begin() const { return creature_render_info_.begin(); }
       const_iterator creatures_end() const { return creature_render_info_.end(); }
+      unsigned creatures_count() const { return creature_render_info_.size(); }
 
       iterator props_begin() { return prop_render_info_.begin(); }
       iterator props_end() { return prop_render_info_.end(); }
 
       const_iterator props_begin() const { return prop_render_info_.begin(); }
       const_iterator props_end() const { return prop_render_info_.end(); }
+      unsigned props_count() const { return prop_render_info_.size(); }
 
       iterator particles_begin() { return particle_render_info_.begin(); }
       iterator particles_end() { return particle_render_info_.end(); }
 
       const_iterator particles_begin() const { return particle_render_info_.begin(); }
       const_iterator particles_end() const { return particle_render_info_.end(); }
+      unsigned particles_count() const { return particle_render_info_.size(); }
+
+      unsigned entities_count() const { return creatures_count() + props_count() + particles_count(); }
 
    private:
       void update_creatures(double time_since_last);

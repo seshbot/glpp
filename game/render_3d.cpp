@@ -950,6 +950,13 @@ this is weird)";
                   }
                   ImGui::TreePop();
                }
+               ImGui::SetNextTreeNodeOpened(false, ImGuiSetCond_FirstUseEver);
+               if (ImGui::TreeNode("entity info root", "entities: %d", world_view.entities_count()))
+               {
+                  ImGui::Text("creatures: %d", world_view.creatures_count());
+                  ImGui::Text("props: %d", world_view.props_count());
+                  ImGui::TreePop();
+               }
             }
             ImGui::End();
          }
@@ -969,10 +976,15 @@ this is weird)";
          ImGui::SetNextWindowPosCenter();
          if (ImGui::Begin("Options", nullptr, {}, alpha, FIXED_OVERLAY_SETTINGS)) {
             if (ImGui::BeginPopupModal("Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+               bool fullscreen = context.context.win().is_fullscreen();
+               ImGui::Checkbox("Fullscreen", &fullscreen);
+               if (fullscreen != context.context.win().is_fullscreen()) {
+                  context.toggle_fullscreen();
+               }
                ImGui::SliderFloat("UI alpha", &alpha, 0.0f, 1.0f);
                ImGui::Checkbox("Show Debug UI", &show_debug_window);
                ImGui::Checkbox("Show Test UI", &show_test_window);
-               if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+               if (ImGui::Button("OK")) { ImGui::CloseCurrentPopup(); }
                ImGui::EndPopup();
             }
 
