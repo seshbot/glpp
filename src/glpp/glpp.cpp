@@ -2423,14 +2423,19 @@ void main() {
    namespace {
       static std::atomic<bool> initialized_ { false };
 
-      struct window_key_callbacks_t {
-         struct callback_info_t { GLFWwindow* window; context * context; context::key_callback_t callback; };
+      template <typename CallbackT>
+      struct window_callbacks_t {
+         struct callback_info_t { GLFWwindow* window; context * context; CallbackT callback; };
 
-         void set(GLFWwindow* window, context & context, context::key_callback_t callback) {
+         void set(GLFWwindow* window, context & context, CallbackT callback) {
             std::unique_lock<std::mutex> l(m_);
 
-            for (auto p : callbacks_) {
-               if (p.window == window) throw error("cannot set window key callback - key handler already registered for window");
+            for (auto & p : callbacks_) {
+               if (p.window == window) {
+                  // throw error("cannot set window key callback - key handler already registered for window");
+                  p.callback = callback;
+                  return;
+               }
             }
 
             callbacks_.push_back({ window, &context, callback });
@@ -2447,33 +2452,63 @@ void main() {
             }
          }
 
-         void invoke(GLFWwindow* window, Key key, int scancode, KeyAction action, int mods) {
-            auto info = [&]() -> callback_info_t {
-               std::unique_lock<std::mutex> l(m_);
+         callback_info_t & get(GLFWwindow* window) {
+            std::unique_lock<std::mutex> l(m_);
 
-               for (auto info : callbacks_) {
-                  if (info.window == window) return info;
-               }
+            for (auto & info : callbacks_) {
+               if (info.window == window) return info;
+            }
 
-               throw error("cannot get window key callback - no key callback registered for window");
-            }();
-
-            info.callback(*info.context, key, scancode, action, mods);
+            throw error("cannot get window key callback - no key callback registered for window");
          }
 
          std::mutex m_;
          std::vector<callback_info_t> callbacks_;
       };
 
+      using window_key_callbacks_t = window_callbacks_t<context::key_callback_t>;
+      using window_mouse_button_callbacks_t = window_callbacks_t<context::mouse_button_callback_t>;
+      using window_mouse_scroll_callbacks_t = window_callbacks_t<context::mouse_scroll_callback_t>;
+      using window_char_callbacks_t = window_callbacks_t<context::char_callback_t>;
+
       window_key_callbacks_t window_key_callbacks_;
+      window_mouse_button_callbacks_t window_mouse_button_callbacks_;
+      window_mouse_scroll_callbacks_t window_mouse_scroll_callbacks_;
+      window_char_callbacks_t window_char_callbacks_;
 
       void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-         window_key_callbacks_.invoke(
-            window, 
+         auto & callback_info = window_key_callbacks_.get(window);
+         if (!callback_info.callback) return;
+         callback_info.callback(
+            *callback_info.context,
             glpp::from_glfw_key(key), 
             scancode, 
             glpp::from_glfw_key_action(action), 
             glpp::from_glfw_key_mods(mods));
+      }
+
+      void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+         auto & callback_info = window_mouse_button_callbacks_.get(window);
+         if (!callback_info.callback) return;
+         callback_info.callback(
+            *callback_info.context,
+            button,
+            glpp::from_glfw_key_action(action),
+            glpp::from_glfw_key_mods(mods));
+      }
+
+      void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+         auto & callback_info = window_mouse_scroll_callbacks_.get(window);
+         if (!callback_info.callback) return;
+         callback_info.callback(
+            *callback_info.context,
+            xoffset, yoffset);
+      }
+
+      void char_callback(GLFWwindow* window, unsigned int c) {
+         auto & callback_info = window_char_callbacks_.get(window);
+         if (!callback_info.callback) return;
+         callback_info.callback(*callback_info.context, c);
       }
    }
 
@@ -2541,9 +2576,23 @@ void main() {
       };
       glfwSetFramebufferSizeCallback(win, cb);
 
-      if (impl_) window_key_callbacks_.remove(impl_->window_);
-      window_key_callbacks_.set(win, *this, key_handler_);
+      if (impl_) {
+         window_key_callbacks_.get(impl_->window_).window = win;
+         window_mouse_button_callbacks_.get(impl_->window_).window = win;
+         window_mouse_scroll_callbacks_.get(impl_->window_).window = win;
+         window_char_callbacks_.get(impl_->window_).window = win;
+      }
+      else {
+         window_key_callbacks_.set(win, *this, key_handler_);
+         window_mouse_button_callbacks_.set(win, *this, {});
+         window_mouse_scroll_callbacks_.set(win, *this, {});
+         window_char_callbacks_.set(win, *this, {});
+      }
+
       glfwSetKeyCallback(win, key_callback);
+      glfwSetMouseButtonCallback(win, mouse_button_callback);
+      glfwSetScrollCallback(win, mouse_scroll_callback);
+      glfwSetCharCallback(win, char_callback);
 
       impl_.reset(new impl{ win });
    }
@@ -2583,6 +2632,28 @@ void main() {
       }
 
       return buf;
+   }
+
+   void context::add_key_callback(key_callback_t handler, bool highest_priority) {
+      auto first_handler = highest_priority ? handler : key_handler_;
+      auto second_handler = highest_priority ? key_handler_ : handler;
+      key_handler_ = [first_handler, second_handler](context & ctx, Key key, int scan, KeyAction a, int mods) -> bool {
+         return first_handler(ctx, key, scan, a, mods) || second_handler(ctx, key, scan, a, mods);
+      };
+      window_key_callbacks_.set(impl_->window_, *this, key_handler_);
+   }
+
+
+   void context::add_mouse_button_callback(mouse_button_callback_t handler, bool highest_priority) {
+      window_mouse_button_callbacks_.set(impl_->window_, *this, handler);
+   }
+
+   void context::add_mouse_scroll_callback(mouse_scroll_callback_t handler, bool highest_priority) {
+      window_mouse_scroll_callbacks_.set(impl_->window_, *this, handler);
+   }
+
+   void context::add_char_callback(char_callback_t handler, bool highest_priority) {
+      window_char_callbacks_.set(impl_->window_, *this, handler);
    }
 
    void context::destroy() {

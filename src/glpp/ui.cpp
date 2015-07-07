@@ -207,16 +207,18 @@ void main() {
       io.ImeWindowHandle = glfwGetWin32Window(glfw_win);
 #endif
 
-      auto mouse_button_callback = [](GLFWwindow*, int button, int action, int /*mods*/) {
+      auto mouse_button_callback = [](glpp::context&, int button, int action, int /*mods*/) -> bool {
          if (action == GLFW_PRESS && button >= 0 && button < 3)
             g_MousePressed[button] = true;
+         return false;
       };
 
-      auto mouse_scroll_callback = [](GLFWwindow*, double /*xoffset*/, double yoffset) {
+      auto mouse_scroll_callback = [](glpp::context&, double /*xoffset*/, double yoffset) -> bool {
          g_MouseWheel += (float)yoffset; // Use fractional mouse wheel, 1.0 unit 5 lines.
+         return false;
       };
 
-      auto key_callback = [](GLFWwindow*, int key, int, int action, int mods) {
+      auto key_callback = [](glpp::context&, glpp::Key key, int, glpp::KeyAction action, int mods) -> bool {
          ImGuiIO& io = ImGui::GetIO();
          if (action == GLFW_PRESS)
             io.KeysDown[key] = true;
@@ -227,18 +229,21 @@ void main() {
          io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
          io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
          io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+         return false;
       };
 
-      auto char_callback = [](GLFWwindow*, unsigned int c) {
+      auto char_callback = [](glpp::context&, unsigned int c) -> bool {
          ImGuiIO& io = ImGui::GetIO();
          if (c > 0 && c < 0x10000)
             io.AddInputCharacter((unsigned short)c);
+         return false;
       };
 
-      glfwSetMouseButtonCallback(glfw_win, mouse_button_callback);
-      glfwSetScrollCallback(glfw_win, mouse_scroll_callback);
-      glfwSetKeyCallback(glfw_win, key_callback);
-      glfwSetCharCallback(glfw_win, char_callback);
+      auto & gl_ctx = ui_context.gl_context;
+      gl_ctx.add_key_callback(key_callback, true);
+      gl_ctx.add_mouse_scroll_callback(mouse_scroll_callback, true);
+      gl_ctx.add_mouse_button_callback(mouse_button_callback, true);
+      gl_ctx.add_char_callback(char_callback, true);
    }
 }
 
@@ -251,7 +256,7 @@ namespace imgui {
 
    ui_context_t::~ui_context_t() = default;
 
-   ui_context_t init(context & ctx)
+   ui_context_t init(context & ctx, glpp::texture_unit_t ui_texture_unit)
    {
       glpp::program prg(
          glpp::shader::create_from_source(VERTEX_SHADER, glpp::shader::Vertex),
@@ -281,7 +286,7 @@ namespace imgui {
       auto ui_context_data = context_data_t{
          ctx, 0.,
          prg,
-         glpp::texture_unit_t{ 8 }, texture,
+         ui_texture_unit, texture,
          glpp::map_buffer(prg, glpp::buffer_t(glpp::buffer_t::Usage::Stream), buffer_attrib_map) 
       };
 

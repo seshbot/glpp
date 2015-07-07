@@ -647,7 +647,10 @@ namespace glpp {
 
 	class context {
    public:
-      using key_callback_t = std::function < void(context &, Key, int, KeyAction, int) >; // key, scancode, action, mods
+      using key_callback_t = std::function < bool(context &, Key, int, KeyAction, int) >; // key, scancode, action, mods
+      using mouse_button_callback_t = std::function < bool(context &, int, KeyAction, int) >; // button, action, mods
+      using mouse_scroll_callback_t = std::function < bool(context &, double, double) >; // key, xoffset, yoffset
+      using char_callback_t = std::function < bool(context &, unsigned int) >; // key, char_code
 
       context(key_callback_t key_handler);
       context(context const &) = delete;
@@ -656,6 +659,11 @@ namespace glpp {
 
       std::vector<std::string> extensions() const;
       std::string info(bool with_extensions = true) const;
+
+      void add_key_callback(key_callback_t handler, bool highest_priority);
+      void add_mouse_button_callback(mouse_button_callback_t handler, bool highest_priority);
+      void add_mouse_scroll_callback(mouse_scroll_callback_t handler, bool highest_priority);
+      void add_char_callback(char_callback_t handler, bool highest_priority);
 
       void destroy(); // optional, will be invoked by dtor
 

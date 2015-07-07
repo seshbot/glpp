@@ -44,6 +44,7 @@ namespace {
    const int shadow_texture_width = 100;
 
    glpp::texture_unit_t BLANK_TEXTURE_UNIT{ 9 };
+   glpp::texture_unit_t UI_TEXTURE_UNIT{ 8 };
    glpp::texture_unit_t POST_TEXTURE_UNIT{ 2 };
    glpp::texture_unit_t SHADOW_TEXTURE_UNIT{ 3 };
    glpp::texture_unit_t GROUND_TEXTURE_UNIT{ 4 };
@@ -383,6 +384,7 @@ namespace game {
 
    render_context::render_context(glpp::archive_t const & assets, glpp::context::key_callback_t key_callback)
       : context(key_callback)
+      , ui_context{ glpp::imgui::init(context, UI_TEXTURE_UNIT) }
       , assets(assets)
       , prg_3d{ create_program(assets, "3d") }
       , prg_3d_shadow{ create_program(assets, "3d_shadow") }
@@ -640,8 +642,22 @@ something should really happen here
 this is weird)";
    }
 
-   void renderer::update_and_render(double time_since_last_tick, game::world_view_t const & world_view) {
+   void renderer::update_and_render(double time_since_last_tick, game::world_view_t const & world_view, bool show_ui) {
+      struct stage_t {
+         std::string name;
+         double time_begin;
+      };
+      static const unsigned MAX_STAGES = 10;
+      stage_t stages[MAX_STAGES];
+      auto stage_count = 0U;
+      auto begin_stage = [&](std::string const & name) {
+         assert(stage_count < MAX_STAGES);
+         stages[stage_count++] = {name, glpp::get_time()};
+      };
 
+      begin_stage("update");
+
+      context.init_context();
       context.reload_framebuffers();
 
       //
@@ -693,7 +709,7 @@ this is weird)";
          }
       };
 
-
+      begin_stage("shadows");
 
       //
       // render
@@ -810,6 +826,7 @@ this is weird)";
       //
       // draw to anti-aliasing frame buffer
       //
+      begin_stage("scene");
 
       auto dims = context.context.win().frame_buffer_dims();
       gl::viewport(0, 0, dims.x, dims.y);
@@ -905,12 +922,72 @@ this is weird)";
 #if defined(USE_POST_PROCESSING_FBO)
       post_pass.back().draw(glpp::DrawMode::Triangles);
 #endif
-      
+
       gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
-      auto win_dims = context.context.win().frame_buffer_dims();
-      auto text_mvp = glpp::make_debug_text_projection(win_dims.x, win_dims.y, 100, 30, 2.);
-      auto text_pass = glpp::make_debug_text_pass(SAMPLE_TEXT, context.prg_ui, text_mvp);
-      text_pass.draw(glpp::DrawMode::Triangles);
+      glpp::imgui::new_frame(context.ui_context);
+
+      static float alpha = .5f;
+
+      const auto FIXED_POPUP_SETTINGS = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+      const auto FIXED_OVERLAY_SETTINGS = FIXED_POPUP_SETTINGS | ImGuiWindowFlags_NoTitleBar;
+
+      static bool show_debug_window = true;
+      if (show_debug_window) {
+         ImGui::SetNextWindowPos(ImVec2(10, 10));
+         if (ImGui::Begin("Render Info", &show_debug_window, {}, alpha, FIXED_OVERLAY_SETTINGS)) {
+            if (stage_count > 0) {
+               auto now = glpp::get_time();
+               auto total_time = now - stages[0].time_begin;
+
+               ImGui::SetNextTreeNodeOpened(false, ImGuiSetCond_FirstUseEver);
+               if (ImGui::TreeNode("render info root", "render: %.1fms (%.1f FPS)", total_time * 1000., 1.f / total_time))
+               {
+                  for (auto stage_idx = 0U; stage_idx < stage_count; stage_idx++) {
+                     auto next_idx = stage_idx + 1;
+                     auto next_start = next_idx == stage_count ? now : stages[next_idx].time_begin;
+                     auto stage_time = next_start - stages[stage_idx].time_begin;
+                     ImGui::Text("%s: %.1fms (%.1f%%)", stages[stage_idx].name.c_str(), stage_time * 1000., 100. * stage_time / total_time);
+                  }
+                  ImGui::TreePop();
+               }
+            }
+            ImGui::End();
+         }
+      }
+   
+      if (show_ui) {
+         //auto win_dims = context.context.win().frame_buffer_dims();
+         //auto text_mvp = glpp::make_debug_text_projection(win_dims.x, win_dims.y, 100, 30, 2.);
+         //auto text_pass = glpp::make_debug_text_pass(SAMPLE_TEXT, context.prg_ui, text_mvp);
+         //text_pass.draw(glpp::DrawMode::Triangles);
+
+
+         static bool show_test_window = false;
+         if (show_test_window)
+            ImGui::ShowTestWindow(&show_test_window);
+
+         ImGui::SetNextWindowPosCenter();
+         if (ImGui::Begin("Options", nullptr, {}, alpha, FIXED_OVERLAY_SETTINGS)) {
+            if (ImGui::BeginPopupModal("Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+               ImGui::SliderFloat("UI alpha", &alpha, 0.0f, 1.0f);
+               ImGui::Checkbox("Show Debug UI", &show_debug_window);
+               ImGui::Checkbox("Show Test UI", &show_test_window);
+               if (ImGui::Button("Cancel")) { ImGui::CloseCurrentPopup(); }
+               ImGui::EndPopup();
+            }
+
+            if (ImGui::Button("Settings...")) {
+               ImGui::OpenPopup("Settings");
+            }
+            ImGui::Separator();
+            if (ImGui::Button("Quit")) {
+               context.context.win().set_should_close();
+            }
+            ImGui::End();
+         }
+      }
+
+      glpp::imgui::render(context.ui_context);
    }
 
 } // namespace game

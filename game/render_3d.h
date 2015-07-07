@@ -2,6 +2,7 @@
 #define GAME_VIEW_3D__H
 
 #include <glpp/glpp.h>
+#include <glpp/ui.h>
 #include <glpp/assets.h>
 
 #include "game.h"
@@ -48,6 +49,7 @@ namespace game {
       void init_context();
 
       glpp::context context;
+      glpp::imgui::ui_context_t ui_context;
 
       glpp::archive_t const & assets;
 
@@ -73,7 +75,7 @@ namespace game {
 
       void set_player_light_position(glm::vec3 const & pos) { player_light.position = pos; }
 
-      void update_and_render(double time_since_last_tick, game::world_view_t const & world_view);
+      void update_and_render(double time_since_last_tick, game::world_view_t const & world_view, bool show_ui);
 
       float get_view_height() const { return view_height; }
       void set_view_height(float view_height_in) { view_height = std::max(0.f, std::min(1.f, view_height_in)); }

@@ -59,10 +59,10 @@ namespace {
       bool is_moving() const { return dir_flags_ != 0; }
       glm::vec2 const & direction() const { return direction_; }
 
-      void handle_key_action(glpp::Key key, glpp::KeyAction action) {
+      bool handle_key_action(glpp::Key key, glpp::KeyAction action) {
          auto action_it = actions_.find({ key, action });
          if (actions_.end() != action_it) {
-            if (action_it->second(key, action)) return;
+            if (action_it->second(key, action)) return true;
          }
 
          enum class dir { none = 0, up = 1, down = 2, left = 4, right = 8 };
@@ -79,7 +79,7 @@ namespace {
 
          if (key_dir == dir::none && action == glpp::KeyAction::KEY_ACTION_PRESS) {
             utils::log(utils::LOG_INFO, "key pressed: %s\n", glpp::to_string(key).c_str());
-            return;
+            return false;
          }
          if (action == glpp::KEY_ACTION_PRESS) dir_flags_ |= static_cast<uint16_t>(key_dir);
          if (action == glpp::KEY_ACTION_RELEASE) dir_flags_ &= ~static_cast<uint16_t>(key_dir);
@@ -93,6 +93,8 @@ namespace {
 
          auto dir = glm::vec2(horiz_vec, vert_vec);
          direction_ = glm::length(dir) == 0. ? dir : glm::normalize(dir);
+
+         return true;
       }
 
    private:
@@ -123,13 +125,22 @@ int main()
 
    try {
       bool should_reload_program = false;
+      bool show_ui = false;
       auto key_handler = [&](glpp::context & ctx, glpp::Key key, int scancode, glpp::KeyAction action, int mods) {
-         if (key == glpp::KEY_ESCAPE && action == glpp::KEY_ACTION_PRESS)
+         if ((key == glpp::KEY_ESCAPE || key == glpp::KEY_GRAVE_ACCENT) && action == glpp::KEY_ACTION_PRESS) {
+            show_ui = !show_ui;
+            return true;
+         }
+         if (key == glpp::KEY_ESCAPE && action == glpp::KEY_ACTION_PRESS) {
             ctx.win().set_should_close();
-         if (key == glpp::KEY_R && action == glpp::KEY_ACTION_PRESS)
+            return true;
+         }
+         if (key == glpp::KEY_R && action == glpp::KEY_ACTION_PRESS) {
             should_reload_program = true;
+            return true;
+         }
 
-         controls.handle_key_action(key, action);
+         return controls.handle_key_action(key, action);
       };
       
       auto assets = glpp::archive_t::load_from_directory(glpp::path_t{ "../../res/" });
@@ -409,7 +420,7 @@ int main()
          auto torch_world_pos = player_moment.pos() + 45.f * glm::rotate(player_moment.dir(), -.5f);
          auto torch_3d_pos = glm::vec3{ torch_world_pos.x, 45., -torch_world_pos.y };
          view.set_player_light_position(torch_3d_pos);
-         view.update_and_render(time_since_last_tick, world_view);
+         view.update_and_render(time_since_last_tick, world_view, show_ui);
 
          last_tick = this_tick;
 

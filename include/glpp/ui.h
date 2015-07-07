@@ -20,12 +20,12 @@ namespace imgui {
 
       ui_context_t(std::unique_ptr<impl> i);
 
-      friend ui_context_t init(context & ctx);
+      friend ui_context_t init(context & ctx, glpp::texture_unit_t ui_texture_unit);
       friend void new_frame(ui_context_t & ui_context);
       friend void render(ui_context_t & ui_context);
    };
 
-   ui_context_t init(glpp::context & ctx);
+   ui_context_t init(glpp::context & ctx, glpp::texture_unit_t ui_texture_unit);
    void new_frame(ui_context_t & ui_context);
    void render(ui_context_t & ui_context);
 }
