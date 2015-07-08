@@ -2407,7 +2407,7 @@ void main() {
    void window::set_fullscreen(bool enable) {
       if (enable == is_fullscreen()) return;
 
-      ctx_.recreate_window(enable);
+      ctx_.recreate_window(ctx_.resolution_, enable);
    }
 
    bool window::is_fullscreen() const {
@@ -2512,14 +2512,72 @@ void main() {
       }
    }
 
-   context::context(key_callback_t key_handler)
+
+
+   std::vector<context::resolution_t> context::resolution_t::supported() {
+      static std::vector<context::resolution_t> modes = [] {
+         auto mon = glfwGetPrimaryMonitor();
+         auto mode_count = 0;
+         auto modes = glfwGetVideoModes(mon, &mode_count);
+
+         std::vector<context::resolution_t> result;
+         for (auto midx = 0; midx < mode_count; midx++) {
+            auto & mode = modes[midx];
+            result.push_back({mode.width, mode.height, mode.refreshRate});
+         }
+         return result;
+      }();
+
+      return modes;
+   }
+
+   std::vector<const char *> context::resolution_t::supported_name_c_str() {
+      // static std::string representations
+      static std::vector<std::string> supported_names = []{
+         std::vector<std::string> result;
+         for (auto & r : supported()) {
+            result.push_back(std::to_string(r.width) + "x" + std::to_string(r.height));
+         }
+         return result;
+      }();
+
+      // const char * representations using std::string storage
+      static std::vector<const char *> result = [](auto & ns) {
+         std::vector<const char *> result;
+         for (auto & n : ns) { result.push_back(n.c_str()); }
+         return result;
+      }(supported_names);
+
+      return result;
+   }
+
+
+   context::resolution_t context::resolution_t::current() {
+      auto mon = glfwGetPrimaryMonitor();
+      auto &mode = *glfwGetVideoMode(mon);
+      return{ mode.width, mode.height, mode.refreshRate };
+   }
+
+   int context::resolution_t::current_idx() {
+      auto rs = supported();
+      auto r = current();
+
+      for (auto idx = 0U; idx < rs.size(); idx++) {
+         if (r == rs[idx]) return idx;
+      }
+
+      return -1;
+   }
+   
+   context::context(resolution_t const & res, key_callback_t key_handler)
    : key_handler_(key_handler)
+   , resolution_(res)
    , fullscreen_(false)
    , impl_(nullptr)
    {
       if (!initialized_) { throw error("runtime not initialised - call glpp::init() first"); }
 
-      recreate_window(false);
+      recreate_window(res, false);
 
       gl_::init();
 
@@ -2535,7 +2593,8 @@ void main() {
       destroy();
    }
 
-   void context::recreate_window(bool fullscreen) {
+   void context::recreate_window(resolution_t const & res, bool fullscreen) {
+      resolution_ = res;
       fullscreen_ = fullscreen;
       // some more info on extensions: http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-12-opengl-extensions/
       // glfwOpenWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1); 
@@ -2550,17 +2609,19 @@ void main() {
       glfwWindowHint(GLFW_SAMPLES, 8);
       glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
+      //glGetIntegerv(GL_MAX_TEXTURE_UNITS, &id);
+
       auto * monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
-      auto res = [&] {
+      auto res_dims = [&] {
          if (fullscreen) {
             auto * vid_mode = glfwGetVideoMode(monitor);
             return dim_t{ vid_mode->width, vid_mode->height };
          }
-         return dim_t{ 1920, 1089 };
+         return dim_t{ resolution_.width, resolution_.height };//dim_t{ 1920, 1089 };
       }();
 
       auto* prev_win = impl_ ? impl_->window_ : nullptr;
-      auto* win = glfwCreateWindow(res.x, res.y, "Game", monitor, prev_win);
+      auto* win = glfwCreateWindow(res_dims.x, res_dims.y, "Game", monitor, prev_win);
       if (!win) {
          throw error("could not create GLFW window or context");
       }
@@ -2658,6 +2719,10 @@ void main() {
 
    void context::destroy() {
       if (impl_ && impl_->window_) glfwDestroyWindow(impl_->window_);
+   }
+
+   void context::set_resolution(resolution_t const & res) {
+      recreate_window(res, fullscreen_);
    }
 
    void * context::platform_handle() const {

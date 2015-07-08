@@ -383,7 +383,7 @@ namespace game {
    //
 
    render_context::render_context(glpp::archive_t const & assets, glpp::context::key_callback_t key_callback)
-      : context(key_callback)
+      : context(glpp::context::resolution_t::current(), key_callback)
       , ui_context{ glpp::imgui::init(context, UI_TEXTURE_UNIT) }
       , assets(assets)
       , prg_3d{ create_program(assets, "3d") }
@@ -458,6 +458,20 @@ namespace game {
       tex_fbo.reset();
       msaa_fbo.reset();
    }
+
+   void render_context::set_resolution(glpp::context::resolution_t const & res) {
+      context.set_resolution(res);
+
+      init_context();
+
+      // force deallocation of all FBOs after context reinit to get around this ANGLE bug:
+      // https://code.google.com/p/angleproject/issues/detail?id=979
+      // ideally we would let the resize-handling code re-allocate the FBOs
+      shadow_fbo.reset();
+      tex_fbo.reset();
+      msaa_fbo.reset();
+   }
+
 
    void render_context::init_context() {
       gl::enable(gl::enable_cap_t::depth_test);
@@ -951,7 +965,7 @@ this is weird)";
                   ImGui::TreePop();
                }
                ImGui::SetNextTreeNodeOpened(false, ImGuiSetCond_FirstUseEver);
-               if (ImGui::TreeNode("entity info root", "entities: %d", world_view.entities_count()))
+               if (ImGui::TreeNode("entity info root", "scene: %d entities", world_view.entities_count()))
                {
                   ImGui::Text("creatures: %d", world_view.creatures_count());
                   ImGui::Text("props: %d", world_view.props_count());
@@ -976,11 +990,19 @@ this is weird)";
          ImGui::SetNextWindowPosCenter();
          if (ImGui::Begin("Options", nullptr, {}, alpha, FIXED_OVERLAY_SETTINGS)) {
             if (ImGui::BeginPopupModal("Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+               auto resolutions = glpp::context::resolution_t::supported_name_c_str();
+               auto resolution_selected = glpp::context::resolution_t::current_idx();
+
+               if (ImGui::Combo("Resolution", &resolution_selected, &resolutions.front(), resolutions.size())) {
+                  context.set_resolution(glpp::context::resolution_t::supported()[resolution_selected]);
+               }
+
                bool fullscreen = context.context.win().is_fullscreen();
                ImGui::Checkbox("Fullscreen", &fullscreen);
                if (fullscreen != context.context.win().is_fullscreen()) {
                   context.toggle_fullscreen();
                }
+
                ImGui::SliderFloat("UI alpha", &alpha, 0.0f, 1.0f);
                ImGui::Checkbox("Show Debug UI", &show_debug_window);
                ImGui::Checkbox("Show Test UI", &show_test_window);
