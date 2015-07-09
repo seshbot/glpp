@@ -45,6 +45,7 @@ namespace game {
       void reload_shaders();
       void reload_framebuffers();
       void toggle_fullscreen();
+      void set_resolution(glpp::context::resolution_t const & res);
 
       void init_context();
 
