@@ -45,6 +45,11 @@
 
 
 namespace glpp {
+   const double PI = 3.141592653589793238463;
+   const double TAU = 2 * PI;
+   const float  PI_F = 3.14159265358979f;
+   const float  TAU_F = 2 * PI_F;
+
 	using id_t = gl::uint_t;
 
    struct dim_t { int x; int y; };
@@ -653,17 +658,20 @@ namespace glpp {
       using char_callback_t = std::function < bool(context &, unsigned int) >; // key, char_code
 
       struct resolution_t {
+         static const resolution_t INVALID;
+
          int width;
          int height;
-         int refresh_rate;
 
          static std::vector<resolution_t> supported();
          static std::vector<const char *> supported_name_c_str();
-         static resolution_t current();
-         static int current_idx();
+         static int idx_of(resolution_t const & res);
+         static resolution_t nearest(resolution_t const & res);
+         static resolution_t desktop();
+         static int desktop_idx();
 
          friend bool operator==(resolution_t const & lhs, resolution_t const & rhs) {
-            return lhs.width == rhs.width && lhs.height == rhs.height && lhs.refresh_rate == rhs.refresh_rate;
+            return lhs.width == rhs.width && lhs.height == rhs.height;
          }
          friend bool operator!=(resolution_t const & lhs, resolution_t const & rhs) { return !(lhs == rhs); }
       };
@@ -686,12 +694,13 @@ namespace glpp {
       window const & win() const { return *win_; }
       window & win() { return *win_; }
 
+      resolution_t resolution() const;
       void set_resolution(resolution_t const & res);
 
       void * platform_handle() const;
 
    private:
-      void recreate_window(resolution_t const & res, bool fullscreen);
+      void recreate_window(bool fullscreen);
 
       key_callback_t key_handler_;
       resolution_t resolution_;

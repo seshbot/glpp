@@ -22,11 +22,11 @@ struct PositionalLight {
 	mediump float attenuation_square;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .0, .00008);
 uniform PositionalLight shadow_lights[1];
 uniform PositionalLight lights[1];
 
-const mediump vec4 c_ambient_intensity = vec4(.2, .6, .8, 1.) * .03;
+const lowp vec3 ambient_colour = vec3(.2, .6, .8);
+const lowp float ambient_intensity = .0;
 
 
 mediump vec4 light(PositionalLight light) {
@@ -43,5 +43,5 @@ void main() {
     mediump vec4 colour = texture2D(texture, frag_tex_coords);
 
     //gl_FragColor = vec4(.75, .40, .05, .1);
-	gl_FragColor = colour * .4 * light(shadow_lights[0]) + colour * .4 * light(lights[0]) + colour * c_ambient_intensity;
+	gl_FragColor = colour * .4 * light(shadow_lights[0]) + colour * .4 * light(lights[0]) + colour * vec4(ambient_colour, 1.) * ambient_intensity;
 }

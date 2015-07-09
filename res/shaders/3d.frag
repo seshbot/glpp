@@ -22,6 +22,13 @@ const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_F
 uniform PositionalLight shadow_lights[1];
 uniform PositionalLight lights[4];
 
+uniform mediump vec3 sky_light_dir; // = vec3(-1., -1., -1.);
+uniform lowp vec3 sky_light_colour; // = vec3(.5, .5, .8);
+uniform lowp float sky_light_intensity; // = .001;
+
+uniform lowp vec3 ambient_colour; // = vec3(.2, .6, .8);
+uniform lowp float ambient_intensity; // = .0;
+
 uniform lowp float use_texture;
 uniform sampler2D texture;
 uniform mediump vec4 colour;
@@ -30,11 +37,6 @@ uniform samplerCube shadow_texture;
 varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
 varying mediump vec2 frag_tex_coords;
-
-const mediump vec3 c_sky_light_dir = vec3(-1., -1., -1.);
-const mediump vec3 c_sky_light_intensity = vec3(.5, .5, .8) * .001;
-
-const mediump vec3 c_ambient_intensity = vec3(.2, .6, .8) * .0;
 
 mediump float random(mediump vec4 seed4) {
    mediump float dot_product = dot(seed4, vec4(12.9898,78.233,45.164,94.673));
@@ -125,7 +127,7 @@ mediump float fog_factor() {
 
 void main() {
    mediump vec3 n = normalize(frag_normal);
-   mediump vec3 l = normalize(-c_sky_light_dir);
+   mediump vec3 l = normalize(-sky_light_dir);
    mediump float diffuse_intensity = clamp( dot( n,l ), 0.0, 1.0 );
 
    //mediump vec4 diffuse_colour = vec4(1., 0., 1., 1.);
@@ -134,8 +136,8 @@ void main() {
       diffuse_colour = colour;
    }
 
-   mediump vec3 diffuse = diffuse_colour.rgb * diffuse_intensity * c_sky_light_intensity;
-   mediump vec3 ambient = diffuse_colour.rgb * c_ambient_intensity;
+   mediump vec3 diffuse = diffuse_colour.rgb * diffuse_intensity * sky_light_colour * sky_light_intensity;
+   mediump vec3 ambient = diffuse_colour.rgb * ambient_colour * ambient_intensity;
    
    gl_FragColor = vec4(
 	ambient + 

@@ -2407,7 +2407,7 @@ void main() {
    void window::set_fullscreen(bool enable) {
       if (enable == is_fullscreen()) return;
 
-      ctx_.recreate_window(ctx_.resolution_, enable);
+      ctx_.recreate_window(enable);
    }
 
    bool window::is_fullscreen() const {
@@ -2513,6 +2513,7 @@ void main() {
    }
 
 
+   const context::resolution_t context::resolution_t::INVALID = { 0, 0 };
 
    std::vector<context::resolution_t> context::resolution_t::supported() {
       static std::vector<context::resolution_t> modes = [] {
@@ -2523,7 +2524,9 @@ void main() {
          std::vector<context::resolution_t> result;
          for (auto midx = 0; midx < mode_count; midx++) {
             auto & mode = modes[midx];
-            result.push_back({mode.width, mode.height, mode.refreshRate});
+            resolution_t new_res { mode.width, mode.height };
+            if (result.size() == 0 || result.back() != new_res)
+               result.push_back(new_res);
          }
          return result;
       }();
@@ -2551,22 +2554,36 @@ void main() {
       return result;
    }
 
+   context::resolution_t context::resolution_t::nearest(resolution_t const & res) {
+      auto rs = supported();
+      auto nearest = context::resolution_t::INVALID;
+      for (auto & r : rs) {
+         if (r.width > res.width) break;
+         if (r.width == res.width && r.height > res.height) break;
+         nearest = r;
+      }
 
-   context::resolution_t context::resolution_t::current() {
-      auto mon = glfwGetPrimaryMonitor();
-      auto &mode = *glfwGetVideoMode(mon);
-      return{ mode.width, mode.height, mode.refreshRate };
+      assert(nearest != context::resolution_t::INVALID);
+      return nearest;
    }
 
-   int context::resolution_t::current_idx() {
-      auto rs = supported();
-      auto r = current();
+   context::resolution_t context::resolution_t::desktop() {
+      auto mon = glfwGetPrimaryMonitor();
+      auto &mode = *glfwGetVideoMode(mon);
+      return{ mode.width, mode.height };
+   }
 
+   int context::resolution_t::idx_of(resolution_t const & res) {
+      auto rs = supported();
       for (auto idx = 0U; idx < rs.size(); idx++) {
-         if (r == rs[idx]) return idx;
+         if (res == rs[idx]) return idx;
       }
 
       return -1;
+   }
+
+   int context::resolution_t::desktop_idx() {
+      return idx_of(desktop());
    }
    
    context::context(resolution_t const & res, key_callback_t key_handler)
@@ -2577,7 +2594,7 @@ void main() {
    {
       if (!initialized_) { throw error("runtime not initialised - call glpp::init() first"); }
 
-      recreate_window(res, false);
+      recreate_window(false);
 
       gl_::init();
 
@@ -2593,8 +2610,7 @@ void main() {
       destroy();
    }
 
-   void context::recreate_window(resolution_t const & res, bool fullscreen) {
-      resolution_ = res;
+   void context::recreate_window(bool fullscreen) {
       fullscreen_ = fullscreen;
       // some more info on extensions: http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-12-opengl-extensions/
       // glfwOpenWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1); 
@@ -2607,17 +2623,17 @@ void main() {
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
       glfwWindowHint(GLFW_SAMPLES, 8);
-      glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+      glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
       //glGetIntegerv(GL_MAX_TEXTURE_UNITS, &id);
 
       auto * monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
       auto res_dims = [&] {
-         if (fullscreen) {
-            auto * vid_mode = glfwGetVideoMode(monitor);
-            return dim_t{ vid_mode->width, vid_mode->height };
-         }
-         return dim_t{ resolution_.width, resolution_.height };//dim_t{ 1920, 1089 };
+         //if (fullscreen) {
+         //   auto * vid_mode = glfwGetVideoMode(monitor);
+         //   return dim_t{ vid_mode->width, vid_mode->height };
+         //}
+         return dim_t{ resolution_.width, resolution_.height };//dim_t{ 1920, 1080 };
       }();
 
       auto* prev_win = impl_ ? impl_->window_ : nullptr;
@@ -2721,8 +2737,14 @@ void main() {
       if (impl_ && impl_->window_) glfwDestroyWindow(impl_->window_);
    }
 
+   context::resolution_t context::resolution() const {
+      return resolution_;
+   }
+
    void context::set_resolution(resolution_t const & res) {
-      recreate_window(res, fullscreen_);
+      if (res == resolution_) return;
+      resolution_ = res;
+      glfwSetWindowSize(impl_->window_, resolution_.width, resolution_.height);
    }
 
    void * context::platform_handle() const {

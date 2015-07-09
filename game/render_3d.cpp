@@ -43,7 +43,6 @@ namespace game { namespace impl {
 namespace {
    const int shadow_texture_width = 100;
 
-   glpp::texture_unit_t BLANK_TEXTURE_UNIT{ 9 };
    glpp::texture_unit_t UI_TEXTURE_UNIT{ 8 };
    glpp::texture_unit_t POST_TEXTURE_UNIT{ 2 };
    glpp::texture_unit_t SHADOW_TEXTURE_UNIT{ 3 };
@@ -190,9 +189,33 @@ namespace {
    //
    // render callbacks
    //
+   namespace {
+      glm::vec3 calc_sky_light_direction(float dir) {
+         // light goes from 0. == below, .5 == above, 1. == below
+         // t: 0.   .25    .5   .75   1.
+         // x: 0 -> -1 ->  0 -> 1 -> 0   : -sin(t * 2PI)
+         // y: 1 ->  0 -> -1 -> 0 -> 1   :  cos(t * 2PI) 
+         return{-std::sin(dir * glpp::TAU), std::cos(dir * glpp::TAU), 0.f};
+      }
+   }
 
    struct mesh_render_batch_callback_t : public glpp::pass_t::render_batch_callback {
       using entity_filter = std::function<bool(game::world_view_t::render_info_t const &)>;
+
+      struct light_t {
+         enum class type_t {none, ambient, positional, directional};
+         type_t type = type_t::none;
+         glm::vec3 colour = {};
+         float intensity = 0.f;
+         glm::vec3 moment = {}; // either pos or direction, depending on type
+
+         light_t(glm::vec3 const & colour, float intensity) : type(type_t::ambient), colour(colour), intensity(intensity) {}
+         light_t(glm::vec3 const & colour, float intensity, float dir) : type(type_t::directional), colour(colour), intensity(intensity), moment(calc_sky_light_direction(dir)) {}
+         light_t(glm::vec3 const & colour, float intensity, glm::vec3 pos) : type(type_t::positional), colour(colour), intensity(intensity), moment(pos) {}
+         light_t() {}
+         light_t(light_t const&) = default;
+         light_t & operator=(light_t const&) = default;
+      };
 
       mesh_render_batch_callback_t(
          unsigned pass_mesh_idx,
@@ -200,12 +223,16 @@ namespace {
          game::world_view_t::const_iterator itEnd,
          glm::mat4 const & view_matrix,
          glm::mat4 const & proj_matrix,
-         entity_filter filter)
+         entity_filter filter,
+         light_t ambient,
+         light_t sky)
          : pass_mesh_idx_(pass_mesh_idx)
          , itEnd_(itEnd)
          , it_(itBegin)
          , filter_(filter)
-         , proj_view_matrix_(proj_matrix * view_matrix) {
+         , proj_view_matrix_(proj_matrix * view_matrix)
+         , ambient_light_(ambient)
+         , sky_light_(sky){
       }
 
       bool prepare_next(glpp::program & p) const override {
@@ -227,6 +254,19 @@ namespace {
          auto & mesh = animation.meshes()[pass_mesh_idx_];
          p.uniform("bones[0]").set(mesh.bone_transforms());
 
+         if (ambient_light_.type != light_t::type_t::none) {
+            assert(ambient_light_.type == light_t::type_t::ambient);
+            p.uniform("ambient_colour").set(ambient_light_.colour);
+            p.uniform("ambient_intensity").set(ambient_light_.intensity);
+         }
+
+         if (sky_light_.type != light_t::type_t::none) {
+            assert(sky_light_.type == light_t::type_t::directional);
+            p.uniform("sky_light_dir").set(sky_light_.moment);
+            p.uniform("sky_light_colour").set(sky_light_.colour);
+            p.uniform("sky_light_intensity").set(sky_light_.intensity);
+         }
+
          ++it_;
          return true;
       }
@@ -240,6 +280,8 @@ namespace {
       mutable game::world_view_t::const_iterator it_;
       entity_filter filter_;
       glm::mat4 proj_view_matrix_;
+      light_t ambient_light_;
+      light_t sky_light_;
    };
 
 
@@ -268,8 +310,6 @@ namespace {
             .map_buffer(program, { { mesh.bone_weights().buffer, mesh.bone_weights().count } });
 
          if (!shadow) {
-            auto set_blank_tex_cb = [&](glpp::uniform & u) { BLANK_TEXTURE_UNIT.activate(); ctx.blank_tex.bind(); u.set(BLANK_TEXTURE_UNIT); };
-
             result.push_back(
                program.pass()
                .with(verts)
@@ -383,7 +423,7 @@ namespace game {
    //
 
    render_context::render_context(glpp::archive_t const & assets, glpp::context::key_callback_t key_callback)
-      : context(glpp::context::resolution_t::current(), key_callback)
+      : context(glpp::context::resolution_t::nearest({1920, 1080}), key_callback)
       , ui_context{ glpp::imgui::init(context, UI_TEXTURE_UNIT) }
       , assets(assets)
       , prg_3d{ create_program(assets, "3d") }
@@ -457,6 +497,10 @@ namespace game {
       shadow_fbo.reset();
       tex_fbo.reset();
       msaa_fbo.reset();
+   }
+
+   glpp::context::resolution_t render_context::resolution() {
+      return context.resolution();
    }
 
    void render_context::set_resolution(glpp::context::resolution_t const & res) {
@@ -638,11 +682,9 @@ namespace game {
 
    namespace {
       const float PARTICLE_MAX_LIFE = 15.f;
-      static const float PI = 3.141592653589793238462643383f;
-      static const float TAU = 2 * PI;
       float particle_lifecycles[3] = { 0., 5., 10. };
 
-      glm::vec2 signal_2d(float t) { return glm::rotate(glm::vec2{1.f, 0.f}, t * TAU); }
+      glm::vec2 signal_2d(float t) { return glm::rotate(glm::vec2{1.f, 0.f}, t * glpp::TAU_F); }
 
 
 
@@ -663,16 +705,59 @@ this is weird)";
       };
       static const unsigned MAX_STAGES = 10;
       stage_t stages[MAX_STAGES];
+      static double stage_times[MAX_STAGES] = {};
       auto stage_count = 0U;
       auto begin_stage = [&](std::string const & name) {
          assert(stage_count < MAX_STAGES);
          stages[stage_count++] = {name, glpp::get_time()};
+      };
+      auto time_stage = [&](unsigned stage_idx, double now) {
+         auto next_idx = stage_idx + 1;
+         auto next_start = next_idx == stage_count ? now : stages[next_idx].time_begin;
+         auto stage_time = next_start - stages[stage_idx].time_begin;
+         auto avg_stage_time = stage_times[stage_idx];
+         avg_stage_time = avg_stage_time == 0. ? stage_time : (avg_stage_time * 9 + stage_time) / 10.;
+         stage_times[stage_idx] = avg_stage_time;
+         return avg_stage_time;
       };
 
       begin_stage("update");
 
       context.init_context();
       context.reload_framebuffers();
+
+      const float LIGHT_INTENSITY_MIDNIGHT = .001f;
+
+      const float LIGHT_POSITION_MORNING = .3f;
+      const float LIGHT_INTENSITY_MORNING = .2f;
+      const glm::vec3 LIGHT_COLOUR_MORNING{ .6, .6, .6 };
+
+      const float LIGHT_POSITION_MIDDAY = .5f;
+      const float LIGHT_INTENSITY_MIDDAY = .85f;
+      const glm::vec3 LIGHT_COLOUR_MIDDAY{ 1., 1., 1. };
+
+      const float LIGHT_POSITION_EVENING = .7f;
+      const float LIGHT_INTENSITY_EVENING = .2f;
+      const glm::vec3 LIGHT_COLOUR_EVENING{ .847, .553, .572 };
+
+      static float sky_light_position = LIGHT_POSITION_EVENING;
+      static glm::vec3 sky_light_colour = LIGHT_COLOUR_EVENING;
+      static float sky_light_intensity = LIGHT_INTENSITY_MIDNIGHT;
+
+      static glm::vec3 ambient_colour{ .2, .6, .8 };
+      static float ambient_intensity = .0f;
+
+      static float target_sky_light_position = sky_light_position;
+      static glm::vec3 target_sky_light_colour = sky_light_colour;
+      static float target_sky_light_intensity = sky_light_intensity;
+      static glm::vec3 target_ambient_colour = ambient_colour;
+      static float target_ambient_intensity = ambient_intensity;
+
+      sky_light_position = utils::lerp(sky_light_position, target_sky_light_position, static_cast<float>(time_since_last_tick * 5.));
+      sky_light_colour = utils::lerp(sky_light_colour, target_sky_light_colour, static_cast<float>(time_since_last_tick * 5.));
+      sky_light_intensity = utils::lerp(sky_light_intensity, target_sky_light_intensity, static_cast<float>(time_since_last_tick * 5.));
+      ambient_intensity = utils::lerp(ambient_intensity, target_ambient_intensity, static_cast<float>(time_since_last_tick * 5.));
+      ambient_colour = utils::lerp(ambient_colour, target_ambient_colour, static_cast<float>(time_since_last_tick * 5.));
 
       //
       // update animations
@@ -707,6 +792,13 @@ this is weird)";
             };
             auto entity_partition_end = std::partition_point(entity_it, entity_it_end, same_entity_type);
 
+            auto ambient_light = mesh_render_batch_callback_t::light_t{};
+            auto sky_light = mesh_render_batch_callback_t::light_t{};
+            if (!use_shadow_passes) {
+               ambient_light = mesh_render_batch_callback_t::light_t{ambient_colour, ambient_intensity};
+               sky_light = mesh_render_batch_callback_t::light_t{sky_light_colour, sky_light_intensity, sky_light_position};
+            }
+
             auto pass_mesh_idx = 0U;
             for (auto & pass : passes) {
                pass.draw_batch(
@@ -715,7 +807,8 @@ this is weird)";
                      entity_it,
                      entity_partition_end,
                      view_mat, proj_mat,
-                     entity_filter },
+                     entity_filter,
+                     ambient_light, sky_light},
                   glpp::DrawMode::Triangles);
             }
 
@@ -957,9 +1050,7 @@ this is weird)";
                if (ImGui::TreeNode("render info root", "render: %.1fms (%.1f FPS)", total_time * 1000., 1.f / total_time))
                {
                   for (auto stage_idx = 0U; stage_idx < stage_count; stage_idx++) {
-                     auto next_idx = stage_idx + 1;
-                     auto next_start = next_idx == stage_count ? now : stages[next_idx].time_begin;
-                     auto stage_time = next_start - stages[stage_idx].time_begin;
+                     auto stage_time = time_stage(stage_idx, now);
                      ImGui::Text("%s: %.1fms (%.1f%%)", stages[stage_idx].name.c_str(), stage_time * 1000., 100. * stage_time / total_time);
                   }
                   ImGui::TreePop();
@@ -967,6 +1058,38 @@ this is weird)";
                ImGui::SetNextTreeNodeOpened(false, ImGuiSetCond_FirstUseEver);
                if (ImGui::TreeNode("entity info root", "scene: %d entities", world_view.entities_count()))
                {
+                  if (ImGui::Button("morning")) {
+                     target_sky_light_position = LIGHT_POSITION_MORNING;
+                     target_sky_light_colour = LIGHT_COLOUR_MORNING;
+                     target_sky_light_intensity = LIGHT_INTENSITY_MORNING;
+                  }
+                  ImGui::SameLine();
+                  if (ImGui::Button("midday")) {
+                     target_sky_light_position = LIGHT_POSITION_MIDDAY;
+                     target_sky_light_colour = LIGHT_COLOUR_MIDDAY;
+                     target_sky_light_intensity = LIGHT_INTENSITY_MIDDAY;
+                  }
+                  ImGui::SameLine();
+                  if (ImGui::Button("evening")) {
+                     target_sky_light_position = LIGHT_POSITION_EVENING;
+                     target_sky_light_colour = LIGHT_COLOUR_EVENING;
+                     target_sky_light_intensity = LIGHT_INTENSITY_EVENING;
+                  }
+                  ImGui::SameLine();
+                  if (ImGui::Button("night")) {
+                     target_sky_light_intensity = LIGHT_INTENSITY_MIDNIGHT;
+                  }
+                  if (ImGui::TreeNode("ambient root", "ambient light")) {
+                     ImGui::ColorEdit3("colour", glm::value_ptr(target_ambient_colour));
+                     ImGui::SliderFloat("strength", &target_ambient_intensity, 0.f, 1.f, "%.2f");
+                     ImGui::TreePop();
+                  }
+                  if (ImGui::TreeNode("skylight root", "sky light")) {
+                     ImGui::SliderFloat("position", &target_sky_light_position, 0.f, 1.f, "%.2f");
+                     ImGui::ColorEdit3("colour", glm::value_ptr(target_sky_light_colour));
+                     ImGui::SliderFloat("strength", &target_sky_light_intensity, 0.f, 1.f, "%.2f");
+                     ImGui::TreePop();
+                  }
                   ImGui::Text("creatures: %d", world_view.creatures_count());
                   ImGui::Text("props: %d", world_view.props_count());
                   ImGui::TreePop();
@@ -991,7 +1114,7 @@ this is weird)";
          if (ImGui::Begin("Options", nullptr, {}, alpha, FIXED_OVERLAY_SETTINGS)) {
             if (ImGui::BeginPopupModal("Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
                auto resolutions = glpp::context::resolution_t::supported_name_c_str();
-               auto resolution_selected = glpp::context::resolution_t::current_idx();
+               auto resolution_selected = glpp::context::resolution_t::idx_of(context.resolution());
 
                if (ImGui::Combo("Resolution", &resolution_selected, &resolutions.front(), resolutions.size())) {
                   context.set_resolution(glpp::context::resolution_t::supported()[resolution_selected]);
