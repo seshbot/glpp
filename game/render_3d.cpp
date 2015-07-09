@@ -157,10 +157,10 @@ namespace {
    const float G_VERT_SCALE = 2.5f;
    const float G_TEX_SCALE = 2.5f * 7.5f;
    static const float ground_verts[] = {
-      G_VERT_SCALE * -800., 0., G_VERT_SCALE * -900.,     0., 1., 0.,    0.,                  G_TEX_SCALE,
-      G_VERT_SCALE *  800., 0., G_VERT_SCALE * -900.,     0., 1., 0.,    G_TEX_SCALE * 1.33f, G_TEX_SCALE,
-      G_VERT_SCALE * -800., 0., G_VERT_SCALE * 1100.,     0., 1., 0.,    0.,                  0.,
-      G_VERT_SCALE *  800., 0., G_VERT_SCALE * 1100.,     0., 1., 0.,    G_TEX_SCALE * 1.33f, 0.,
+      G_VERT_SCALE * -800.f, 0., G_VERT_SCALE * -900.f,     0., 1.f, 0.,    0.,                  G_TEX_SCALE,
+      G_VERT_SCALE *  800.f, 0., G_VERT_SCALE * -900.f,     0., 1.f, 0.,    G_TEX_SCALE * 1.33f, G_TEX_SCALE,
+      G_VERT_SCALE * -800.f, 0., G_VERT_SCALE * 1100.f,     0., 1.f, 0.,    0.,                  0.,
+      G_VERT_SCALE *  800.f, 0., G_VERT_SCALE * 1100.f,     0., 1.f, 0.,    G_TEX_SCALE * 1.33f, 0.,
    };
    static const unsigned short ground_indices[] = {
       0, 2, 1,

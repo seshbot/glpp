@@ -10,8 +10,8 @@ namespace glpp {
 namespace imgui {
    struct ui_context_t {
    public:
-      ui_context_t(ui_context_t &&) = default;
-      ui_context_t & operator=(ui_context_t &&) = default;
+      ui_context_t(ui_context_t &&);
+      ui_context_t & operator=(ui_context_t &&);
       ~ui_context_t();
 
    private:

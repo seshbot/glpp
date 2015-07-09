@@ -1637,7 +1637,7 @@ namespace glpp
    }
 
    buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, ValueType type, unsigned elem_count) {
-      state_->slices_.push_back({ attrib_name, type, attrib_atomic_val_bytes(type), elem_count });
+      state_->slices_.push_back({ attrib_name, type, (unsigned)attrib_atomic_val_bytes(type), elem_count });
 
       return *this;
    }

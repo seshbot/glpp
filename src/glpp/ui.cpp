@@ -2,9 +2,11 @@
 #include <glpp/utils.h>
 
 #include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#include <GLFW/glfw3native.h>
+#ifdef _MSC_VER
+#  define GLFW_EXPOSE_NATIVE_WIN32
+#  define GLFW_EXPOSE_NATIVE_WGL
+#  include <GLFW/glfw3native.h>
+#endif
 
 #ifdef _MSC_VER
 #  include <glpp/gles2.h>
@@ -16,7 +18,7 @@ namespace gl_ {
 #  include <glpp/gl2.h>
 namespace gl_ {
    using namespace gl2;
-   using namespace osx;
+   //using namespace osx;
 }
 #endif
 
@@ -254,6 +256,8 @@ namespace imgui {
       : impl_(std::move(i)) {
    }
 
+   ui_context_t::ui_context_t(ui_context_t &&) = default;
+   ui_context_t & ui_context_t::operator=(ui_context_t &&) = default;
    ui_context_t::~ui_context_t() = default;
 
    ui_context_t init(context & ctx, glpp::texture_unit_t ui_texture_unit)
