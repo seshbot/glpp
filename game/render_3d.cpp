@@ -1121,19 +1121,21 @@ this is weird)";
                }
 
                bool fullscreen = context.context.win().is_fullscreen();
-               ImGui::Checkbox("Fullscreen", &fullscreen);
-               if (fullscreen != context.context.win().is_fullscreen()) {
+               if (ImGui::Checkbox("Fullscreen", &fullscreen)) {
                   context.toggle_fullscreen();
                }
+
+               ImGui::Checkbox("Orthogonal View", &ortho);
 
                ImGui::SliderFloat("UI alpha", &alpha, 0.0f, 1.0f);
                ImGui::Checkbox("Show Debug UI", &show_debug_window);
                ImGui::Checkbox("Show Test UI", &show_test_window);
-               if (ImGui::Button("OK")) { ImGui::CloseCurrentPopup(); }
+               ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+               if (ImGui::Button("OK", {50, 0})) { ImGui::CloseCurrentPopup(); }
                ImGui::EndPopup();
             }
 
-            if (ImGui::Button("Settings...")) {
+            if (ImGui::Button("video...")) {
                ImGui::OpenPopup("Settings");
             }
             ImGui::Separator();
