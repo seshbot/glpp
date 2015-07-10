@@ -111,6 +111,8 @@ namespace game {
 
       glpp::mapped_buffer_t particle_mesh_buffer;
       glpp::mapped_buffer_t particle_position_buffer;
+      glpp::mapped_buffer_t grass_mesh_buffer;
+      glpp::mapped_buffer_t grass_position_buffer;
       std::vector<glpp::pass_t> debug_diamond_pass;
       std::vector<glpp::pass_t> ground_pass;
       std::vector<glpp::pass_t> particle_pass;
@@ -119,7 +121,8 @@ namespace game {
       // debugging
       std::vector<std::string> mesh_names;
 
-      constant_particle_emitter_buffer_t emitter;
+      manual_continuous_particle_emitter_buffer_t emitter;
+      manual_immediate_particle_emitter_buffer_t grass;
 
       bool ortho = true;
       float view_height = 1.;

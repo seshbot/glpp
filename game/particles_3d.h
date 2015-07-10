@@ -87,8 +87,8 @@ protected:
    }
 };
 
-template <unsigned CREATE_PER_SEC>
-class constant_create_policy_t {
+template <unsigned CREATE_PER_SEC, unsigned ALTITUDE = 800>
+class static_continuous_create_policy_t {
 protected:
    std::mt19937 rnd;
 
@@ -99,7 +99,7 @@ protected:
    void create_particle(T & emitter) {
       auto pos = glm::vec3{
          (float)(rnd() % 1400) - 700.f, // (float)(std::rand() % 460), // - 230.,
-         800.,
+         (float)ALTITUDE,
          600.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
 
       emitter.add(pos);
@@ -111,6 +111,101 @@ protected:
       while (next_create_time_ < now) {
          create_particle(emitter);
          next_create_time_ += TIME_BETWEEN_CREATE;
+      }
+   }
+};
+
+template <unsigned CREATE_NUMBER, unsigned ALTITUDE = 0>
+class static_create_policy_t {
+protected:
+   std::mt19937 rnd;
+
+   template <typename T>
+   void create_particle(T & emitter) {
+      auto pos = glm::vec3{
+         (float)(rnd() % 1400) - 700.f, // (float)(std::rand() % 460), // - 230.,
+         (float)ALTITUDE,
+         600.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
+
+      emitter.add(pos);
+   }
+
+   template <typename T>
+   void create_particles(T & emitter, double time_since_last) {
+      for (auto i = emitter.count(); i < CREATE_NUMBER; i++) {
+         create_particle(emitter);
+      }
+      return;
+   }
+};
+
+template <unsigned ALTITUDE = 0>
+class manual_immediate_create_policy_t {
+public:
+   glm::vec3 creation_center() const { return create_center_; }
+   void set_creation_center(glm::vec3 const & center) { create_center_ = center; }
+
+   int creation_radius() const { return create_radius_; }
+   void set_creation_radius(int radius) { create_radius_ = radius; }
+
+   int creation_count() const { return create_to_count_; }
+   void set_creation_count(int create_count) { create_to_count_ = create_count; }
+
+protected:
+   std::mt19937 rnd;
+   glm::vec3 create_center_ = {};
+   int create_radius_ = 700;
+   int create_to_count_ = 0;
+
+   template <typename T>
+   void create_particle(T & emitter) {
+      auto pos = glm::vec3{
+         (float)(rnd() % (2 * create_radius_)) - create_radius_,
+         (float)ALTITUDE,
+         create_radius_ - (float)(rnd() % (2 * create_radius_)) };
+
+      emitter.add(pos);
+   }
+
+   template <typename T>
+   void create_particles(T & emitter, double time_since_last) {
+      for (int i = emitter.count(); i < create_to_count_; i++) {
+         create_particle(emitter);
+      }
+      return;
+   }
+};
+
+template <unsigned ALTITUDE = 800>
+class manual_continuous_create_policy_t {
+public:
+   int creation_rate() const { return per_second_; }
+   void set_creation_rate(int per_second) { per_second_ = per_second; }
+
+protected:
+   std::mt19937 rnd;
+
+   int per_second_ = 0;
+   double next_create_time_ = 0.;
+
+   template <typename T>
+   void create_particle(T & emitter) {
+      auto pos = glm::vec3{
+         (float)(rnd() % 1400) - 700.f, // (float)(std::rand() % 460), // - 230.,
+         (float)ALTITUDE,
+         600.f - (float)(rnd() % 1200) };// (float)(std::rand() % 350) - 250. };
+
+      emitter.add(pos);
+   }
+
+   template <typename T>
+   void create_particles(T & emitter, double time_since_last) {
+      if (per_second_ <= 0) return;
+
+      auto now = emitter.time();
+      while (next_create_time_ < now) {
+         create_particle(emitter);
+         next_create_time_ += 1. / per_second_;
       }
    }
 };
@@ -130,6 +225,18 @@ protected:
    void update_particle(T & emitter, idx_t idx, float time_since_last) {
       auto & pos = emitter.pos_at(idx);
       pos += emitter.vel_at(idx) * time_since_last;
+   }
+};
+
+class never_update_policy_t {
+protected:
+   using idx_t = std::size_t;
+   template <typename T>
+   void particle_created(T & emitter, idx_t idx) {
+   }
+
+   template <typename T>
+   void update_particle(T & emitter, idx_t idx, float time_since_last) {
    }
 };
 
@@ -174,6 +281,22 @@ public:
    }
 };
 
+class manual_immediate_delete_policy_t {
+public:
+   using idx_t = std::size_t;
+
+   unsigned deletion_count() const { return delete_to_count_; }
+   void set_deletion_count(unsigned delete_count) { delete_to_count_ = delete_count; }
+
+protected:
+   unsigned delete_to_count_ = 0;
+
+   template <typename T>
+   bool should_delete(T & emitter, idx_t idx) {
+      return idx >= delete_to_count_;
+   }
+};
+
 template <unsigned TTL_MS>
 class constant_depth_delete_policy_t {
 public:
@@ -186,10 +309,20 @@ public:
    }
 };
 
-using constant_particle_emitter_buffer_t = particle_emitter_buffer_t <
-   constant_create_policy_t<6000>,
+using static_continuous_particle_emitter_buffer_t = particle_emitter_buffer_t <
+   static_continuous_create_policy_t<6000>,
    constant_update_policy_t,
    constant_depth_delete_policy_t<0> >;
+
+using manual_continuous_particle_emitter_buffer_t = particle_emitter_buffer_t <
+   manual_continuous_create_policy_t<>,
+   constant_update_policy_t,
+   constant_depth_delete_policy_t<0> >;
+
+using manual_immediate_particle_emitter_buffer_t = particle_emitter_buffer_t <
+   manual_immediate_create_policy_t<>,
+   never_update_policy_t,
+   manual_immediate_delete_policy_t >;
 
 using test_particle_emitter_buffer_t = particle_emitter_buffer_t <
    single_create_policy_t,

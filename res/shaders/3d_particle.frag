@@ -5,6 +5,7 @@
 #endif
 
 uniform sampler2D texture;
+uniform lowp float override_alpha;
 
 varying mediump vec3 frag_position;
 varying mediump vec2 frag_tex_coords;
@@ -23,10 +24,13 @@ struct PositionalLight {
 };
 
 uniform PositionalLight shadow_lights[1];
-uniform PositionalLight lights[1];
+uniform PositionalLight lights[4];
+uniform lowp vec4 colour;
 
-const lowp vec3 ambient_colour = vec3(.2, .6, .8);
-const lowp float ambient_intensity = .0;
+uniform lowp vec3 sky_light_colour; // = vec3(.5, .5, .8);
+uniform lowp float sky_light_intensity; // = .001;
+uniform lowp vec3 ambient_colour; // = vec3(.2, .6, .8);
+uniform lowp float ambient_intensity; // = .0;
 
 
 mediump vec4 light(PositionalLight light) {
@@ -40,8 +44,32 @@ mediump vec4 light(PositionalLight light) {
 
 
 void main() {
-    mediump vec4 colour = texture2D(texture, frag_tex_coords);
+    mediump vec4 col = colour;
+	
+	if (col.a == 0.)
+	{
+		col = texture2D(texture, frag_tex_coords);
+	}
 
     //gl_FragColor = vec4(.75, .40, .05, .1);
-	gl_FragColor = colour * .4 * light(shadow_lights[0]) + colour * .4 * light(lights[0]) + colour * vec4(ambient_colour, 1.) * ambient_intensity;
+	//gl_FragColor = vec4(1., 0., 0., 1.);
+	//gl_FragColor = col * .4 * light(shadow_lights[0]) + col * .4 * light(lights[0]) + col * vec4(ambient_colour, 1.) * ambient_intensity;
+	
+   mediump vec4 diffuse = col * vec4(sky_light_colour, 1.) * sky_light_intensity;
+   mediump vec4 ambient = col * vec4(ambient_colour, 1.) * ambient_intensity;
+
+   gl_FragColor = .4 *
+    (ambient + 
+     diffuse + 
+     col * 
+       (light(shadow_lights[0]) +
+        light(lights[0]) +
+        light(lights[1]) +
+        light(lights[2]) +
+        light(lights[3]))
+    );
+
+   if (override_alpha >= 0.) {
+      gl_FragColor = vec4(gl_FragColor.rgb, override_alpha);
+   }
 }

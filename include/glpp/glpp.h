@@ -49,6 +49,8 @@ namespace glpp {
    const double TAU = 2 * PI;
    const float  PI_F = 3.14159265358979f;
    const float  TAU_F = 2 * PI_F;
+   template <typename T>
+   const T norm_hex_value(T const & v) { return v / 255.f; }
 
 	using id_t = gl::uint_t;
 

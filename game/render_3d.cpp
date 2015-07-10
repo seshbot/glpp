@@ -43,6 +43,7 @@ namespace game { namespace impl {
 namespace {
    const int shadow_texture_width = 100;
 
+   glpp::texture_unit_t DEFAULT_TEXTURE_UNIT{ 0 };
    glpp::texture_unit_t UI_TEXTURE_UNIT{ 8 };
    glpp::texture_unit_t POST_TEXTURE_UNIT{ 2 };
    glpp::texture_unit_t SHADOW_TEXTURE_UNIT{ 3 };
@@ -235,7 +236,23 @@ namespace {
          , sky_light_(sky){
       }
 
+      mutable bool first_ = true;
       bool prepare_next(glpp::program & p) const override {
+         if (first_) {
+            first_ = false;
+            if (ambient_light_.type != light_t::type_t::none) {
+               assert(ambient_light_.type == light_t::type_t::ambient);
+               p.uniform("ambient_colour").set(ambient_light_.colour);
+               p.uniform("ambient_intensity").set(ambient_light_.intensity);
+            }
+
+            if (sky_light_.type != light_t::type_t::none) {
+               assert(sky_light_.type == light_t::type_t::directional);
+               p.uniform("sky_light_dir").set(sky_light_.moment);
+               p.uniform("sky_light_colour").set(sky_light_.colour);
+               p.uniform("sky_light_intensity").set(sky_light_.intensity);
+            }
+         }
          while (true) {
             if (it_ == itEnd_) return false;
             if (filter_(*it_)) break; // found valid entity
@@ -253,19 +270,6 @@ namespace {
 
          auto & mesh = animation.meshes()[pass_mesh_idx_];
          p.uniform("bones[0]").set(mesh.bone_transforms());
-
-         if (ambient_light_.type != light_t::type_t::none) {
-            assert(ambient_light_.type == light_t::type_t::ambient);
-            p.uniform("ambient_colour").set(ambient_light_.colour);
-            p.uniform("ambient_intensity").set(ambient_light_.intensity);
-         }
-
-         if (sky_light_.type != light_t::type_t::none) {
-            assert(sky_light_.type == light_t::type_t::directional);
-            p.uniform("sky_light_dir").set(sky_light_.moment);
-            p.uniform("sky_light_colour").set(sky_light_.colour);
-            p.uniform("sky_light_intensity").set(sky_light_.intensity);
-         }
 
          ++it_;
          return true;
@@ -351,11 +355,14 @@ namespace {
    using callback_get_mat4 = std::function<glm::mat4()>;
    using callback_set_uniform = std::function<void(glpp::uniform &)>;
 
+   static float g_camera_distance = 800.f;
+   static float g_camera_height = 1000.f;
+   static float g_camera_fov = 45.f;
 
    glm::vec3 get_camera_pos(game::renderer const & view) {
       auto center_2d = game::center_world_location();
       auto center = glm::vec3{ center_2d.x, 0.f, -center_2d.y };
-      auto eye = center + glm::vec3{ 0.f, 1000.f * view.get_view_height(), 800.f };
+      auto eye = center + glm::vec3{ 0.f, g_camera_height * view.get_view_height(), g_camera_distance };
       return eye;
    }
 
@@ -369,9 +376,12 @@ namespace {
 
    glm::mat4 get_proj(bool ortho) {
       // 0, 0 is the bottom left of the lookAt target!
+      auto max_dist = g_camera_distance > g_camera_height ? g_camera_distance : g_camera_height;
+      auto near_plane = .05f * max_dist;
+      auto far_dist = 5 * max_dist;
       if (ortho)
-         return glm::ortho<float>(-800., 800., -600., 600., 500., 3000.);
-      return glm::perspective<float>(45.f, 800.f / 600.f, 500.f, 3000.f);
+         return glm::ortho<float>(-800., 800., -600., 600., near_plane, far_dist);
+      return glm::perspective<float>(glpp::PI_F * g_camera_fov / 180.f, 800.f / 600.f, near_plane, far_dist);
    }
 
    glm::mat4 get_mvp(game::renderer const & view, bool ortho) {
@@ -422,8 +432,11 @@ namespace game {
    // context_3d implementation
    //
 
+   //static const glpp::context::resolution_t default_res{ 1920, 1080 };
+   static const glpp::context::resolution_t default_res{ 1280, 800 };
+
    render_context::render_context(glpp::archive_t const & assets, glpp::context::key_callback_t key_callback)
-      : context(glpp::context::resolution_t::nearest({1920, 1080}), key_callback)
+      : context(glpp::context::resolution_t::nearest(default_res), key_callback)
       , ui_context{ glpp::imgui::init(context, UI_TEXTURE_UNIT) }
       , assets(assets)
       , prg_3d{ create_program(assets, "3d") }
@@ -652,6 +665,38 @@ namespace game {
          .push_attrib("tex_coords", 2)
          .map_buffer(context.prg_3d_particle, { particle_static_data });
 
+      static float grass_static_data[] = {
+         -8, 0, -5, 0, -7, 9,
+         -5, 0, -6, 10, -7, 9,
+
+         -4, 0, -2, 0, -4, 35,
+         -2, 0, -3, 10, -4, 35,
+
+         -1, 0, 2, 0, 0, 22,
+         2, 0, 1, 30, 0, 22,
+
+         3, 0, 5, 0, 4, 5,
+      };
+
+      //static float grass_positions[] = {
+      //   -500., 0., -500.,
+      //   0., 0., -500.,
+      //   500., 0., -500.,
+      //   -500., 0., 0.,
+      //   0., 0., 0.,
+      //   500., 0., 0.,
+      //   -500., 0., 500.,
+      //   0., 0., 500.,
+      //   500., 0., 500.,
+      //};
+
+      grass_position_buffer = glpp::buffer_attrib_mappings_t()
+         .push_attrib("position", 3)
+         .map_buffer(context.prg_3d_particle, { grass.buffer() });
+      grass_mesh_buffer = glpp::buffer_attrib_mappings_t()
+         .push_attrib("offset_coords", 2)
+         .map_buffer(context.prg_3d_particle, { grass_static_data });
+
       //
       // post-processing pass
       //
@@ -759,10 +804,15 @@ this is weird)";
       ambient_intensity = utils::lerp(ambient_intensity, target_ambient_intensity, static_cast<float>(time_since_last_tick * 5.));
       ambient_colour = utils::lerp(ambient_colour, target_ambient_colour, static_cast<float>(time_since_last_tick * 5.));
 
+      static glm::vec3 grass_colour = glpp::norm_hex_value(glm::vec3{60.f, 160.f, 20.f});
+      static float grass_scale{ 1.f };
+      static float rain_scale{ 1.f };
+
       //
       // update animations
       //
       emitter.update(time_since_last_tick);
+      grass.update(time_since_last_tick);
 //      dude_walk_animation.advance_by(time_since_last_tick);
 
       for (auto i = 0U; i < 3; i++) {
@@ -906,6 +956,7 @@ this is weird)";
          render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
       }
       context.shadow_fbo->unbind();
+      //gl::enable(gl::enable_cap_t::cull_face);
       gl::cull_face(gl::cull_face_mode_t::back);
       gl::enable(gl::enable_cap_t::blend);
 
@@ -970,12 +1021,11 @@ this is weird)";
 
          //debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
 
+     //    gl::disable(gl::enable_cap_t::cull_face);
 #if 1
-         gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
 
          context.prg_3d_particle.use();
          context.prg_3d_particle.uniform("screen_size").set(glm::vec2{ dims.x, dims.y });
-         context.prg_3d_particle.uniform("proj").set(get_proj(false)); // glm::perspective<float>(45.f, 800.f / 600.f, 10.f, 1500.f));
          context.prg_3d_particle.uniform("view").set(get_view(*this));
          context.prg_3d_particle.uniform("eye").set(get_camera_pos(*this));
 
@@ -985,15 +1035,54 @@ this is weird)";
          context.prg_3d_particle.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
          context.prg_3d_particle.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
 
-         context.prg_3d_particle.uniform("lights[0].world_position").set(lights[0].position);
-         context.prg_3d_particle.uniform("lights[0].ambient").set(lights[0].ambient_colour);
-         context.prg_3d_particle.uniform("lights[0].diffuse").set(lights[0].diffuse_colour);
-         context.prg_3d_particle.uniform("lights[0].attenuation_linear").set(lights[0].attenuation_linear);
-         context.prg_3d_particle.uniform("lights[0].attenuation_square").set(lights[0].attenuation_square);
-         
+         context.prg_3d_particle.uniform("ambient_colour").set(ambient_colour);
+         context.prg_3d_particle.uniform("ambient_intensity").set(ambient_intensity);
+
+         //context.prg_3d_particle.uniform("sky_light_dir").set(sky_light_.moment);
+         context.prg_3d_particle.uniform("sky_light_colour").set(sky_light_colour);
+         context.prg_3d_particle.uniform("sky_light_intensity").set(sky_light_intensity);
+
+         for (auto i = 0U; i < 4; i++) {
+            auto array_name = std::string{ "lights[" } +std::to_string(i) + "]";
+            context.prg_3d_particle.uniform(array_name + ".world_position").set(lights[i].position);
+            context.prg_3d_particle.uniform(array_name + ".ambient").set(lights[i].ambient_colour);
+            context.prg_3d_particle.uniform(array_name + ".diffuse").set(lights[i].diffuse_colour);
+            context.prg_3d_particle.uniform(array_name + ".attenuation_linear").set(lights[i].attenuation_linear);
+            context.prg_3d_particle.uniform(array_name + ".attenuation_square").set(lights[i].attenuation_square);
+         }
+#if 1
+         // grass
+         context.prg_3d_particle.uniform("scale").set(grass_scale);
+         context.prg_3d_particle.uniform("proj").set(get_proj(ortho));
+         context.prg_3d_particle.uniform("colour").set(glm::vec4(grass_colour, 1.));
+         context.prg_3d_particle.uniform("override_alpha").set(1.f);
+         context.prg_3d_particle.uniform("texture").set(DEFAULT_TEXTURE_UNIT);
+
+         glpp::bind(grass_position_buffer);
+         gl::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
+
+         glpp::bind(grass_mesh_buffer);
+
+         GL_VERIFY(gl::draw_arrays_instanced(gl::primitive_type_t::triangles, 0, 21, grass.count()));
+
+         gl::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 0);
+         glpp::unbind(grass_mesh_buffer);
+         glpp::unbind(grass_position_buffer);
+#endif
+
+#if 1
+         // rain
+         if (ortho) {
+            gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
+         }
+
          RAIN_TEXTURE_UNIT.activate();
          context.rain_tex.bind();
          context.prg_3d_particle.uniform("texture").set(RAIN_TEXTURE_UNIT);
+         context.prg_3d_particle.uniform("scale").set(rain_scale);
+         context.prg_3d_particle.uniform("proj").set(get_proj(false));
+         context.prg_3d_particle.uniform("colour").set(glm::vec4(0.));
+         context.prg_3d_particle.uniform("override_alpha").set(-1.f);
 
          glpp::bind(particle_position_buffer);
          gl::vertex_attrib_divisor(context.prg_3d_particle.attrib("position").location(), 1);
@@ -1006,6 +1095,10 @@ this is weird)";
          glpp::unbind(particle_mesh_buffer);
          glpp::unbind(particle_position_buffer);
 #endif
+#endif
+
+         //gl::enable(gl::enable_cap_t::cull_face);
+
       }
 #if defined(USE_MSAA_FBO)
       context.msaa_fbo->bind();
@@ -1058,6 +1151,15 @@ this is weird)";
                ImGui::SetNextTreeNodeOpened(false, ImGuiSetCond_FirstUseEver);
                if (ImGui::TreeNode("entity info root", "scene: %d entities", world_view.entities_count()))
                {
+                  if (ImGui::TreeNode("camera root", "camera")) {
+                     ImGui::PushItemWidth(ImGui::CalcItemWidth() / 3);
+                     ImGui::SliderFloat("height", &g_camera_height, 0.f, 5000.f, "%.0f");
+                     ImGui::SameLine();
+                     ImGui::SliderFloat("dist", &g_camera_distance, 100.f, 5000.f, "%.0f");
+                     ImGui::PopItemWidth();
+                     ImGui::SliderFloat("fov", &g_camera_fov, 10.f, 110.f, "%.1f");
+                     ImGui::TreePop();
+                  }
                   if (ImGui::Button("morning")) {
                      target_sky_light_position = LIGHT_POSITION_MORNING;
                      target_sky_light_colour = LIGHT_COLOUR_MORNING;
@@ -1088,6 +1190,28 @@ this is weird)";
                      ImGui::SliderFloat("position", &target_sky_light_position, 0.f, 1.f, "%.2f");
                      ImGui::ColorEdit3("colour", glm::value_ptr(target_sky_light_colour));
                      ImGui::SliderFloat("strength", &target_sky_light_intensity, 0.f, 1.f, "%.2f");
+                     ImGui::TreePop();
+                  }
+                  if (ImGui::TreeNode("rain root", "rain")) {
+                     static auto rain_particles_per_second = emitter.creation_rate();
+                     if (ImGui::SliderInt("density", &rain_particles_per_second, 0, 10000)) {
+                        emitter.set_creation_rate(rain_particles_per_second);
+                     }                     
+                     ImGui::SliderFloat("scale", &rain_scale, .1f, 25.f, "%.1f");
+                     ImGui::TreePop();
+                  }
+                  if (ImGui::TreeNode("grass root", "grass")) {
+                     static int grass_radius = grass.creation_radius();
+                     if (ImGui::SliderInt("radius", &grass_radius, 0, 5000)) {
+                        grass.set_creation_radius(grass_radius);
+                     }
+                     static int grass_count = grass.creation_count();
+                     if (ImGui::SliderInt("density", &grass_count, 0, 100000)) {
+                        grass.set_creation_count(grass_count);
+                        grass.set_deletion_count(grass_count);
+                     }
+                     ImGui::ColorEdit3("colour", glm::value_ptr(grass_colour));
+                     ImGui::SliderFloat("scale", &grass_scale, .1f, 25.f, "%.1f");
                      ImGui::TreePop();
                   }
                   ImGui::Text("creatures: %d", world_view.creatures_count());
@@ -1130,7 +1254,7 @@ this is weird)";
                ImGui::SliderFloat("UI alpha", &alpha, 0.0f, 1.0f);
                ImGui::Checkbox("Show Debug UI", &show_debug_window);
                ImGui::Checkbox("Show Test UI", &show_test_window);
-               ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+               ImGui::SameLine((int)ImGui::GetWindowWidth() - 60);
                if (ImGui::Button("OK", {50, 0})) { ImGui::CloseCurrentPopup(); }
                ImGui::EndPopup();
             }
@@ -1138,6 +1262,7 @@ this is weird)";
             if (ImGui::Button("video...")) {
                ImGui::OpenPopup("Settings");
             }
+
             ImGui::Separator();
             if (ImGui::Button("Quit")) {
                context.context.win().set_should_close();

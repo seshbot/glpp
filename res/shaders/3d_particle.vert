@@ -8,6 +8,7 @@ uniform mediump vec2 screen_size;
 uniform mediump vec3 eye;
 uniform mediump mat4 proj;
 uniform mediump mat4 view;
+uniform mediump float scale;
 
 attribute mediump vec2 offset_coords;
 attribute mediump vec2 tex_coords;
@@ -30,7 +31,7 @@ void main() {
 					-s, 0., c,  0.,
 					0., 0., 0., 1.);
 
-	vec4 rotated_offset = rot * vec4(1.2 * offset_coords, 0., 0.);
+	vec4 rotated_offset = rot * vec4(scale * offset_coords, 0., 0.);
 
 	vec3 vertex_pos = position + rotated_offset.xyz;
 	vec4 viewPos = view * vec4(vertex_pos, 1.);
@@ -38,4 +39,6 @@ void main() {
 	gl_Position = proj * viewPos;
 	frag_position = position;
 	frag_tex_coords = tex_coords;
+
+	//gl_Position = vec4(offset_coords, 0., 1.);
 }
