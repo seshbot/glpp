@@ -36,7 +36,7 @@ uniform lowp float ambient_intensity; // = .0;
 mediump vec4 light(PositionalLight light) {
    // calculate attenuation (light strengtht based on inverse square law)
    mediump float dist = distance(frag_position, light.world_position);
-   mediump float att = 1. / (0.25 + light.attenuation_linear * dist + light.attenuation_square * dist * dist) - .05;
+   mediump float att = 1. / (.6 + light.attenuation_linear * dist + light.attenuation_square * dist * dist);
 
    // phong calculation
    return att * vec4(light.diffuse, 1.);
@@ -48,20 +48,16 @@ void main() {
 	
 	if (col.a == 0.)
 	{
-		col = texture2D(texture, frag_tex_coords);
+		col = vec4(vec3(1.), .2); // texture2D(texture, frag_tex_coords);
 	}
 
-    //gl_FragColor = vec4(.75, .40, .05, .1);
-	//gl_FragColor = vec4(1., 0., 0., 1.);
-	//gl_FragColor = col * .4 * light(shadow_lights[0]) + col * .4 * light(lights[0]) + col * vec4(ambient_colour, 1.) * ambient_intensity;
-	
    mediump vec4 diffuse = col * vec4(sky_light_colour, 1.) * sky_light_intensity;
    mediump vec4 ambient = col * vec4(ambient_colour, 1.) * ambient_intensity;
 
-   gl_FragColor = .4 *
+   gl_FragColor = 
     (ambient + 
      diffuse + 
-     col * 
+	 col * 
        (light(shadow_lights[0]) +
         light(lights[0]) +
         light(lights[1]) +

@@ -4,6 +4,12 @@
 #define lowp
 #endif
 
+uniform lowp float contrast;
+uniform lowp float saturation;
+uniform lowp float brightness;
+uniform lowp float gamma;
+
+
 uniform mediump float t;
 uniform sampler2D texture;
 
@@ -49,13 +55,10 @@ lowp vec3 post_adjust(lowp vec3 rgb, mediump vec2 xy) {
     // from http://glsl.heroku.com/e#12543.1
 
     // Gamma first...
-	rgb = sqrt(rgb);
-    //rgb = pow(rgb, vec3(0.45));
+	//rgb = sqrt(rgb);
+    rgb = pow(rgb, vec3(1. / gamma));
 
-    lowp float CONTRAST = 1.2;
-    lowp float SATURATION = 1.;
-    lowp float BRIGHTNESS = .6;
-    rgb = mix(vec3(.5), mix(vec3(dot(vec3(.2125, .7154, .0721), rgb*BRIGHTNESS)), rgb*BRIGHTNESS, SATURATION), CONTRAST);
+    rgb = mix(vec3(.5), mix(vec3(dot(vec3(.2125, .7154, .0721), rgb*brightness)), rgb*brightness, saturation), contrast);
     // Vignette...
     rgb *= .4+0.5*pow(40.0*xy.x*xy.y*(1.0-xy.x)*(1.0-xy.y), 0.1 );
     return rgb;
@@ -66,6 +69,6 @@ void main() {
 
    //colour = hsv_adjust(colour, sin(2. * t));
    lowp vec3 post_colour = post_adjust(colour.rgb, v_tex_coords);
-   //gl_FragColor = vec4(post_colour.rgb, colour.a);
-   gl_FragColor = vec4(sqrt(colour.rgb), colour.a);
+   //gl_FragColor = vec4(pow(colour.rgb, vec3(1. / 2.2)), 1.);
+   gl_FragColor = vec4(post_colour, 1.);
 }

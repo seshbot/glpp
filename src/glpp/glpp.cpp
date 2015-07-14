@@ -629,14 +629,15 @@ namespace glpp
       return static_cast<unsigned int>(tgt);
    }
 
-   texture_t::state::state(image_t image, Target target, bool invert_y)
+   texture_t::state::state(image_t image, Target target, bool invert_y, bool srgb)
    : format_(texture_format_t::RGBA) { // TODO: this may not be right?
       dims_.x = image.width();
       dims_.y = image.height();
 
       int width = image.width();
       int height = image.height();
-      id_ = SOIL_create_OGL_texture(image.data(), &width, &height, image.channels(), 0, invert_y ? SOIL_FLAG_INVERT_Y : 0);
+      unsigned flags = (invert_y ? SOIL_FLAG_INVERT_Y : 0) | (srgb ? SOIL_FLAG_SRGB : 0);
+      id_ = SOIL_create_OGL_texture(image.data(), &width, &height, image.channels(), 0, flags);
 
       if (!id_) {
          throw glpp::error(std::string("Could not load texture from image: ") + SOIL_last_result());
@@ -769,8 +770,8 @@ namespace glpp
       glDeleteTextures(1, &id_);
    }
 
-   texture_t::texture_t(image_t image, bool invert_y)
-      : state_(std::make_shared<state>(image, TEXTURE_2D, invert_y)) {
+   texture_t::texture_t(image_t image, bool invert_y, bool srgb)
+      : state_(std::make_shared<state>(image, TEXTURE_2D, invert_y, srgb)) {
    }
 
    texture_t::texture_t(dim_t const & dims, texture_format_t format)
@@ -781,13 +782,12 @@ namespace glpp
 
       std::vector<uint8_t> buffer(4 * state.dims_.x * state.dims_.y);
 
-      auto format = state.format_;
       auto fmt
-         = format == texture_format_t::RGBA ? GL_RGBA
-         : format == texture_format_t::RGB ? GL_RGB
-         : format == texture_format_t::DEPTH ? GL_DEPTH_COMPONENT
+         = state.format_ == texture_format_t::RGBA ? GL_RGBA
+         : state.format_ == texture_format_t::RGB ? GL_RGB
+         : state.format_ == texture_format_t::DEPTH ? GL_DEPTH_COMPONENT
 #ifdef _MSC_VER
-         : format == texture_format_t::BGRA ? GL_BGRA_EXT
+         : state.format_ == texture_format_t::BGRA ? GL_BGRA_EXT
 #endif
          : throw error("unrecognised image format");
 

@@ -108,7 +108,7 @@ namespace glpp {
    public:
       using id_type = uint32_t;
 
-      texture_t(image_t image, bool invert_y = true);
+      texture_t(image_t image, bool invert_y = true, bool srgb = false);
       texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
 
       id_type id() const { return state_->id_; }
@@ -130,7 +130,7 @@ namespace glpp {
       static unsigned int to_gl(Target target);
 
       struct state {
-         state(image_t image, Target target, bool invert_y);
+         state(image_t image, Target target, bool invert_y, bool srgb);
          state(dim_t const & dims, Target target, texture_format_t format);
          ~state();
          id_type id_;

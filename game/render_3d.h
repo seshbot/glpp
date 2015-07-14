@@ -124,7 +124,7 @@ namespace game {
       manual_continuous_particle_emitter_buffer_t emitter;
       manual_immediate_particle_emitter_buffer_t grass;
 
-      bool ortho = true;
+      bool ortho = false;
       float view_height = 1.;
       bool debug_do_special_thing_ = false;
       bool debug_special_mode_enabled_ = false;

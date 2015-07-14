@@ -131,9 +131,9 @@ void main() {
    mediump float diffuse_intensity = clamp( dot( n,l ), 0.0, 1.0 );
 
    //mediump vec4 diffuse_colour = vec4(1., 0., 1., 1.);
-   mediump vec4 diffuse_colour = texture2D(texture, frag_tex_coords);
-   if (use_texture < .5) {
-      diffuse_colour = colour;
+   mediump vec4 diffuse_colour = colour;
+   if (use_texture > .5) {
+	  diffuse_colour = texture2D(texture, frag_tex_coords);
    }
 
    mediump vec3 diffuse = diffuse_colour.rgb * diffuse_intensity * sky_light_colour * sky_light_intensity;
@@ -152,4 +152,5 @@ void main() {
 
    //gl_FragColor = mix(c_fog_colour, gl_FragColor, fog_factor());
    //gl_FragColor = vec4(c.rgb, 1.); // colour; // vec4(.0, .0, .0, 1.);
+   //gl_FragColor = diffuse_colour;
 }

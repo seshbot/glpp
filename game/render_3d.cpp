@@ -155,7 +155,7 @@ namespace {
    // ground data
    //
    const float G_VERT_SCALE = 2.5f;
-   const float G_TEX_SCALE = 2.5f * 7.5f;
+   const float G_TEX_SCALE = 2.5f * 3.f;
    static const float ground_verts[] = {
       G_VERT_SCALE * -800.f, 0., G_VERT_SCALE * -900.f,     0., 1.f, 0.,    0.,                  G_TEX_SCALE,
       G_VERT_SCALE *  800.f, 0., G_VERT_SCALE * -900.f,     0., 1.f, 0.,    G_TEX_SCALE * 1.33f, G_TEX_SCALE,
@@ -446,8 +446,8 @@ namespace game {
       , prg_ui{ glpp::make_debug_ui_program() }
       , blank_tex(assets.load_image("blank-1x1.png"))
       , test_tex(assets.load_image("test-100x100.png"))
-      , ground_tex(assets.load_image("ground-64x64.png"))
-      , rain_tex(assets.load_image("rain.png"))
+      , ground_tex(assets.load_image("ground-64x64.png"), false, true)
+      , rain_tex(assets.load_image("rain.png"), true, false)
       , shadow_tex{ std::unique_ptr<glpp::cube_map_texture_t>() }
       , post_tex{ std::unique_ptr<glpp::texture_t>() }
       , shadow_fbo{ std::unique_ptr<glpp::frame_buffer_t>() }
@@ -773,8 +773,8 @@ this is weird)";
 
       const float LIGHT_INTENSITY_MIDNIGHT = .001f;
 
-      const float LIGHT_POSITION_MORNING = .3f;
-      const float LIGHT_INTENSITY_MORNING = .2f;
+      const float LIGHT_POSITION_MORNING = .33f;
+      const float LIGHT_INTENSITY_MORNING = .5f;
       const glm::vec3 LIGHT_COLOUR_MORNING{ .6, .6, .6 };
 
       const float LIGHT_POSITION_MIDDAY = .5f;
@@ -782,7 +782,7 @@ this is weird)";
       const glm::vec3 LIGHT_COLOUR_MIDDAY{ 1., 1., 1. };
 
       const float LIGHT_POSITION_EVENING = .7f;
-      const float LIGHT_INTENSITY_EVENING = .2f;
+      const float LIGHT_INTENSITY_EVENING = .5f;
       const glm::vec3 LIGHT_COLOUR_EVENING{ .847, .553, .572 };
 
       static float sky_light_position = LIGHT_POSITION_EVENING;
@@ -806,7 +806,7 @@ this is weird)";
 
       static glm::vec3 grass_colour = glpp::norm_hex_value(glm::vec3{60.f, 160.f, 20.f});
       static float grass_scale{ 1.f };
-      static float rain_scale{ 1.f };
+      static float rain_scale{ 1.5f };
 
       //
       // update animations
@@ -1120,7 +1120,16 @@ this is weird)";
 #endif
 
 #if defined(USE_POST_PROCESSING_FBO)
-      post_pass.back().draw(glpp::DrawMode::Triangles);
+      static float brightness = 1.f;
+      static float saturation = .5f;
+      static float contrast = 1.f;
+      static float gamma = 2.2f;
+      auto & pass = post_pass.back();
+      pass.set_uniform("brightness", brightness);
+      pass.set_uniform("saturation", saturation);
+      pass.set_uniform("contrast", contrast);
+      pass.set_uniform("gamma", gamma);
+      pass.draw(glpp::DrawMode::Triangles);
 #endif
 
       gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
@@ -1251,6 +1260,11 @@ this is weird)";
 
                ImGui::Checkbox("Orthogonal View", &ortho);
 
+               ImGui::SliderFloat("Brightness", &brightness, 0.0f, 2.0f);
+               ImGui::SliderFloat("Contrast", &contrast, 0.0f, 2.0f);
+               ImGui::SliderFloat("Saturation", &saturation, 0.0f, 2.0f);
+               ImGui::SliderFloat("Gamma", &gamma, 0.5f, 4.0f);
+
                ImGui::SliderFloat("UI alpha", &alpha, 0.0f, 1.0f);
                ImGui::Checkbox("Show Debug UI", &show_debug_window);
                ImGui::Checkbox("Show Test UI", &show_test_window);
@@ -1264,7 +1278,7 @@ this is weird)";
             }
 
             ImGui::Separator();
-            if (ImGui::Button("Quit")) {
+            if (ImGui::Button("quit")) {
                context.context.win().set_should_close();
             }
             ImGui::End();

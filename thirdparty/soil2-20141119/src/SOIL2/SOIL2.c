@@ -102,6 +102,45 @@
 #define GL_BGRA                                             0x80E1
 #endif
 
+#ifndef GL_SRGB_EXT
+#define GL_SRGB_EXT                                       0x8C40
+#endif
+#ifndef GL_SRGB8_EXT
+#define GL_SRGB8_EXT                                      0x8C41
+#endif
+#ifndef GL_SRGB_ALPHA_EXT
+#define GL_SRGB_ALPHA_EXT                                 0x8C42
+#endif
+#ifndef GL_SRGB8_ALPHA8_EXT
+#define GL_SRGB8_ALPHA8_EXT                               0x8C43
+#endif
+#ifndef GL_SLUMINANCE_ALPHA_EXT
+#define GL_SLUMINANCE_ALPHA_EXT                           0x8C44
+#endif
+#ifndef GL_SLUMINANCE8_ALPHA8_EXT
+#define GL_SLUMINANCE8_ALPHA8_EXT                         0x8C45
+#endif
+#ifndef GL_SLUMINANCE_EXT
+#define GL_SLUMINANCE_EXT                                 0x8C46
+#endif
+#ifndef GL_SLUMINANCE8_EXT
+#define GL_SLUMINANCE8_EXT                                0x8C47
+#endif
+#ifndef GL_COMPRESSED_SRGB_EXT
+#define GL_COMPRESSED_SRGB_EXT                            0x8C48
+#endif
+#ifndef GL_COMPRESSED_SRGB_ALPHA_EXT
+#define GL_COMPRESSED_SRGB_ALPHA_EXT                      0x8C49
+#endif
+#ifndef GL_COMPRESSED_SLUMINANCE_EXT
+#define GL_COMPRESSED_SLUMINANCE_EXT                      0x8C4A
+#endif
+#ifndef GL_COMPRESSED_SLUMINANCE_ALPHA_EXT
+#define GL_COMPRESSED_SLUMINANCE_ALPHA_EXT                0x8C4B
+#endif
+
+
+
 #ifndef GL_RG
 #define GL_RG                             0x8227
 #endif
@@ -1629,6 +1668,8 @@ unsigned int
 	/* Note: sometimes glGenTextures fails (usually no OpenGL context)	*/
 	if( tex_id )
 	{
+      bool srgb = flags & SOIL_FLAG_SRGB;
+
 		/*	and what type am I using as the internal texture format?	*/
 		switch( channels )
 		{
@@ -1636,24 +1677,31 @@ unsigned int
 			#if defined( SOIL_X11_PLATFORM ) || defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX )
 			original_texture_format = isAtLeastGL3() ? GL_RED : GL_LUMINANCE;
 			#else
-			original_texture_format = GL_LUMINANCE;
+			original_texture_format = internal_texture_format = GL_LUMINANCE;
+         if (srgb)
+            internal_texture_format = GL_SLUMINANCE_EXT;
 			#endif
 			break;
 		case 2:
 			#if defined( SOIL_X11_PLATFORM ) || defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX )
 			original_texture_format = isAtLeastGL3() ? GL_RG : GL_LUMINANCE_ALPHA;
 			#else
-			original_texture_format = GL_LUMINANCE_ALPHA;
+			original_texture_format = internal_texture_format = GL_LUMINANCE_ALPHA;
+         if (srgb)
+            internal_texture_format = GL_SLUMINANCE_ALPHA_EXT;
 			#endif
 			break;
 		case 3:
-			original_texture_format = GL_RGB;
+			original_texture_format = internal_texture_format = GL_RGB;
+         if (srgb)
+            original_texture_format = internal_texture_format = GL_SRGB_EXT;
 			break;
 		case 4:
-			original_texture_format = GL_RGBA;
+			original_texture_format = internal_texture_format = GL_RGBA;
+         if (srgb)
+            original_texture_format = internal_texture_format = GL_SRGB_ALPHA_EXT;
 			break;
 		}
-		internal_texture_format = original_texture_format;
 		/*	does the user want me to, and can I, save as DXT?	*/
 		if( flags & SOIL_FLAG_COMPRESS_TO_DXT )
 		{
