@@ -180,23 +180,23 @@ void main() {
 
    void init_callbacks(context_data_t & ui_context) {
       ImGuiIO& io = ImGui::GetIO();
-      io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;                 // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
-      io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
-      io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
-      io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
-      io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
-      io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
-      io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
-      io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
-      io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
-      io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
-      io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-      io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-      io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-      io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-      io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-      io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-      io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+      io.KeyMap[ImGuiKey_Tab] = glpp::KEY_TAB;                 // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
+      io.KeyMap[ImGuiKey_LeftArrow] = glpp::KEY_LEFT;
+      io.KeyMap[ImGuiKey_RightArrow] = glpp::KEY_RIGHT;
+      io.KeyMap[ImGuiKey_UpArrow] = glpp::KEY_UP;
+      io.KeyMap[ImGuiKey_DownArrow] = glpp::KEY_DOWN;
+      io.KeyMap[ImGuiKey_Home] = glpp::KEY_HOME;
+      io.KeyMap[ImGuiKey_End] = glpp::KEY_END;
+      io.KeyMap[ImGuiKey_Delete] = glpp::KEY_DELETE;
+      io.KeyMap[ImGuiKey_Backspace] = glpp::KEY_BACKSPACE;
+      io.KeyMap[ImGuiKey_Enter] = glpp::KEY_ENTER;
+      io.KeyMap[ImGuiKey_Escape] = glpp::KEY_ESCAPE;
+      io.KeyMap[ImGuiKey_A] = glpp::KEY_A;
+      io.KeyMap[ImGuiKey_C] = glpp::KEY_C;
+      io.KeyMap[ImGuiKey_V] = glpp::KEY_V;
+      io.KeyMap[ImGuiKey_X] = glpp::KEY_X;
+      io.KeyMap[ImGuiKey_Y] = glpp::KEY_Y;
+      io.KeyMap[ImGuiKey_Z] = glpp::KEY_Z;
 
       io.CallbackContext = (void*)&ui_context;
       io.RenderDrawListsFn = render_callback;
@@ -210,7 +210,7 @@ void main() {
 #endif
 
       auto mouse_button_callback = [](glpp::context&, int button, int action, int /*mods*/) -> bool {
-         if (action == GLFW_PRESS && button >= 0 && button < 3)
+         if (action == glpp::KeyAction::KEY_ACTION_PRESS && button >= 0 && button < 3)
             g_MousePressed[button] = true;
          return false;
       };
@@ -222,15 +222,15 @@ void main() {
 
       auto key_callback = [](glpp::context&, glpp::Key key, int, glpp::KeyAction action, int mods) -> bool {
          ImGuiIO& io = ImGui::GetIO();
-         if (action == GLFW_PRESS)
+         if (action == glpp::KeyAction::KEY_ACTION_PRESS)
             io.KeysDown[key] = true;
-         if (action == GLFW_RELEASE)
+         if (action == glpp::KeyAction::KEY_ACTION_RELEASE)
             io.KeysDown[key] = false;
 
          (void)mods; // Modifiers are not reliable across systems
-         io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
-         io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
-         io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+         io.KeyCtrl = io.KeysDown[glpp::KEY_LEFT_CONTROL] || io.KeysDown[glpp::KEY_RIGHT_CONTROL];
+         io.KeyShift = io.KeysDown[glpp::KEY_LEFT_SHIFT] || io.KeysDown[glpp::KEY_RIGHT_SHIFT];
+         io.KeyAlt = io.KeysDown[glpp::KEY_LEFT_ALT] || io.KeysDown[glpp::KEY_RIGHT_ALT];
          return false;
       };
 

@@ -4,13 +4,8 @@
 #define lowp
 #endif
 
-// for some light colours: http://planetpixelemporium.com/tutorialpages/light.html
-// fire (black body palette) http://pages.cs.wisc.edu/~dekruijf/docs/capstone.pdf:
-const lowp vec3 COLOUR_FIRE_LOW = vec3(.75, .40, .05);
-const lowp vec3 COLOUR_FIRE_MID = vec3(.80, .55, .10);
-const lowp vec3 COLOUR_FIRE_HOT = vec3(.95, .70, .15);
-
 struct PositionalLight {
+	lowp float is_positional;
 	mediump vec3 world_position;
 	mediump vec3 ambient;
 	mediump vec3 diffuse;
@@ -18,21 +13,21 @@ struct PositionalLight {
 	mediump float attenuation_square;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), COLOUR_FIRE_LOW * .2, COLOUR_FIRE_LOW, .0, .00008);
 uniform PositionalLight shadow_lights[1];
 uniform PositionalLight lights[4];
 
-uniform mediump vec3 sky_light_dir; // = vec3(-1., -1., -1.);
-uniform lowp vec3 sky_light_colour; // = vec3(.5, .5, .8);
-uniform lowp float sky_light_intensity; // = .001;
+uniform mediump vec3 sky_light_dir;
+uniform lowp vec3 sky_light_colour;
+uniform lowp float sky_light_intensity;
 
-uniform lowp vec3 ambient_colour; // = vec3(.2, .6, .8);
-uniform lowp float ambient_intensity; // = .0;
+uniform lowp vec3 ambient_colour;
+uniform lowp float ambient_intensity;
 
 uniform lowp float use_texture;
 uniform sampler2D texture;
 uniform mediump vec4 colour;
-uniform samplerCube shadow_texture;
+uniform samplerCube pos_shadow_texture;
+uniform sampler2D dir_shadow_texture;
 
 varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
@@ -48,8 +43,14 @@ mediump float unpack(mediump vec4 packed_dist) {
    return dot(packed_dist,unpackFactors);
 }
 
-mediump float sample_shadow_dist(mediump vec3 uvw) {
-     mediump vec4 packed_dist = textureCube(shadow_texture, uvw);
+mediump float sample_pos_shadow_dist(mediump vec3 uvw) {
+     mediump vec4 packed_dist = textureCube(pos_shadow_texture, uvw);
+     mediump float unpacked_dist = unpack(packed_dist) * 800.;
+	 return unpacked_dist;
+}
+
+mediump float sample_dir_shadow_dist(mediump vec2 uv) {
+     mediump vec4 packed_dist = texture2D(dir_shadow_texture, uv);
      mediump float unpacked_dist = unpack(packed_dist) * 800.;
 	 return unpacked_dist;
 }
@@ -73,11 +74,11 @@ mediump float calc_shadow_factor(mediump vec3 world_position) {
    // bias = clamp(bias, 0,0.01);
 
    mediump float visibility = 1.;
-   if (sample_shadow_dist(-pos_from_light)                                       < (dist - 2.)) visibility -= sample_fact;
-   if (sample_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_1.x + sample_norm2 * SAMP_1.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
-   //if (sample_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_2.x + sample_norm2 * SAMP_2.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
-   if (sample_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_3.x + sample_norm2 * SAMP_3.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
-   if (sample_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_4.x + sample_norm2 * SAMP_4.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
+   if (sample_pos_shadow_dist(-pos_from_light)                                       < (dist - 2.)) visibility -= sample_fact;
+   if (sample_pos_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_1.x + sample_norm2 * SAMP_1.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
+   //if (sample_pos_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_2.x + sample_norm2 * SAMP_2.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
+   if (sample_pos_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_3.x + sample_norm2 * SAMP_3.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
+   if (sample_pos_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_4.x + sample_norm2 * SAMP_4.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
    return visibility;
 }
 

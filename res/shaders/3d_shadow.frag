@@ -12,7 +12,6 @@ struct PositionalLight {
 	mediump float attenuation_square;
 };
 
-const PositionalLight c_light = PositionalLight(vec3(400., 30., -424.), vec3(0., 0., 0.), vec3(.9, .8, .1), .0, .1);
 uniform PositionalLight shadow_lights[1];
 
 varying mediump vec3 frag_position;

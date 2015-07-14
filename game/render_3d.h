@@ -65,9 +65,11 @@ namespace game {
       glpp::texture_t test_tex;
       glpp::texture_t ground_tex;
       glpp::texture_t rain_tex;
-      std::unique_ptr<glpp::cube_map_texture_t> shadow_tex;
+      std::unique_ptr<glpp::cube_map_texture_t> pos_shadow_tex;
+      std::unique_ptr<glpp::texture_t> dir_shadow_tex;
       std::unique_ptr<glpp::texture_t> post_tex;
-      std::unique_ptr<glpp::frame_buffer_t> shadow_fbo;
+      std::unique_ptr<glpp::frame_buffer_t> pos_shadow_fbo;
+      std::unique_ptr<glpp::frame_buffer_t> dir_shadow_fbo;
       std::unique_ptr<glpp::frame_buffer_t> tex_fbo;
       std::unique_ptr<glpp::frame_buffer_t> msaa_fbo;
    };

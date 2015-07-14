@@ -448,9 +448,11 @@ namespace game {
       , test_tex(assets.load_image("test-100x100.png"))
       , ground_tex(assets.load_image("ground-64x64.png"), false, true)
       , rain_tex(assets.load_image("rain.png"), true, false)
-      , shadow_tex{ std::unique_ptr<glpp::cube_map_texture_t>() }
+      , pos_shadow_tex{ std::unique_ptr<glpp::cube_map_texture_t>() }
+      , dir_shadow_tex{ std::unique_ptr<glpp::texture_t>() }
       , post_tex{ std::unique_ptr<glpp::texture_t>() }
-      , shadow_fbo{ std::unique_ptr<glpp::frame_buffer_t>() }
+      , pos_shadow_fbo{ std::unique_ptr<glpp::frame_buffer_t>() }
+      , dir_shadow_fbo{ std::unique_ptr<glpp::frame_buffer_t>() }
       , tex_fbo{ std::unique_ptr<glpp::frame_buffer_t>() }
       , msaa_fbo{ std::unique_ptr<glpp::frame_buffer_t>() }
    {
@@ -486,9 +488,14 @@ namespace game {
 #else
       const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
 #endif
-      if (!shadow_fbo || shadow_fbo->dims() != shadow_texture_dims) {
-         shadow_tex.reset(new glpp::cube_map_texture_t(shadow_texture_width, tex_fmt));
-         shadow_fbo.reset(new glpp::frame_buffer_t(*shadow_tex));
+      if (!pos_shadow_fbo || pos_shadow_fbo->dims() != shadow_texture_dims) {
+         pos_shadow_tex.reset(new glpp::cube_map_texture_t(shadow_texture_width, tex_fmt));
+         pos_shadow_fbo.reset(new glpp::frame_buffer_t(*pos_shadow_tex));
+      }
+      if (!dir_shadow_fbo || dir_shadow_fbo->dims() != shadow_texture_dims) {
+         glpp::dim_t dims{ shadow_texture_width, shadow_texture_width };
+         dir_shadow_tex.reset(new glpp::texture_t(dims, tex_fmt));
+         dir_shadow_fbo.reset(new glpp::frame_buffer_t(*dir_shadow_tex));
       }
       if (!tex_fbo || tex_fbo->dims() != dims) {
          post_tex.reset(new glpp::texture_t(dims, tex_fmt));
@@ -507,7 +514,8 @@ namespace game {
       // force deallocation of all FBOs after context reinit to get around this ANGLE bug:
       // https://code.google.com/p/angleproject/issues/detail?id=979
       // ideally we would let the resize-handling code re-allocate the FBOs
-      shadow_fbo.reset();
+      pos_shadow_fbo.reset();
+      dir_shadow_fbo.reset();
       tex_fbo.reset();
       msaa_fbo.reset();
    }
@@ -524,7 +532,8 @@ namespace game {
       // force deallocation of all FBOs after context reinit to get around this ANGLE bug:
       // https://code.google.com/p/angleproject/issues/detail?id=979
       // ideally we would let the resize-handling code re-allocate the FBOs
-      shadow_fbo.reset();
+      pos_shadow_fbo.reset();
+      dir_shadow_fbo.reset();
       tex_fbo.reset();
       msaa_fbo.reset();
    }
@@ -557,6 +566,12 @@ namespace game {
       , player_light{{ 400., 40., -424. }, { .75, .40, .05 }, .04f * glm::vec3{ .75, .40, .05 }, .035f, .000005f}
    {
       emitter.set_creation_rate(1000);
+
+      //// for some light colours: http://planetpixelemporium.com/tutorialpages/light.html
+      //// fire (black body palette) http://pages.cs.wisc.edu/~dekruijf/docs/capstone.pdf:
+      //const lowp vec3 COLOUR_FIRE_LOW = vec3(.75, .40, .05);
+      //const lowp vec3 COLOUR_FIRE_MID = vec3(.80, .55, .10);
+      //const lowp vec3 COLOUR_FIRE_HOT = vec3(.95, .70, .15);
 
       lights[0] = { { 400., 40., -424. },{ .75, .40, .05 }, .2f * glm::vec3{ .75, .40, .05 }, .0f, .00005f };
 
@@ -680,18 +695,6 @@ namespace game {
          3, 0, 5, 0, 4, 5,
       };
 
-      //static float grass_positions[] = {
-      //   -500., 0., -500.,
-      //   0., 0., -500.,
-      //   500., 0., -500.,
-      //   -500., 0., 0.,
-      //   0., 0., 0.,
-      //   500., 0., 0.,
-      //   -500., 0., 500.,
-      //   0., 0., 500.,
-      //   500., 0., 500.,
-      //};
-
       grass_position_buffer = glpp::buffer_attrib_mappings_t()
          .push_attrib("position", 3)
          .map_buffer(context.prg_3d_particle, { grass.buffer() });
@@ -732,17 +735,6 @@ namespace game {
       float particle_lifecycles[3] = { 0., 5., 10. };
 
       glm::vec2 signal_2d(float t) { return glm::rotate(glm::vec2{1.f, 0.f}, t * glpp::TAU_F); }
-
-
-
-
-      static auto SAMPLE_TEXT = R"(a line of text
-another line of text with some data
-whats going on another line of text with some data
-another line but something
-what is going on here
-something should really happen here
-this is weird)";
    }
 
    void renderer::update_and_render(double time_since_last_tick, game::world_view_t const & world_view, bool show_ui) {
@@ -806,8 +798,10 @@ this is weird)";
       ambient_intensity = utils::lerp(ambient_intensity, target_ambient_intensity, static_cast<float>(time_since_last_tick * 5.));
       ambient_colour = utils::lerp(ambient_colour, target_ambient_colour, static_cast<float>(time_since_last_tick * 5.));
 
+      bool is_daytime = sky_light_position > .3f && sky_light_position < .7f;
+
       static glm::vec3 grass_colour = glpp::norm_hex_value(glm::vec3{60.f, 160.f, 20.f});
-      static float grass_scale{ 1.f };
+      static float grass_scale{ .6f };
       static float rain_scale{ .9f };
 
       //
@@ -886,26 +880,6 @@ this is weird)";
       //
 #if 1
 
-      // const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
-      struct face_info {
-         glpp::frame_buffer_t::CubeFace face;
-         glm::vec3 view_direction;
-         glm::vec3 up_direction;
-         std::string name;
-      };
-
-      const face_info faces[6] = {
-         { glpp::frame_buffer_t::POSITIVE_X,{ 1., 0., 0. },{ 0., -1., 0. }, "x_pos" },
-         { glpp::frame_buffer_t::NEGATIVE_X,{ -1., 0., 0. },{ 0., -1., 0. }, "x_neg" },
-         { glpp::frame_buffer_t::POSITIVE_Y,{ 0., 1., 0. },{ 0., 0., 1. }, "y_pos" },
-         { glpp::frame_buffer_t::NEGATIVE_Y,{ 0., -1., 0. },{ 0., 0., -1. }, "y_neg" },
-         { glpp::frame_buffer_t::POSITIVE_Z,{ 0., 0., 1. },{ 0., -1., 0. }, "z_pos" },
-         { glpp::frame_buffer_t::NEGATIVE_Z,{ 0., 0., -1. },{ 0., -1., 0. }, "z_neg" },
-      };
-
-      const auto light_pos = player_light.position;
-      const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
-
       gl::disable(gl::enable_cap_t::blend);
       gl::cull_face(gl::cull_face_mode_t::front);
       gl::clear_color(1., 1., 1., 1.);
@@ -913,59 +887,87 @@ this is weird)";
       // HOLY CRAP this took me ages to figure out people
       gl::viewport(0, 0, shadow_texture_width, shadow_texture_width);
 
-      for (auto face_idx = 0; face_idx < 6; face_idx++) {
-         auto & face = faces[face_idx];
-         const auto view = glm::lookAt(light_pos, light_pos + face.view_direction, face.up_direction);
+      if (false && is_daytime) {
 
-         context.shadow_fbo->bind(face.face);
-
-         GL_VERIFY(gl::clear(
-            gl::clear_buffer_flags_t::color_buffer_bit |
-            gl::clear_buffer_flags_t::depth_buffer_bit));
-
-         auto filter = [&](game::world_view_t::render_info_t const & render_info) {
-            // not casting shadows upwards
-            if (face.face == glpp::frame_buffer_t::POSITIVE_Y) return false;
-
-            auto light_to_entity = render_info.moment->pos() - glm::vec2(light_pos.x, -light_pos.z);
-            auto light_height_squared = light_pos.y * light_pos.y;
-            auto light_to_entity_dist_squared = light_to_entity.x * light_to_entity.x + light_to_entity.y * light_to_entity.y;
-
-            // anything thats close to the light gets included
-            if (light_to_entity_dist_squared < (2 * light_height_squared)) {
-               return true;
-            }
-
-            // TODO: exclude entities that are far away
-
-            // not close to the light, wont cast a shadow underneath the light
-            if (face.face == glpp::frame_buffer_t::NEGATIVE_Y) return false;
-
-            auto light_to_entity_norm = glm::normalize(light_to_entity);
-            auto dot = light_to_entity.x * face.view_direction.x + light_to_entity.y * -face.view_direction.z;
-
-            return dot > 0;
+      } // end daytime shadow calculations
+      else {
+         // const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
+         struct face_info {
+            glpp::frame_buffer_t::CubeFace face;
+            glm::vec3 view_direction;
+            glm::vec3 up_direction;
+            std::string name;
          };
 
-         context.prg_3d_shadow.use();
-         context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(player_light.position);
-         context.prg_3d_shadow.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
-         context.prg_3d_shadow.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
-         context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
-         context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
+         const face_info faces[6] = {
+            { glpp::frame_buffer_t::POSITIVE_X,{ 1., 0., 0. },{ 0., -1., 0. }, "x_pos" },
+            { glpp::frame_buffer_t::NEGATIVE_X,{ -1., 0., 0. },{ 0., -1., 0. }, "x_neg" },
+            { glpp::frame_buffer_t::POSITIVE_Y,{ 0., 1., 0. },{ 0., 0., 1. }, "y_pos" },
+            { glpp::frame_buffer_t::NEGATIVE_Y,{ 0., -1., 0. },{ 0., 0., -1. }, "y_neg" },
+            { glpp::frame_buffer_t::POSITIVE_Z,{ 0., 0., 1. },{ 0., -1., 0. }, "z_pos" },
+            { glpp::frame_buffer_t::NEGATIVE_Z,{ 0., 0., -1. },{ 0., -1., 0. }, "z_neg" },
+         };
 
-         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
-         render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
-      }
-      context.shadow_fbo->unbind();
+         const auto light_pos = player_light.position;
+         const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
+
+         for (auto face_idx = 0; face_idx < 6; face_idx++) {
+            auto & face = faces[face_idx];
+            const auto view = glm::lookAt(light_pos, light_pos + face.view_direction, face.up_direction);
+
+            context.pos_shadow_fbo->bind(face.face);
+
+            GL_VERIFY(gl::clear(
+               gl::clear_buffer_flags_t::color_buffer_bit |
+               gl::clear_buffer_flags_t::depth_buffer_bit));
+
+            auto filter = [&](game::world_view_t::render_info_t const & render_info) {
+               // not casting shadows upwards
+               if (face.face == glpp::frame_buffer_t::POSITIVE_Y) return false;
+
+               auto light_to_entity = render_info.moment->pos() - glm::vec2(light_pos.x, -light_pos.z);
+               auto light_height_squared = light_pos.y * light_pos.y;
+               auto light_to_entity_dist_squared = light_to_entity.x * light_to_entity.x + light_to_entity.y * light_to_entity.y;
+
+               // anything thats close to the light gets included
+               if (light_to_entity_dist_squared < (2 * light_height_squared)) {
+                  return true;
+               }
+
+               // TODO: exclude entities that are far away
+
+               // not close to the light, wont cast a shadow underneath the light
+               if (face.face == glpp::frame_buffer_t::NEGATIVE_Y) return false;
+
+               auto light_to_entity_norm = glm::normalize(light_to_entity);
+               auto dot = light_to_entity.x * face.view_direction.x + light_to_entity.y * -face.view_direction.z;
+
+               return dot > 0;
+            };
+
+            context.prg_3d_shadow.use();
+            context.prg_3d_shadow.uniform("shadow_lights[0].is_directional").set(0.f);
+            context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(player_light.position);
+            context.prg_3d_shadow.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
+            context.prg_3d_shadow.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
+            context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
+            context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
+
+            render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
+            render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
+         }
+      } // end nighttime shadow calculations
+
+      context.pos_shadow_fbo->unbind();
       //gl::enable(gl::enable_cap_t::cull_face);
       gl::cull_face(gl::cull_face_mode_t::back);
       gl::enable(gl::enable_cap_t::blend);
 
       context.prg_3d.use();
       SHADOW_TEXTURE_UNIT.activate();
-      context.shadow_tex->bind();
-      context.prg_3d.uniform("shadow_texture").set(SHADOW_TEXTURE_UNIT);
+      context.pos_shadow_tex->bind();
+      context.prg_3d.uniform("pos_shadow_texture").set(SHADOW_TEXTURE_UNIT);
+      context.prg_3d.uniform("shadow_lights[0].is_directional").set(0.f);
       context.prg_3d.uniform("shadow_lights[0].world_position").set(player_light.position);
       context.prg_3d.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
       context.prg_3d.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
@@ -1235,12 +1237,6 @@ this is weird)";
       }
    
       if (show_ui) {
-         //auto win_dims = context.context.win().frame_buffer_dims();
-         //auto text_mvp = glpp::make_debug_text_projection(win_dims.x, win_dims.y, 100, 30, 2.);
-         //auto text_pass = glpp::make_debug_text_pass(SAMPLE_TEXT, context.prg_ui, text_mvp);
-         //text_pass.draw(glpp::DrawMode::Triangles);
-
-
          static bool show_test_window = false;
          if (show_test_window)
             ImGui::ShowTestWindow(&show_test_window);
