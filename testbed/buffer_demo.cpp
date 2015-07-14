@@ -113,10 +113,11 @@ void buffer_demo() {
    auto key_handler = [&](glpp::context & ctx, glpp::Key key, int scancode, glpp::KeyAction action, int mods) {
       if (key == glpp::KEY_ESCAPE && action == glpp::KEY_ACTION_PRESS)
          ctx.win().set_should_close();
+      return false;
    };
 
    glpp::init();
-   glpp::context context(key_handler);
+   glpp::context context({ 800, 600 }, key_handler);
    gl::disable(gl::enable_cap_t::cull_face);
 
    glpp::program prg(

@@ -42,7 +42,15 @@ namespace glpp {
       return mods; // they should be the same
    }
 
-   std::string to_string(KeyAction action);
+   std::string to_string(KeyAction action) {
+      switch (action) {
+      case GLFW_PRESS: return "KEY_ACTION_PRESS";
+      case GLFW_RELEASE: return "KEY_ACTION_RELEASE";
+      case GLFW_REPEAT: return "KEY_ACTION_REPEAT";
+      default: return "KEY_ACTION_UNKNOWN";
+      }
+   }
+
    KeyAction from_glfw_key_action(int action) {
       switch (action) {
       case GLFW_PRESS: return KEY_ACTION_PRESS;

@@ -15,12 +15,13 @@ void ui_demo() {
    auto key_handler = [&](glpp::context & ctx, glpp::Key key, int scancode, glpp::KeyAction action, int mods) {
       if (key == glpp::KEY_ESCAPE && action == glpp::KEY_ACTION_PRESS)
          ctx.win().set_should_close();
+      return false;
    };
 
    glpp::init();
-   glpp::context context(key_handler);
+   glpp::context context({ 1024, 768 }, key_handler);
 
-   auto ui_context = glpp::imgui::init(context);
+   auto ui_context = glpp::imgui::init(context, { 1 });
 
    while (!context.win().closing()) {
       gl::clear_color(0.f, 0.f, 0.f, 1.f);

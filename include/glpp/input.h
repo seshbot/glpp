@@ -17,10 +17,10 @@ namespace glpp {
    int from_glfw_key_mods(int mods);
 
    enum KeyAction {
-      KEY_ACTION_UNKNOWN,
-      KEY_ACTION_PRESS,
-      KEY_ACTION_RELEASE,
-      KEY_ACTION_REPEAT,
+      KEY_ACTION_UNKNOWN = -1,
+      KEY_ACTION_PRESS = 1,
+      KEY_ACTION_RELEASE = 0,
+      KEY_ACTION_REPEAT = 2,
    };
 
    std::string to_string(KeyAction action);

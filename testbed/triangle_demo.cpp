@@ -50,10 +50,11 @@ void triangle_demo() {
          ctx.win().set_should_close();
       if (key == glpp::KEY_R && action == glpp::KEY_ACTION_PRESS)
          should_reload_program = true;
+      return false;
    };
 
    glpp::init();
-   glpp::context context(key_handler);
+   glpp::context context({ 800, 600 }, key_handler);
 
    glpp::program prg(
       glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::Vertex),
