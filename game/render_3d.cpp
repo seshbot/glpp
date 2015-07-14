@@ -556,6 +556,8 @@ namespace game {
       : context(ctx)
       , player_light{{ 400., 40., -424. }, { .75, .40, .05 }, .04f * glm::vec3{ .75, .40, .05 }, .035f, .000005f}
    {
+      emitter.set_creation_rate(1000);
+
       lights[0] = { { 400., 40., -424. },{ .75, .40, .05 }, .2f * glm::vec3{ .75, .40, .05 }, .0f, .00005f };
 
       lights[1].diffuse_colour = { .05, .45, .05 };
@@ -806,7 +808,7 @@ this is weird)";
 
       static glm::vec3 grass_colour = glpp::norm_hex_value(glm::vec3{60.f, 160.f, 20.f});
       static float grass_scale{ 1.f };
-      static float rain_scale{ 1.5f };
+      static float rain_scale{ .9f };
 
       //
       // update animations
