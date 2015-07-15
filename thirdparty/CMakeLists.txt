@@ -49,6 +49,7 @@ add_subdirectory(glm-0.9.5.4)
 
 if (WIN32)
     set(SOIL2_USE_GLES2 ON CACHE INTERNAL "")
+    set(SOIL2_USE_ANGLE ON CACHE INTERNAL "")
     set(SOIL2_EGL_INCLUDE_DIR ${ANGLE_EGL_INCLUDE_DIR} CACHE INTERNAL "")
 endif ()
 

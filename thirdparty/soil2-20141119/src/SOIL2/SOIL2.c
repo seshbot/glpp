@@ -1694,14 +1694,19 @@ unsigned int
 		case 3:
 			original_texture_format = internal_texture_format = GL_RGB;
          if (srgb)
-            original_texture_format = internal_texture_format = GL_SRGB_EXT;
+            internal_texture_format = GL_SRGB_EXT;
 			break;
 		case 4:
 			original_texture_format = internal_texture_format = GL_RGBA;
          if (srgb)
-            original_texture_format = internal_texture_format = GL_SRGB_ALPHA_EXT;
+            internal_texture_format = GL_SRGB_ALPHA_EXT;
 			break;
 		}
+		#if defined(SOIL_ANGLE)
+		if (srgb)
+			original_texture_format = internal_texture_format;
+		#endif
+
 		/*	does the user want me to, and can I, save as DXT?	*/
 		if( flags & SOIL_FLAG_COMPRESS_TO_DXT )
 		{

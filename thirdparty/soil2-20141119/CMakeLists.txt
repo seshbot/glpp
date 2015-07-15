@@ -3,12 +3,17 @@ cmake_minimum_required (VERSION 2.8)
 project( soil CXX )
 
 option(SOIL2_USE_GLES2 "Use GLES2" OFF)
+option(SOIL2_USE_ANGLE "Use Google ANGLE" OFF)
 
 set( SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/SOIL2 )
 set( INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/SOIL2 )
 
 if (SOIL2_USE_GLES2)
 	add_definitions("-DSOIL_GLES2")
+endif ()
+
+if (SOIL2_USE_ANGLE)
+   add_definitions("-DSOIL_ANGLE")
 endif ()
 
 include_directories( ${INCLUDE_DIR} ${SOIL2_EGL_INCLUDE_DIR})
