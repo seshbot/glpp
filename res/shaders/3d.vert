@@ -11,7 +11,6 @@ uniform mediump mat4 bones[20];
 
 uniform mediump mat4 dir_shadow_mvp_biased;
 
-
 attribute mediump vec3 p;
 attribute mediump vec3 normal;
 attribute mediump vec2 tex_coords;
@@ -33,7 +32,7 @@ void main() {
    BoneTransform     += bones[int(bone_indices.w)] * norm_bone_weights.w;
 
    gl_Position = mvp * BoneTransform * vec4(p, 1.);
-   dir_shadow_texture_coords = dir_shadow_mvp_biased * BoneTransform * vec4(p, 1.);
+   dir_shadow_texture_coords = dir_shadow_mvp_biased * model * BoneTransform * vec4(p, 1.);
    frag_position = vec4(model * BoneTransform * vec4(p, 1.)).xyz;
 
    // TODO: incorporate BoneTransform in normal_matrix

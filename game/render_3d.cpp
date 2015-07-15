@@ -41,7 +41,8 @@ namespace game { namespace impl {
 //
 
 namespace {
-   const int shadow_texture_width = 100;
+   const int pos_shadow_texture_width = 100;
+   const int dir_shadow_texture_width = pos_shadow_texture_width * 10;
 
    glpp::texture_unit_t DEFAULT_TEXTURE_UNIT{ 0 };
    glpp::texture_unit_t UI_TEXTURE_UNIT{ 8 };
@@ -367,7 +368,17 @@ namespace {
       return eye;
    }
 
+   static float g_sky_light_position = 1.;
+
    glm::mat4 get_view(game::renderer const & view) {
+#if 0
+      const auto light_dir = calc_sky_light_direction(g_sky_light_position);
+      auto position = -light_dir * 1000.f;
+
+      auto v = glm::lookAt(position, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. });
+      return v;
+#endif
+
       auto center_2d = game::center_world_location();
       auto center = glm::vec3{ center_2d.x, 0.f, -center_2d.y };
       auto eye = get_camera_pos(view);
@@ -376,6 +387,11 @@ namespace {
    }
 
    glm::mat4 get_proj(bool ortho) {
+#if 0
+      const auto light_proj = glm::ortho(-1000.f, 1000.f, -1000.f, 1000.f, 500.f, 5000.f);
+      return light_proj;
+#endif
+
       // 0, 0 is the bottom left of the lookAt target!
       auto max_dist = g_camera_distance > g_camera_height ? g_camera_distance : g_camera_height;
       auto near_plane = .05f * max_dist;
@@ -483,20 +499,20 @@ namespace game {
       auto dims = context.win().frame_buffer_dims();
       if (dims.x == 0 || dims.y == 0) return false;
 
-      auto shadow_texture_dims = glpp::dim_t{ shadow_texture_width, shadow_texture_width };
+      auto pos_shadow_texture_dims = glpp::dim_t{ pos_shadow_texture_width, pos_shadow_texture_width };
+      auto dir_shadow_texture_dims = glpp::dim_t{ dir_shadow_texture_width, dir_shadow_texture_width};
 
 #ifdef WIN32 
       const glpp::texture_format_t tex_fmt = glpp::texture_format_t::BGRA;
 #else
       const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
 #endif
-      if (!pos_shadow_fbo || pos_shadow_fbo->dims() != shadow_texture_dims) {
-         pos_shadow_tex.reset(new glpp::cube_map_texture_t(shadow_texture_width, tex_fmt));
+      if (!pos_shadow_fbo || pos_shadow_fbo->dims() != pos_shadow_texture_dims) {
+         pos_shadow_tex.reset(new glpp::cube_map_texture_t(pos_shadow_texture_dims.x, tex_fmt));
          pos_shadow_fbo.reset(new glpp::frame_buffer_t(*pos_shadow_tex));
       }
-      if (!dir_shadow_fbo || dir_shadow_fbo->dims() != shadow_texture_dims) {
-         glpp::dim_t dims{ shadow_texture_width, shadow_texture_width };
-         dir_shadow_tex.reset(new glpp::texture_t(dims, tex_fmt));
+      if (!dir_shadow_fbo || dir_shadow_fbo->dims() != dir_shadow_texture_dims) {
+         dir_shadow_tex.reset(new glpp::texture_t(dir_shadow_texture_dims, tex_fmt));
          dir_shadow_fbo.reset(new glpp::frame_buffer_t(*dir_shadow_tex));
       }
       if (!tex_fbo || tex_fbo->dims() != dims) {
@@ -775,7 +791,9 @@ namespace game {
          return;
       }
 
+      const float LIGHT_POSITION_MIDNIGHT = .1f;
       const float LIGHT_INTENSITY_MIDNIGHT = .001f;
+      const glm::vec3 LIGHT_COLOUR_MIDNIGHT{ .572, .553, .847 };
 
       const float LIGHT_POSITION_MORNING = .33f;
       const float LIGHT_INTENSITY_MORNING = .5f;
@@ -789,8 +807,8 @@ namespace game {
       const float LIGHT_INTENSITY_EVENING = .5f;
       const glm::vec3 LIGHT_COLOUR_EVENING{ .847, .553, .572 };
 
-      static float sky_light_position = LIGHT_POSITION_EVENING;
-      static glm::vec3 sky_light_colour = LIGHT_COLOUR_EVENING;
+      static float sky_light_position = LIGHT_POSITION_MIDNIGHT;
+      static glm::vec3 sky_light_colour = LIGHT_COLOUR_MIDNIGHT;
       static float sky_light_intensity = LIGHT_INTENSITY_MIDNIGHT;
 
       static glm::vec3 ambient_colour{ .2, .6, .8 };
@@ -807,6 +825,7 @@ namespace game {
       sky_light_intensity = utils::lerp(sky_light_intensity, target_sky_light_intensity, static_cast<float>(time_since_last_tick * 5.));
       ambient_intensity = utils::lerp(ambient_intensity, target_ambient_intensity, static_cast<float>(time_since_last_tick * 5.));
       ambient_colour = utils::lerp(ambient_colour, target_ambient_colour, static_cast<float>(time_since_last_tick * 5.));
+      g_sky_light_position = sky_light_position;
 
       bool is_daytime = sky_light_position > .3f && sky_light_position < .7f;
 
@@ -894,31 +913,30 @@ namespace game {
       gl::cull_face(gl::cull_face_mode_t::front);
       gl::clear_color(1., 1., 1., 1.);
 
-      // HOLY CRAP this took me ages to figure out people
-      gl::viewport(0, 0, shadow_texture_width, shadow_texture_width);
-
       auto shadow_light = light_info{};
       auto dir_shadow_mvp_biased = glm::mat4{};
 
-      is_daytime = false;
+      //is_daytime = true;
       if (is_daytime) {
+         gl::viewport(0, 0, dir_shadow_texture_width, dir_shadow_texture_width);
+
          const auto light_dir = calc_sky_light_direction(sky_light_position);
 
          // TODO: get rid of these magic numbers
-         shadow_light.position = -light_dir * 1000.f;
+         shadow_light.position = -light_dir * 500.f;
          shadow_light.diffuse_colour = sky_light_colour;
          shadow_light.ambient_colour = ambient_colour;
 
-         const auto light_proj = glm::ortho(-1000.f, 1000.f, -1000.f, 1000.f, 500.f, 5000.f);
-         const auto view = glm::lookAt(shadow_light.position, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. });
+         const auto light_proj = glm::ortho(-1500.f, 1500.f, -1500.f, 1500.f, 200.f, 1000.f);
+         const auto view = glm::lookAt(shadow_light.position, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 0., -1. });
 
-         glm::mat4 bias_xform(
+         static glm::mat4 bias_xform(
             0.5, 0.0, 0.0, 0.0,
             0.0, 0.5, 0.0, 0.0,
             0.0, 0.0, 0.5, 0.0,
             0.5, 0.5, 0.5, 1.0);
 
-         dir_shadow_mvp_biased = bias_xform * light_proj;
+         dir_shadow_mvp_biased = bias_xform * light_proj * view * glm::mat4{};
 
          context.dir_shadow_fbo->bind(glpp::frame_buffer_t::BindTarget::Draw);
 
@@ -935,9 +953,11 @@ namespace game {
          render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, view, light_proj, true);
 
          context.dir_shadow_fbo->unbind();
-
       } // end daytime shadow calculations
       else {
+         // HOLY CRAP this took me ages to figure out people
+         gl::viewport(0, 0, pos_shadow_texture_width, pos_shadow_texture_width);
+
          // const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
          struct face_info {
             glpp::frame_buffer_t::CubeFace face;
@@ -1008,14 +1028,17 @@ namespace game {
       gl::enable(gl::enable_cap_t::blend);
 
       context.prg_3d.use();
-      SHADOW_TEXTURE_UNIT.activate();
       if (is_daytime) {
+         SHADOW_TEXTURE_UNIT.activate();
          context.dir_shadow_tex->bind();
+         context.prg_3d.uniform("pos_shadow_texture").set(DEFAULT_TEXTURE_UNIT);
          context.prg_3d.uniform("dir_shadow_texture").set(SHADOW_TEXTURE_UNIT);
          context.prg_3d.uniform("dir_shadow_mvp_biased").set(dir_shadow_mvp_biased);
       }
       else {
+         SHADOW_TEXTURE_UNIT.activate();
          context.pos_shadow_tex->bind();
+         context.prg_3d.uniform("dir_shadow_texture").set(DEFAULT_TEXTURE_UNIT);
          context.prg_3d.uniform("pos_shadow_texture").set(SHADOW_TEXTURE_UNIT);
       }
       context.prg_3d.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
@@ -1243,6 +1266,8 @@ namespace game {
                   }
                   ImGui::SameLine();
                   if (ImGui::Button("night")) {
+                     target_sky_light_position = LIGHT_POSITION_MIDNIGHT;
+                     target_sky_light_colour = LIGHT_COLOUR_MIDNIGHT;
                      target_sky_light_intensity = LIGHT_INTENSITY_MIDNIGHT;
                   }
                   if (ImGui::TreeNode("ambient root", "ambient light")) {

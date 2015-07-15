@@ -62,7 +62,7 @@ const mediump vec2 SAMP_2 = vec2(0.94558609,-0.76890725);
 const mediump vec2 SAMP_3 = vec2(-0.094184101,-0.92938870);
 const mediump vec2 SAMP_4 = vec2(0.34495938,0.29387760);
 
-mediump float calc_shadow_factor(mediump vec3 world_position) {
+mediump float calc_pos_shadow_factor(mediump vec3 world_position) {
    mediump vec3 pos_from_light = world_position - frag_position;
    mediump vec3 sample_norm1 = normalize(cross(vec3(0., 1., 0.), pos_from_light));
    mediump vec3 sample_norm2 = normalize(cross(sample_norm1, pos_from_light));
@@ -82,6 +82,21 @@ mediump float calc_shadow_factor(mediump vec3 world_position) {
    if (sample_pos_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_3.x + sample_norm2 * SAMP_3.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
    if (sample_pos_shadow_dist(-pos_from_light + (sample_norm1 * SAMP_4.x + sample_norm2 * SAMP_4.y) * sample_range) < (dist - 2.)) visibility -= sample_fact;
    return visibility;
+}
+
+mediump float calc_dir_shadow_factor(mediump vec3 world_position) {
+   mediump vec3 pos_from_light = world_position - frag_position;
+
+   mediump float dist = distance(world_position, frag_position);
+   
+   // TODO: project light->frag vector onto light direction for distance from plane:
+   //   length(sky_light_dir * dot(sky_light_dir, pos_from_light));
+   //  BUT have to set distance to this in the shadow frag shader
+
+   if (sample_dir_shadow_dist(dir_shadow_texture_coords.xy) < (dist - 10.))
+     return .1;
+
+   return 1.;
 }
 
 mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
@@ -108,10 +123,11 @@ mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
 
 mediump vec3 shadowed_light(PositionalLight light) {
    if (light.is_directional > 0.5) {
-     return light.diffuse;
+	  mediump float shadow_factor = calc_dir_shadow_factor(light.world_position);
+	  return shadow_factor * light.diffuse;
    }
    else {
-      mediump float shadow_factor = calc_shadow_factor(light.world_position);
+      mediump float shadow_factor = calc_pos_shadow_factor(light.world_position);
       return light_impl(light, shadow_factor);
    }
 }
@@ -149,7 +165,7 @@ void main() {
    
    gl_FragColor = vec4(
 	ambient + 
-	diffuse + 
+	//diffuse + 
 	diffuse_colour.rgb *
 		(shadowed_light(shadow_lights[0]) +
 		 light(lights[0]) +
