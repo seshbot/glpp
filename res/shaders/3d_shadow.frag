@@ -5,6 +5,7 @@
 #endif
 
 struct PositionalLight {
+	lowp float is_directional;
 	mediump vec3 world_position;
 	mediump vec3 ambient;
 	mediump vec3 diffuse;
