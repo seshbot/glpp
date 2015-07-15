@@ -203,6 +203,7 @@ namespace {
    struct mesh_render_batch_callback_t : public glpp::pass_t::render_batch_callback {
       using entity_filter = std::function<bool(game::world_view_t::render_info_t const &)>;
 
+      // TODO: this should be in a scene class or namespace
       struct light_t {
          enum class type_t {none, ambient, positional, directional};
          type_t type = type_t::none;
@@ -478,8 +479,9 @@ namespace game {
       }
    }
 
-   void render_context::reload_framebuffers() {
+   bool render_context::reload_framebuffers() {
       auto dims = context.win().frame_buffer_dims();
+      if (dims.x == 0 || dims.y == 0) return false;
 
       auto shadow_texture_dims = glpp::dim_t{ shadow_texture_width, shadow_texture_width };
 
@@ -504,9 +506,13 @@ namespace game {
       if (!msaa_fbo || msaa_fbo->dims() != dims) {
          msaa_fbo.reset(new glpp::frame_buffer_t(dims, 8));
       }
+
+      return true;
    }
 
    void render_context::toggle_fullscreen() {
+      utils::log(utils::LOG_INFO, "toggling fullscreen - resetting fbos\n");
+
       context.win().set_fullscreen(!context.win().is_fullscreen());
 
       init_context();
@@ -525,6 +531,8 @@ namespace game {
    }
 
    void render_context::set_resolution(glpp::context::resolution_t const & res) {
+      utils::log(utils::LOG_INFO, "updating resolution - resetting fbos\n");
+
       context.set_resolution(res);
 
       init_context();
@@ -763,7 +771,9 @@ namespace game {
       begin_stage("update");
 
       context.init_context();
-      context.reload_framebuffers();
+      if (!context.reload_framebuffers()) {
+         return;
+      }
 
       const float LIGHT_INTENSITY_MIDNIGHT = .001f;
 
@@ -887,7 +897,35 @@ namespace game {
       // HOLY CRAP this took me ages to figure out people
       gl::viewport(0, 0, shadow_texture_width, shadow_texture_width);
 
-      if (false && is_daytime) {
+      auto shadow_light = light_info{};
+
+      is_daytime = false;
+      if (is_daytime) {
+         const auto light_dir = calc_sky_light_direction(sky_light_position);
+
+         // TODO: get rid of these magic numbers
+         shadow_light.position = -light_dir * 1000.f;
+         shadow_light.diffuse_colour = sky_light_colour;
+         shadow_light.ambient_colour = ambient_colour;
+
+         const auto light_proj = glm::ortho(-1000.f, 1000.f, -1000.f, 1000.f, 500.f, 5000.f);
+         const auto view = glm::lookAt(shadow_light.position, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. });
+
+         context.dir_shadow_fbo->bind(glpp::frame_buffer_t::BindTarget::Draw);
+
+         GL_VERIFY(gl::clear(
+            gl::clear_buffer_flags_t::color_buffer_bit |
+            gl::clear_buffer_flags_t::depth_buffer_bit));
+
+         context.prg_3d_shadow.use();
+         context.prg_3d_shadow.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
+         context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(shadow_light.position);
+
+         // TODO: exclude entities outside view radius
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, view, light_proj, true);
+         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, view, light_proj, true);
+
+         context.dir_shadow_fbo->unbind();
 
       } // end daytime shadow calculations
       else {
@@ -908,14 +946,14 @@ namespace game {
             { glpp::frame_buffer_t::NEGATIVE_Z,{ 0., 0., -1. },{ 0., -1., 0. }, "z_neg" },
          };
 
-         const auto light_pos = player_light.position;
+         shadow_light = player_light;
          const auto light_proj = glm::perspective((float)glm::radians(90.), 1.f, 10.f, 400.f);
 
          for (auto face_idx = 0; face_idx < 6; face_idx++) {
             auto & face = faces[face_idx];
-            const auto view = glm::lookAt(light_pos, light_pos + face.view_direction, face.up_direction);
+            const auto view = glm::lookAt(shadow_light.position, shadow_light.position + face.view_direction, face.up_direction);
 
-            context.pos_shadow_fbo->bind(face.face);
+            context.pos_shadow_fbo->bind(face.face, glpp::frame_buffer_t::BindTarget::Draw);
 
             GL_VERIFY(gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
@@ -925,8 +963,8 @@ namespace game {
                // not casting shadows upwards
                if (face.face == glpp::frame_buffer_t::POSITIVE_Y) return false;
 
-               auto light_to_entity = render_info.moment->pos() - glm::vec2(light_pos.x, -light_pos.z);
-               auto light_height_squared = light_pos.y * light_pos.y;
+               auto light_to_entity = render_info.moment->pos() - glm::vec2(shadow_light.position.x, -shadow_light.position.z);
+               auto light_height_squared = shadow_light.position.y * shadow_light.position.y;
                auto light_to_entity_dist_squared = light_to_entity.x * light_to_entity.x + light_to_entity.y * light_to_entity.y;
 
                // anything thats close to the light gets included
@@ -946,33 +984,36 @@ namespace game {
             };
 
             context.prg_3d_shadow.use();
-            context.prg_3d_shadow.uniform("shadow_lights[0].is_directional").set(0.f);
-            context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(player_light.position);
-            context.prg_3d_shadow.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
-            context.prg_3d_shadow.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
-            context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
-            context.prg_3d_shadow.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
+            context.prg_3d_shadow.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
+            context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(shadow_light.position);
 
             render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
             render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
          }
+
+         context.pos_shadow_fbo->unbind();
       } // end nighttime shadow calculations
 
-      context.pos_shadow_fbo->unbind();
       //gl::enable(gl::enable_cap_t::cull_face);
       gl::cull_face(gl::cull_face_mode_t::back);
       gl::enable(gl::enable_cap_t::blend);
 
       context.prg_3d.use();
       SHADOW_TEXTURE_UNIT.activate();
-      context.pos_shadow_tex->bind();
-      context.prg_3d.uniform("pos_shadow_texture").set(SHADOW_TEXTURE_UNIT);
-      context.prg_3d.uniform("shadow_lights[0].is_directional").set(0.f);
-      context.prg_3d.uniform("shadow_lights[0].world_position").set(player_light.position);
-      context.prg_3d.uniform("shadow_lights[0].ambient").set(player_light.ambient_colour);
-      context.prg_3d.uniform("shadow_lights[0].diffuse").set(player_light.diffuse_colour);
-      context.prg_3d.uniform("shadow_lights[0].attenuation_linear").set(player_light.attenuation_linear);
-      context.prg_3d.uniform("shadow_lights[0].attenuation_square").set(player_light.attenuation_square);
+      if (is_daytime) {
+         context.dir_shadow_tex->bind();
+         context.prg_3d.uniform("dir_shadow_texture").set(SHADOW_TEXTURE_UNIT);
+      }
+      else {
+         context.pos_shadow_tex->bind();
+         context.prg_3d.uniform("pos_shadow_texture").set(SHADOW_TEXTURE_UNIT);
+      }
+      context.prg_3d.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
+      context.prg_3d.uniform("shadow_lights[0].world_position").set(shadow_light.position);
+      context.prg_3d.uniform("shadow_lights[0].ambient").set(shadow_light.ambient_colour);
+      context.prg_3d.uniform("shadow_lights[0].diffuse").set(shadow_light.diffuse_colour);
+      context.prg_3d.uniform("shadow_lights[0].attenuation_linear").set(shadow_light.attenuation_linear);
+      context.prg_3d.uniform("shadow_lights[0].attenuation_square").set(shadow_light.attenuation_square);
 
       for (auto i = 0U; i < 4; i++) {
          auto array_name = std::string{ "lights[" } + std::to_string(i) + "]";

@@ -33,7 +33,7 @@ if (WIN32)
     set(GLESv2_LIBRARY ${ANGLE_GLESv2_LIBRARY} CACHE INTERNAL "")
 endif ()
 
-add_subdirectory(glfw-3.0.4)
+add_subdirectory(glfw-3.1.1)
 
 #
 # GLM

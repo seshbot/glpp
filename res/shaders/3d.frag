@@ -5,7 +5,7 @@
 #endif
 
 struct PositionalLight {
-	lowp float is_positional;
+	lowp float is_directional;
 	mediump vec3 world_position;
 	mediump vec3 ambient;
 	mediump vec3 diffuse;
@@ -105,8 +105,13 @@ mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
 }
 
 mediump vec3 shadowed_light(PositionalLight light) {
-   mediump float shadow_factor = calc_shadow_factor(light.world_position);
-   return light_impl(light, shadow_factor);
+   if (light.is_directional > 0.5) {
+     return light.diffuse;
+   }
+   else {
+      mediump float shadow_factor = calc_shadow_factor(light.world_position);
+      return light_impl(light, shadow_factor);
+   }
 }
 
 mediump vec3 light(PositionalLight light) {
