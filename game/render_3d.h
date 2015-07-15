@@ -43,7 +43,7 @@ namespace game {
       void swap() { context.win().swap(); }
 
       void reload_shaders();
-      void reload_framebuffers();
+      bool reload_framebuffers(); //returns false if screen dimensions are invalid
       void toggle_fullscreen();
       glpp::context::resolution_t resolution();
       void set_resolution(glpp::context::resolution_t const & res);

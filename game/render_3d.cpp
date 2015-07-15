@@ -478,8 +478,9 @@ namespace game {
       }
    }
 
-   void render_context::reload_framebuffers() {
+   bool render_context::reload_framebuffers() {
       auto dims = context.win().frame_buffer_dims();
+      if (dims.x == 0 || dims.y == 0) return false;
 
       auto shadow_texture_dims = glpp::dim_t{ shadow_texture_width, shadow_texture_width };
 
@@ -504,9 +505,13 @@ namespace game {
       if (!msaa_fbo || msaa_fbo->dims() != dims) {
          msaa_fbo.reset(new glpp::frame_buffer_t(dims, 8));
       }
+
+      return true;
    }
 
    void render_context::toggle_fullscreen() {
+      utils::log(utils::LOG_INFO, "toggling fullscreen - resetting fbos\n");
+
       context.win().set_fullscreen(!context.win().is_fullscreen());
 
       init_context();
@@ -525,6 +530,8 @@ namespace game {
    }
 
    void render_context::set_resolution(glpp::context::resolution_t const & res) {
+      utils::log(utils::LOG_INFO, "updating resolution - resetting fbos\n");
+
       context.set_resolution(res);
 
       init_context();
@@ -763,7 +770,9 @@ namespace game {
       begin_stage("update");
 
       context.init_context();
-      context.reload_framebuffers();
+      if (!context.reload_framebuffers()) {
+         return;
+      }
 
       const float LIGHT_INTENSITY_MIDNIGHT = .001f;
 
