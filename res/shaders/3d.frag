@@ -29,6 +29,8 @@ uniform mediump vec4 colour;
 uniform samplerCube pos_shadow_texture;
 uniform sampler2D dir_shadow_texture;
 
+varying mediump vec4 dir_shadow_texture_coords;
+
 varying mediump vec3 frag_position;
 varying mediump vec3 frag_normal;
 varying mediump vec2 frag_tex_coords;

@@ -898,6 +898,7 @@ namespace game {
       gl::viewport(0, 0, shadow_texture_width, shadow_texture_width);
 
       auto shadow_light = light_info{};
+      auto dir_shadow_mvp_biased = glm::mat4{};
 
       is_daytime = false;
       if (is_daytime) {
@@ -910,6 +911,14 @@ namespace game {
 
          const auto light_proj = glm::ortho(-1000.f, 1000.f, -1000.f, 1000.f, 500.f, 5000.f);
          const auto view = glm::lookAt(shadow_light.position, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 1., 0. });
+
+         glm::mat4 bias_xform(
+            0.5, 0.0, 0.0, 0.0,
+            0.0, 0.5, 0.0, 0.0,
+            0.0, 0.0, 0.5, 0.0,
+            0.5, 0.5, 0.5, 1.0);
+
+         dir_shadow_mvp_biased = bias_xform * light_proj;
 
          context.dir_shadow_fbo->bind(glpp::frame_buffer_t::BindTarget::Draw);
 
@@ -1003,6 +1012,7 @@ namespace game {
       if (is_daytime) {
          context.dir_shadow_tex->bind();
          context.prg_3d.uniform("dir_shadow_texture").set(SHADOW_TEXTURE_UNIT);
+         context.prg_3d.uniform("dir_shadow_mvp_biased").set(dir_shadow_mvp_biased);
       }
       else {
          context.pos_shadow_tex->bind();
