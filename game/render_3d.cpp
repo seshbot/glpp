@@ -914,20 +914,21 @@ namespace game {
       gl::clear_color(1., 1., 1., 1.);
 
       auto shadow_light = light_info{};
+      auto shadow_light_direction = glm::vec3{};
       auto dir_shadow_mvp_biased = glm::mat4{};
 
       //is_daytime = true;
       if (is_daytime) {
          gl::viewport(0, 0, dir_shadow_texture_width, dir_shadow_texture_width);
 
-         const auto light_dir = calc_sky_light_direction(sky_light_position);
+         shadow_light_direction = calc_sky_light_direction(sky_light_position);
 
          // TODO: get rid of these magic numbers
-         shadow_light.position = -light_dir * 500.f;
+         shadow_light.position = -shadow_light_direction * 500.f;
          shadow_light.diffuse_colour = sky_light_colour;
          shadow_light.ambient_colour = ambient_colour;
 
-         const auto light_proj = glm::ortho(-1500.f, 1500.f, -1500.f, 1500.f, 200.f, 1000.f);
+         const auto light_proj = glm::ortho(-2000.f, 2000.f, -2000.f, 2000.f, 10.f, 10000.f);
          const auto view = glm::lookAt(shadow_light.position, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 0., -1. });
 
          static glm::mat4 bias_xform(
@@ -947,6 +948,7 @@ namespace game {
          context.prg_3d_shadow.use();
          context.prg_3d_shadow.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
          context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(shadow_light.position);
+         context.prg_3d_shadow.uniform("shadow_lights[0].direction").set(shadow_light_direction);
 
          // TODO: exclude entities outside view radius
          render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, view, light_proj, true);
@@ -1043,6 +1045,7 @@ namespace game {
       }
       context.prg_3d.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
       context.prg_3d.uniform("shadow_lights[0].world_position").set(shadow_light.position);
+      context.prg_3d.uniform("shadow_lights[0].direction").set(shadow_light_direction);
       context.prg_3d.uniform("shadow_lights[0].ambient").set(shadow_light.ambient_colour);
       context.prg_3d.uniform("shadow_lights[0].diffuse").set(shadow_light.diffuse_colour);
       context.prg_3d.uniform("shadow_lights[0].attenuation_linear").set(shadow_light.attenuation_linear);

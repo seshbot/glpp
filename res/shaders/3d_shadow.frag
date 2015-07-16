@@ -7,6 +7,7 @@
 struct PositionalLight {
 	lowp float is_directional;
 	mediump vec3 world_position;
+	mediump vec3 direction;
 	mediump vec3 ambient;
 	mediump vec3 diffuse;
 	mediump float attenuation_linear;
@@ -33,6 +34,10 @@ void main() {
    //normalizedDistance += 0.0005;
 
    mediump float dist = distance(frag_position, shadow_lights[0].world_position);
+   if (shadow_lights[0].is_directional > 0.5) {
+      mediump vec3 pos_from_light = shadow_lights[0].world_position - frag_position;
+      dist = length(shadow_lights[0].direction * dot(shadow_lights[0].direction, pos_from_light));
+   }
 
    mediump vec4 packed_ = pack(dist / 800.);
    gl_FragColor = packed_;

@@ -7,6 +7,7 @@
 struct PositionalLight {
 	lowp float is_directional;
 	mediump vec3 world_position;
+	mediump vec3 direction;
 	mediump vec3 ambient;
 	mediump vec3 diffuse;
 	mediump float attenuation_linear;
@@ -84,10 +85,11 @@ mediump float calc_pos_shadow_factor(mediump vec3 world_position) {
    return visibility;
 }
 
-mediump float calc_dir_shadow_factor(mediump vec3 world_position) {
+mediump float calc_dir_shadow_factor(mediump vec3 world_position, mediump vec3 norm_direction) {
    mediump vec3 pos_from_light = world_position - frag_position;
 
-   mediump float dist = distance(world_position, frag_position);
+   mediump float dist = // distance(world_position, frag_position);
+      length(norm_direction * dot(norm_direction, pos_from_light));
    
    // TODO: project light->frag vector onto light direction for distance from plane:
    //   length(sky_light_dir * dot(sky_light_dir, pos_from_light));
@@ -100,12 +102,16 @@ mediump float calc_dir_shadow_factor(mediump vec3 world_position) {
 }
 
 mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
-   // calculate attenuation (light strengtht based on inverse square law)
-   mediump float dist = distance(frag_position, light.world_position);
-   mediump float att = clamp(1. / (0.25 + light.attenuation_linear * dist + light.attenuation_square * dist * dist) - .05, 0., 1.);
+   mediump float att = 1.;
 
-   // from http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
-   // att = clamp(1.0 - dist*dist/(radius*radius), 0.0, 1.0); att *= att
+   if (light.is_directional < .5) {
+	   // calculate attenuation (light strengtht based on inverse square law)
+	   mediump float dist = distance(frag_position, light.world_position);
+	   att = clamp(1. / (0.25 + light.attenuation_linear * dist + light.attenuation_square * dist * dist) - .05, 0., 1.);
+
+	   // from http://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
+	   // att = clamp(1.0 - dist*dist/(radius*radius), 0.0, 1.0); att *= att
+   }
 
    // in shadow, dont bother calculating diffuse factor
    if (shadow_factor < 0.01) {
@@ -123,8 +129,8 @@ mediump vec3 light_impl(PositionalLight light, mediump float shadow_factor) {
 
 mediump vec3 shadowed_light(PositionalLight light) {
    if (light.is_directional > 0.5) {
-	  mediump float shadow_factor = calc_dir_shadow_factor(light.world_position);
-	  return shadow_factor * light.diffuse;
+	  mediump float shadow_factor = calc_dir_shadow_factor(light.world_position, light.direction);
+	  return light_impl(light, shadow_factor);
    }
    else {
       mediump float shadow_factor = calc_pos_shadow_factor(light.world_position);
