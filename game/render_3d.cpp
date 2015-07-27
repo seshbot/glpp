@@ -836,8 +836,10 @@ namespace game {
       //
       // update animations
       //
+#if 1
       emitter.update(time_since_last_tick);
       grass.update(time_since_last_tick);
+
 //      dude_walk_animation.advance_by(time_since_last_tick);
 
       for (auto i = 0U; i < 3; i++) {
@@ -849,6 +851,7 @@ namespace game {
          auto height = 60.f + 55.f * std::sin(20.f * t) + 25.f * std::sin(.2f + t * 30.f);
          lights[i + 1].position = { pos.x, height, -pos.y };
       }
+#endif
 
       auto default_entity_filter = [](auto const &) { return true; };
       auto render_entity_meshes = [&](
@@ -904,11 +907,11 @@ namespace game {
          gl::clear_buffer_flags_t::depth_buffer_bit);
 
 
+      static float sun_distance = 1000.f;
       //
       // draw to shadow texture
       //
 #if 1
-
       gl::disable(gl::enable_cap_t::blend);
       gl::cull_face(gl::cull_face_mode_t::front);
       gl::clear_color(1., 1., 1., 1.);
@@ -924,11 +927,11 @@ namespace game {
          shadow_light_direction = calc_sky_light_direction(sky_light_position);
 
          // TODO: get rid of these magic numbers
-         shadow_light.position = -shadow_light_direction * 500.f;
+         shadow_light.position = -shadow_light_direction * sun_distance;
          shadow_light.diffuse_colour = sky_light_colour;
          shadow_light.ambient_colour = ambient_colour;
 
-         const auto light_proj = glm::ortho(-2000.f, 2000.f, -2000.f, 2000.f, 10.f, 10000.f);
+         const auto light_proj = glm::ortho(-2000.f, 2000.f, -2000.f, 2000.f, 100.f, 5000.f);
          const auto view = glm::lookAt(shadow_light.position, glm::vec3{ 0., 0., 0. }, glm::vec3{ 0., 0., -1. });
 
          static glm::mat4 bias_xform(
@@ -1070,6 +1073,7 @@ namespace game {
       auto dims = context.context.win().frame_buffer_dims();
       gl::viewport(0, 0, dims.x, dims.y);
 
+#if 1
 #ifdef _MSC_VER
 #  define USE_MSAA_FBO
 #else
@@ -1082,6 +1086,8 @@ namespace game {
 #    define USE_POST_PROCESSING_FBO
 #  endif
 #endif
+#endif
+
 #if !defined(USE_MSAA_FBO) && defined(USE_POST_PROCESSING_FBO)
       context.tex_fbo->bind();
 #endif
@@ -1201,18 +1207,19 @@ namespace game {
 #endif
 
 #if defined(USE_POST_PROCESSING_FBO)
-      static float brightness = 1.f;
-      static float saturation = .5f;
-      static float contrast = 1.f;
-      static float gamma = 2.2f;
+      static float post_brightness = 1.f;
+      static float post_saturation = .5f;
+      static float post_contrast = 1.f;
+      static float post_gamma = 2.2f;
       auto & pass = post_pass.back();
-      pass.set_uniform("brightness", brightness);
-      pass.set_uniform("saturation", saturation);
-      pass.set_uniform("contrast", contrast);
-      pass.set_uniform("gamma", gamma);
+      pass.set_uniform("brightness", post_brightness);
+      pass.set_uniform("saturation", post_saturation);
+      pass.set_uniform("contrast", post_contrast);
+      pass.set_uniform("gamma", post_gamma);
       pass.draw(glpp::DrawMode::Triangles);
 #endif
 
+#if 1
       gl::clear(gl::clear_buffer_flags_t::depth_buffer_bit);
       glpp::imgui::new_frame(context.ui_context);
 
@@ -1230,7 +1237,7 @@ namespace game {
                auto total_time = now - stages[0].time_begin;
 
                ImGui::SetNextTreeNodeOpened(false, ImGuiSetCond_FirstUseEver);
-               if (ImGui::TreeNode("render info root", "render: %.1fms (%.1f FPS)", total_time * 1000., 1.f / total_time))
+               if (ImGui::TreeNode("render info root", "render: %.1fms (%.1f/%.1f FPS)", total_time * 1000., 1.f / total_time, 1. / time_since_last_tick))
                {
                   for (auto stage_idx = 0U; stage_idx < stage_count; stage_idx++) {
                      auto stage_time = time_stage(stage_idx, now);
@@ -1282,6 +1289,7 @@ namespace game {
                      ImGui::SliderFloat("position", &target_sky_light_position, 0.f, 1.f, "%.2f");
                      ImGui::ColorEdit3("colour", glm::value_ptr(target_sky_light_colour));
                      ImGui::SliderFloat("strength", &target_sky_light_intensity, 0.f, 1.f, "%.2f");
+                     ImGui::SliderFloat("sun distance", &sun_distance, 0.0f, 10000.0f);
                      ImGui::TreePop();
                   }
                   if (ImGui::TreeNode("rain root", "rain")) {
@@ -1337,10 +1345,12 @@ namespace game {
 
                ImGui::Checkbox("Orthogonal View", &ortho);
 
-               ImGui::SliderFloat("Brightness", &brightness, 0.0f, 2.0f);
-               ImGui::SliderFloat("Contrast", &contrast, 0.0f, 2.0f);
-               ImGui::SliderFloat("Saturation", &saturation, 0.0f, 2.0f);
-               ImGui::SliderFloat("Gamma", &gamma, 0.5f, 4.0f);
+#if defined(USE_POST_PROCESSING_FBO)
+               ImGui::SliderFloat("Brightness", &post_brightness, 0.0f, 2.0f);
+               ImGui::SliderFloat("Contrast", &post_contrast, 0.0f, 2.0f);
+               ImGui::SliderFloat("Saturation", &post_saturation, 0.0f, 2.0f);
+               ImGui::SliderFloat("Gamma", &post_gamma, 0.5f, 4.0f);
+#endif
 
                ImGui::SliderFloat("UI alpha", &alpha, 0.0f, 1.0f);
                ImGui::Checkbox("Show Debug UI", &show_debug_window);
@@ -1363,6 +1373,7 @@ namespace game {
       }
 
       glpp::imgui::render(context.ui_context);
+#endif
    }
 
 } // namespace game

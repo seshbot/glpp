@@ -39,6 +39,6 @@ void main() {
       dist = length(shadow_lights[0].direction * dot(shadow_lights[0].direction, pos_from_light));
    }
 
-   mediump vec4 packed_ = pack(dist / 800.);
+   mediump vec4 packed_ = pack(dist / 3000.);
    gl_FragColor = packed_;
 }
