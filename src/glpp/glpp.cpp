@@ -1171,6 +1171,8 @@ namespace glpp
    template <> value_type_t value_type<glm::mat2>() { return value_type_t::FloatMat2; }
    template <> value_type_t value_type<glm::mat3>() { return value_type_t::FloatMat3; }
    template <> value_type_t value_type<glm::mat4>() { return value_type_t::FloatMat4; }
+   template <> value_type_t value_type<std::vector<glm::vec4>>() { return value_type_t::FloatVec4; }
+   template <> value_type_t value_type<std::vector<glm::mat4>>() { return value_type_t::FloatMat4; }
    template <> value_type_t value_type<texture_unit_t>() { return value_type_t::Sampler2d; }
 
 
@@ -1200,43 +1202,36 @@ namespace glpp
    }
 
    namespace {
+      const char * uniform_or_attrib_str(glpp::uniform const &) { return "uniform"; }
+      const char * uniform_or_attrib_str(glpp::attrib const &) { return "attribute"; }
 
-      template <typename T>
-      value_type_t uniform_type();
-      template <> value_type_t uniform_type<int>() { return value_type_t::Int; }
-      template <> value_type_t uniform_type<float>() { return value_type_t::Float; }
-      template <> value_type_t uniform_type<glm::ivec2>() { return value_type_t::IntVec2; }
-      template <> value_type_t uniform_type<glm::ivec3>() { return value_type_t::IntVec3; }
-      template <> value_type_t uniform_type<glm::ivec4>() { return value_type_t::IntVec4; }
-      template <> value_type_t uniform_type<glm::vec2>() { return value_type_t::FloatVec2; }
-      template <> value_type_t uniform_type<glm::vec3>() { return value_type_t::FloatVec3; }
-      template <> value_type_t uniform_type<glm::vec4>() { return value_type_t::FloatVec4; }
-      template <> value_type_t uniform_type<glm::mat2>() { return value_type_t::FloatMat2; }
-      template <> value_type_t uniform_type<glm::mat3>() { return value_type_t::FloatMat3; }
-      template <> value_type_t uniform_type<glm::mat4>() { return value_type_t::FloatMat4; }
-      template <> value_type_t uniform_type<std::vector<glm::vec4>>() { return value_type_t::FloatVec4; }
-      template <> value_type_t uniform_type<std::vector<glm::mat4>>() { return value_type_t::FloatMat4; }
-      template <> value_type_t uniform_type<texture_unit_t>() { return value_type_t::Sampler2d; }
+      template <typename UniformOrAttribT, typename ValT>
+      bool validate(UniformOrAttribT & a, ValT const & val, bool report_errors) {
+         if (!a.is_valid()) {
+            if (report_errors) {
+               utils::log(utils::LOG_WARN, "cannot set %s - either program does not contain '%s' or it has been invalidated\n",
+                  uniform_or_attrib_str(a),
+                  a.name().c_str());
+            }
+            return false;
+         }
+
+         if (value_type<ValT>() != a.type()) {
+            if (report_errors) {
+               utils::log(utils::LOG_WARN, "cannot set %s - shader uniform '%s' is type %s, app provided %s\n",
+                  uniform_or_attrib_str(a),
+                  a.name().c_str(),
+                  ::to_string(a.type()).c_str(),
+                  ::to_string(value_type<ValT>()).c_str());
+            }
+            return false;
+         }
+         return true;
+      }
 
       template <typename T>
       bool set_uniform(uniform & u, T const & val, bool report_errors) {
-         if (!u.is_valid()) {
-            if (report_errors) {
-               utils::log(utils::LOG_WARN, "cannot set uniform - either program does not contain '%s' or it has been invalidated\n",
-                  u.name().c_str());
-            }
-            return false;
-         }
-
-         if (uniform_type<T>() != u.type()) {
-            if (report_errors) {
-               utils::log(utils::LOG_WARN, "cannot set uniform - shader uniform '%s' is type %s, app provided %s\n",
-                  u.name().c_str(),
-                  ::to_string(u.type()).c_str(),
-                  ::to_string(uniform_type<T>()).c_str());
-            }
-            return false;
-         }
+         if (!validate(u, val, report_errors)) return false;
 
          glpp::set_uniform(u.location(), val);
          return true;
@@ -1266,6 +1261,14 @@ namespace glpp
          glpp::set_uniform(u.location(), val);
          return true;
       }
+   }
+
+   template <typename T>
+   bool set_attribute(attrib & a, T const & val, bool report_errors) {
+      if (!validate(a, val, report_errors)) return false;
+
+      glpp::set_attribute(a.location(), val);
+      return true;
    }
 
    void uniform::set(int val) {
@@ -1364,6 +1367,26 @@ namespace glpp
    void attrib::reset() {
       state_->location_ = -1;
       state_->error_ = false;
+   }
+
+   void attrib::set(float val) {
+      if (!set_attribute(*this, val, !state_->error_))
+         state_->error_ = true;
+   }
+
+   void attrib::set(glm::vec2 const & val) {
+      auto success = set_attribute(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void attrib::set(glm::vec3 const & val) {
+      auto success = set_attribute(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
+   }
+
+   void attrib::set(glm::vec4 const & val) {
+      auto success = set_attribute(*this, val, !state_->error_);
+      if (!success) state_->error_ = true;
    }
 
 
@@ -1870,6 +1893,7 @@ void main() {
       std::vector<std::pair<texture_unit_t, texture_t>> texture_bindings_;
       std::vector<std::pair<glpp::uniform, texture_t>> texture_bindings_without_tex_units_;
       std::vector<std::pair<glpp::uniform, uniform_action_t>> uniform_actions_;
+      std::vector<std::pair<glpp::attrib, attribute_action_t>> attribute_actions_;
    };
 
 
@@ -1920,6 +1944,20 @@ void main() {
 
       // no binding exists, add to end
       state_->uniform_actions_.push_back({ state_->prg_.uniform(name), action });
+      return *this;
+   }
+
+   pass_t & pass_t::set_attribute_action(std::string const & name, attribute_action_t action) {
+      // overwrite if existing
+      for (auto & upair : state_->attribute_actions_) {
+         if (upair.first.name() != name) continue;
+
+         upair.second = action;
+         return *this;
+      }
+
+      // no binding exists, add to end
+      state_->attribute_actions_.push_back({ state_->prg_.attrib(name), action });
       return *this;
    }
 
@@ -2076,6 +2114,10 @@ void main() {
       }
 
       for (auto & upair : state_->uniform_actions_) {
+         upair.second(upair.first); // invoke action
+      }
+
+      for (auto & upair : state_->attribute_actions_) {
          upair.second(upair.first); // invoke action
       }
 
@@ -2965,7 +3007,10 @@ void main() {
 
    //void set_uniform(gl::int_t location, GLuint i) { glUniform1ui(location, i); }
 
-
+   void set_attribute(int index, float v0) { GL_VERIFY(gl_::vertex_attrib_1f(index, v0)); }
+   void set_attribute(int index, glm::vec2 const & vec) { GL_VERIFY(gl_::vertex_attrib_2fv(index, glm::value_ptr(vec))); }
+   void set_attribute(int index, glm::vec3 const & vec) { GL_VERIFY(gl_::vertex_attrib_3fv(index, glm::value_ptr(vec))); }
+   void set_attribute(int index, glm::vec4 const & vec) { GL_VERIFY(gl_::vertex_attrib_4fv(index, glm::value_ptr(vec))); }
 
 #if 0
    // 

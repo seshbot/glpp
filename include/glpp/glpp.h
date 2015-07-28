@@ -292,6 +292,8 @@ namespace glpp {
    template <> value_type_t value_type<glm::mat2>();
    template <> value_type_t value_type<glm::mat3>();
    template <> value_type_t value_type<glm::mat4>();
+   template <> value_type_t value_type<std::vector<glm::vec4>>();
+   template <> value_type_t value_type<std::vector<glm::mat4>>();
    template <> value_type_t value_type<texture_unit_t>();
 
 
@@ -340,6 +342,11 @@ namespace glpp {
 
    class attrib {
    public:
+      void set(float val);
+      void set(glm::vec2 const & vec);
+      void set(glm::vec3 const & vec);
+      void set(glm::vec4 const & vec);
+
       std::string const & name() const { return state_->name_; }
       int location() const { return state_->location_; }
       int size() const { return state_->size_; }
@@ -532,6 +539,7 @@ namespace glpp {
    class program;
    class pass_t {
       using uniform_action_t = std::function < void(uniform & u) > ;
+      using attribute_action_t = std::function < void(attrib & a) > ;
 
    public:
       struct render_batch_callback {
@@ -551,8 +559,13 @@ namespace glpp {
       pass_t & set_uniform(std::string const & name, T val) {
          return set_uniform_action(name, [val](glpp::uniform & u){ u.set(val); });
       }
+      template <typename T>
+      pass_t & set_attribute(std::string const & name, T val) {
+         return set_attribute_action(name, [val](glpp::attrib & a){ a.set(val); });
+      }
 
       pass_t & set_uniform_action(std::string const & name, uniform_action_t action);
+      pass_t & set_attribute_action(std::string const & name, attribute_action_t action);
 
       pass_t & set_texture_unit(texture_unit_t u, texture_t tex);
 
@@ -740,6 +753,11 @@ namespace glpp {
    void set_uniform(int location, int i);
    void set_uniform(int location, texture_unit_t tex);
    //void set_uniform(GLint location, GLuint i);
+
+   void set_attribute(int index, float v0);
+   void set_attribute(int index, glm::vec2 const & vec);
+   void set_attribute(int index, glm::vec3 const & vec);
+   void set_attribute(int index, glm::vec4 const & vec);
 
    class sprite_sheet {
    public:
