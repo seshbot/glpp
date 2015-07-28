@@ -76,12 +76,12 @@ namespace glpp {
    };
    
    enum class texture_format_t {
-      RGB,
-      RGBA,
+      rgb,
+      rgba,
 #ifdef _MSC_VER
-      BGRA,
+      bgra,
 #endif
-      DEPTH,
+      depth,
    };
 
    class image_t {
@@ -109,9 +109,10 @@ namespace glpp {
       using id_type = uint32_t;
 
       texture_t(image_t image, bool invert_y = true, bool srgb = false);
-      texture_t(dim_t const & dims, texture_format_t format = texture_format_t::RGBA);
+      texture_t(dim_t const & dims, texture_format_t format = texture_format_t::rgba);
 
       id_type id() const { return state_->id_; }
+      texture_format_t format() const { return state_->format_; }
 
       dim_t const & dims() const { return state_->dims_; }
 
@@ -123,15 +124,15 @@ namespace glpp {
    private:
       friend class cube_map_texture_t;
 
-      enum Target {
-         TEXTURE_2D,
-         TEXTURE_CUBE_MAP,
+      enum class target_t {
+         texture_2d,
+         texture_cube_map,
       };
-      static unsigned int to_gl(Target target);
+      static unsigned int to_gl(target_t target);
 
       struct state {
-         state(image_t image, Target target, bool invert_y, bool srgb);
-         state(dim_t const & dims, Target target, texture_format_t format);
+         state(image_t image, target_t target, bool invert_y, bool srgb);
+         state(dim_t const & dims, target_t target, texture_format_t format);
          ~state();
          id_type id_;
          dim_t dims_;
@@ -147,9 +148,10 @@ namespace glpp {
    public:
       using id_type = texture_t::id_type;
 
-      cube_map_texture_t(int side_length, texture_format_t format = texture_format_t::RGBA);
+      cube_map_texture_t(int side_length, texture_format_t format = texture_format_t::rgba);
 
       id_type id() const { return state_->id_; }
+      texture_format_t format() const { return state_->format_; }
       dim_t const & face_dims() const { return state_->dims_; }
 
       void bind() const;
@@ -179,18 +181,19 @@ namespace glpp {
       id_t id() const { return fbo_id_; }
       glpp::dim_t dims() const { return dims_; }
 
-      enum CubeFace { // this enum is aligned with GL_TEXTURE_CUBE_MAP_POSITIVE_*
-         POSITIVE_X = 0x8515,
-         NEGATIVE_X,
-         POSITIVE_Y,
-         NEGATIVE_Y,
-         POSITIVE_Z,
-         NEGATIVE_Z,
+      enum cube_face_t { // this enum is aligned with GL_TEXTURE_CUBE_MAP_POSITIVE_*
+         positive_x = 0x8515,
+         negative_x,
+         positive_y,
+         negative_y,
+         positive_z,
+         negative_z,
       };
-      enum BindTarget { Read, Draw, ReadDraw };
-      void bind(BindTarget target = ReadDraw) const;
-      void bind(CubeFace face, BindTarget target = ReadDraw) const;
-      void unbind(BindTarget target = ReadDraw) const;
+      enum class bind_target_t { read, draw, read_draw };
+
+      void bind(bind_target_t target = bind_target_t::read_draw) const;
+      void bind(cube_face_t face, bind_target_t target = bind_target_t::read_draw) const;
+      void unbind(bind_target_t target = bind_target_t::read_draw) const;
 
       void blit_to_draw_buffer() const;
       void blit_to_screen() const;
@@ -198,15 +201,15 @@ namespace glpp {
       void validate() const { check_fbo(); }
 
    private:
-      void bind_(BindTarget target = ReadDraw) const;
+      void bind_(bind_target_t target = bind_target_t::read_draw) const;
       void check_fbo() const;
 
       texture_t::id_type cube_map_texture_id_ = 0;
       dim_t dims_;
       unsigned samples_;
       id_t fbo_id_;
-      id_t colour_rbo_id_; // render buffer MSAA colour data
-      id_t depth_rbo_id_; // render buffer for stencil/depth
+      id_t colour_rbo_id_ = 0; // render buffer MSAA colour data
+      id_t depth_rbo_id_ = 0; // render buffer for stencil/depth
    };
 
    id_t current_frame_buffer();
@@ -214,35 +217,36 @@ namespace glpp {
 
    class shader {
    public:
-      enum Type { Vertex, Fragment };
+      enum class type_t { vertex, fragment };
 
       ~shader();
 
       shader(shader && other);
       shader & operator=(shader && other);
 
-      static shader create_from_file(std::string const & filename, Type type);
-      static shader create_from_source(std::string const & source, Type type);
+      static shader create_from_file(std::string const & filename, type_t type);
+      static shader create_from_source(std::string const & source, type_t type);
 
       id_t id() const { return id_; }
-      Type type() const { return type_; }
+      type_t type() const { return type_; }
       std::string const & compile_log() const { return compile_log_; }
 
    private:
       shader(shader const &) = delete;
       shader & operator=(shader const &) = delete;
 
-      shader(std::string const & source, Type type);
+      shader(std::string const & source, type_t type);
 
       id_t id_;
-      Type type_;
+      type_t type_;
       std::string compile_log_;
    };
 
    // attr types: GL_FLOAT, GL_FLOAT_VEC2, GL_FLOAT_VEC3, GL_FLOAT_VEC4, GL_FLOAT_MAT2, GL_FLOAT_MAT3, or GL_FLOAT_MAT4
    // attr { name, idx, location, size, type }
 
-   enum ValueType {
+   // TODO: replace this with gl_::uniform_type_t and gl_::attrib_type_t?
+   enum value_type_t {
       Unknown,
       Int, UInt, Float,
       FloatVec2, FloatVec3, FloatVec4,
@@ -264,31 +268,31 @@ namespace glpp {
       DoubleMat4x2, DoubleMat4x3,
    };
 
-   template <typename T> ValueType value_type();
-   template <> ValueType value_type<int8_t>();
-   template <> ValueType value_type<uint8_t>();
-   template <> ValueType value_type<int16_t>();
-   template <> ValueType value_type<uint16_t>();
-   template <> ValueType value_type<int32_t>();
-   template <> ValueType value_type<uint32_t>();
-   template <> ValueType value_type<float>();
-   template <> ValueType value_type<const int8_t>();
-   template <> ValueType value_type<const uint8_t>();
-   template <> ValueType value_type<const int16_t>();
-   template <> ValueType value_type<const uint16_t>();
-   template <> ValueType value_type<const int32_t>();
-   template <> ValueType value_type<const uint32_t>();
-   template <> ValueType value_type<const float>();
-   template <> ValueType value_type<glm::ivec2>();
-   template <> ValueType value_type<glm::ivec3>();
-   template <> ValueType value_type<glm::ivec4>();
-   template <> ValueType value_type<glm::vec2>();
-   template <> ValueType value_type<glm::vec3>();
-   template <> ValueType value_type<glm::vec4>();
-   template <> ValueType value_type<glm::mat2>();
-   template <> ValueType value_type<glm::mat3>();
-   template <> ValueType value_type<glm::mat4>();
-   template <> ValueType value_type<texture_unit_t>();
+   template <typename T> value_type_t value_type();
+   template <> value_type_t value_type<int8_t>();
+   template <> value_type_t value_type<uint8_t>();
+   template <> value_type_t value_type<int16_t>();
+   template <> value_type_t value_type<uint16_t>();
+   template <> value_type_t value_type<int32_t>();
+   template <> value_type_t value_type<uint32_t>();
+   template <> value_type_t value_type<float>();
+   template <> value_type_t value_type<const int8_t>();
+   template <> value_type_t value_type<const uint8_t>();
+   template <> value_type_t value_type<const int16_t>();
+   template <> value_type_t value_type<const uint16_t>();
+   template <> value_type_t value_type<const int32_t>();
+   template <> value_type_t value_type<const uint32_t>();
+   template <> value_type_t value_type<const float>();
+   template <> value_type_t value_type<glm::ivec2>();
+   template <> value_type_t value_type<glm::ivec3>();
+   template <> value_type_t value_type<glm::ivec4>();
+   template <> value_type_t value_type<glm::vec2>();
+   template <> value_type_t value_type<glm::vec3>();
+   template <> value_type_t value_type<glm::vec4>();
+   template <> value_type_t value_type<glm::mat2>();
+   template <> value_type_t value_type<glm::mat3>();
+   template <> value_type_t value_type<glm::mat4>();
+   template <> value_type_t value_type<texture_unit_t>();
 
 
    class uniform {
@@ -311,23 +315,23 @@ namespace glpp {
       std::string const & name() const { return state_->name_; }
       int location() const { return state_->location_; }
       int size() const { return state_->size_; }
-      ValueType type() const { return state_->type_; }
+      value_type_t type() const { return state_->type_; }
 
       bool is_valid() const { return state_->location_ != -1; }
 
    private:
       friend class program;
 
-      uniform(std::string const & name, int location, int size, ValueType type);
+      uniform(std::string const & name, int location, int size, value_type_t type);
       uniform(std::string const & name); // creates an INVALID uniform
-      void reset(int location, int size, ValueType type);
+      void reset(int location, int size, value_type_t type);
       void reset();
 
       struct state {
          std::string name_;
          int location_;
          int size_;
-         ValueType type_;
+         value_type_t type_;
          bool error_; // just used to prevent repeated error reports
       };
 
@@ -339,23 +343,23 @@ namespace glpp {
       std::string const & name() const { return state_->name_; }
       int location() const { return state_->location_; }
       int size() const { return state_->size_; }
-      ValueType type() const { return state_->type_; }
+      value_type_t type() const { return state_->type_; }
 
       bool is_valid() const { return state_->location_ != -1; }
 
    private:
       friend class program;
 
-      attrib(std::string const & name, int location, int size, ValueType type);
+      attrib(std::string const & name, int location, int size, value_type_t type);
       attrib(std::string const & name); // creates an INVALID uniform
-      void reset(int location, int size, ValueType type);
+      void reset(int location, int size, value_type_t type);
       void reset();
 
       struct state {
          std::string name_;
          int location_;
          int size_;
-         ValueType type_;
+         value_type_t type_;
          bool error_; // just used to prevent repeated error reports
       };
 
@@ -375,7 +379,7 @@ namespace glpp {
          : static_array_t((void*)data, value_type<T>(), elem_count, elem_count * sizeof(T)) {}
 
       void * const data() const { return data_; }
-      ValueType data_type() const { return data_type_; }
+      value_type_t data_type() const { return data_type_; }
       std::size_t size() const { return byte_size_; }
       std::size_t elem_count() const { return elem_count_; }
 
@@ -383,29 +387,29 @@ namespace glpp {
       friend bool operator!=(static_array_t const & lhs, static_array_t const & rhs) { return !(lhs == rhs); }
 
    private:
-      static_array_t(void* data, ValueType data_type, std::size_t elem_count, std::size_t byte_size)
+      static_array_t(void* data, value_type_t data_type, std::size_t elem_count, std::size_t byte_size)
          : data_(data), data_type_(data_type), elem_count_(elem_count), byte_size_(byte_size) { }
 
       void * const data_;
-      ValueType data_type_;
+      value_type_t data_type_;
       std::size_t elem_count_;
       std::size_t byte_size_;
    };
 
    class buffer_t {
    public:
-      enum class Target { ArrayBuffer, IndexBuffer };
-      enum class Usage { Static, Stream, Dynamic };
+      enum class target_t { array_buffer, index_buffer };
+      enum class usage_t { static_, stream, dynamic };
 
-      buffer_t(Usage usage = Usage::Static);
-      buffer_t(Target target, static_array_t data, Usage usage = Usage::Static);
+      buffer_t(usage_t usage = usage_t::static_);
+      buffer_t(target_t target, static_array_t data, usage_t usage = usage_t::static_);
 
       // convenience: assume array buffer
-      buffer_t(static_array_t vertex_data, Usage usage = Usage::Static);
+      buffer_t(static_array_t vertex_data, usage_t usage = usage_t::static_);
       // convenience: assume array and index buffers
-      buffer_t(static_array_t vertex_data, static_array_t indices, Usage usage = Usage::Static);
+      buffer_t(static_array_t vertex_data, static_array_t indices, usage_t usage = usage_t::static_);
 
-      void update(Target target, static_array_t data);
+      void update(target_t target, static_array_t data);
 
       // convenience: assume array buffer
       void update(static_array_t vertex_data);
@@ -420,7 +424,7 @@ namespace glpp {
 
       bool has_vertex_data() const { return state_->vertex_id_ != 0; }
       bool has_index_data() const { return state_->index_id_ != 0; }
-      ValueType index_data_type() const { return state_->index_data_type_; }
+      value_type_t index_data_type() const { return state_->index_data_type_; }
       unsigned index_count() const { return state_->index_count_; }
 
       void bind() const;
@@ -431,22 +435,22 @@ namespace glpp {
 
    private:
       struct state {
-         state(Usage usage);
-         state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, Usage usage);
-         state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type, Usage usage);
-         state(void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type, Usage usage);
+         state(usage_t usage);
+         state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, usage_t usage);
+         state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type, usage_t usage);
+         state(void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type, usage_t usage);
          ~state();
 
          void assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size);
-         void assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type);
-         void assign(void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type);
+         void assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type);
+         void assign(void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type);
 
-         Usage usage_;
+         usage_t usage_;
          id_t vertex_id_ = 0;
          id_t index_id_ = 0;
          std::size_t vertex_count_ = 0;
          std::size_t vertex_buffer_size_ = 0;
-         ValueType index_data_type_ = Unknown;
+         value_type_t index_data_type_ = Unknown;
          unsigned index_count_ = 0;
       };
 
@@ -455,14 +459,14 @@ namespace glpp {
 
 
    struct attrib_info {
-      attrib_info(attrib attrib, ValueType override_type, unsigned count, unsigned stride_bytes = 0, unsigned offset_bytes = 0)
+      attrib_info(attrib attrib, value_type_t override_type, unsigned count, unsigned stride_bytes = 0, unsigned offset_bytes = 0)
          : attrib(std::move(attrib)), override_type(override_type), count(count), stride_bytes(stride_bytes), offset_bytes(offset_bytes) {}
 
       // estimate block size (stride) based on attrib specifications
       unsigned calc_stride_bytes() const;
 
       attrib attrib;
-      ValueType override_type;
+      value_type_t override_type;
       unsigned count;
       unsigned stride_bytes;
       unsigned offset_bytes;
@@ -489,12 +493,12 @@ namespace glpp {
       mapped_buffer_t map_buffer(program & prg, buffer_t buffer) const;
 
    private:
-      buffer_attrib_mappings_t push_attrib(std::string attrib_name, ValueType type, unsigned elem_count);
+      buffer_attrib_mappings_t push_attrib(std::string attrib_name, value_type_t type, unsigned elem_count);
 
       struct slice_info {
-         slice_info(std::string const & n, ValueType type, unsigned elem_sz, unsigned elem_cnt) : attrib_name(n), type(type), elem_size(elem_sz), count(elem_cnt) {}
+         slice_info(std::string const & n, value_type_t type, unsigned elem_sz, unsigned elem_cnt) : attrib_name(n), type(type), elem_size(elem_sz), count(elem_cnt) {}
          std::string attrib_name; // "" means skip count bytes
-         ValueType type;
+         value_type_t type;
          unsigned elem_size;
          unsigned count;
       };
@@ -513,17 +517,17 @@ namespace glpp {
 
    mapped_buffer_t map_buffer(program & prg, buffer_t buffer, buffer_attrib_mappings_t const & spec);
 
-   enum class DrawMode {
-      Points,
-      Lines, LineLoop,
-      Triangles, TriangleStrip, TriangleFan,
+   enum class draw_mode_t {
+      points,
+      lines, line_loop,
+      triangles, triangle_strip, triangle_fan,
    };
 
    unsigned num_vertices(mapped_buffer_t const & b);
    void bind(mapped_buffer_t const & b);
    void unbind(mapped_buffer_t const & b);
-   void draw(mapped_buffer_t const & b, DrawMode mode);
-   void draw(mapped_buffer_t const & b, DrawMode mode, unsigned first, unsigned count);
+   void draw(mapped_buffer_t const & b, draw_mode_t mode);
+   void draw(mapped_buffer_t const & b, draw_mode_t mode, unsigned first, unsigned count);
 
    class program;
    class pass_t {
@@ -557,11 +561,11 @@ namespace glpp {
 
       //pass_t & validate_attribs(bool validate = true);
 
-      pass_t & draw(DrawMode mode);
-      pass_t & draw(DrawMode mode, unsigned first, unsigned count);
+      pass_t & draw(draw_mode_t mode);
+      pass_t & draw(draw_mode_t mode, unsigned first, unsigned count);
 
-      pass_t & draw_batch(render_batch_callback const & cb, DrawMode mode);
-      pass_t & draw_batch(render_batch_callback const & cb, DrawMode mode, unsigned first, unsigned count);
+      pass_t & draw_batch(render_batch_callback const & cb, draw_mode_t mode);
+      pass_t & draw_batch(render_batch_callback const & cb, draw_mode_t mode, unsigned first, unsigned count);
 
    private:
       glpp::uniform uniform(std::string const & name);
@@ -569,7 +573,7 @@ namespace glpp {
       unsigned calc_draw_count_() const;
       void prepare_draw_(); // bind program, uniforms and textures
       void unprepare_draw_();
-      void draw_(DrawMode mode, unsigned first, unsigned count); // must call prepare_draw_ first
+      void draw_(draw_mode_t mode, unsigned first, unsigned count); // must call prepare_draw_ first
 
       friend class program;
       pass_t(program prg);
@@ -837,7 +841,7 @@ namespace glpp {
    // auto proj_tx = glm::ortho(0.f, 800.f, 600.f, 0.);
    // auto model_tx = glm::translate(glm::vec3{30.f, 20.f, 0.});
    // auto pass = make_debug_text_pass("xxx", prg, proj_tx * model_tx);
-   // pass.draw(glpp::DrawMode::Triangles);
+   // pass.draw(glpp::draw_mode_t::Triangles);
    pass_t make_debug_text_pass(std::string const & text, program & prg, glm::mat4 const & mvp);
 }
 

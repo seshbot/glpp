@@ -14,7 +14,8 @@ set(SHADERS
   ${ASSET_DIR}/shaders/2d.vert ${ASSET_DIR}/shaders/2d.frag
   ${ASSET_DIR}/shaders/3d.vert ${ASSET_DIR}/shaders/3d.frag
   ${ASSET_DIR}/shaders/3d_particle.vert ${ASSET_DIR}/shaders/3d_particle.frag
-  ${ASSET_DIR}/shaders/3d_shadow.vert ${ASSET_DIR}/shaders/3d_shadow.frag
+  ${ASSET_DIR}/shaders/3d_shadow_pos.vert ${ASSET_DIR}/shaders/3d_shadow_pos.frag
+  ${ASSET_DIR}/shaders/3d_shadow_dir.vert ${ASSET_DIR}/shaders/3d_shadow_dir.frag
   ${ASSET_DIR}/shaders/post.vert ${ASSET_DIR}/shaders/post.frag
   ${ASSET_DIR}/shaders/sprite.vert ${ASSET_DIR}/shaders/sprite.frag)
 

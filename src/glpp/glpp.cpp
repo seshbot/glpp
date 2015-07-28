@@ -6,6 +6,7 @@
       using namespace gles2;
       using angle::map_buffer;
       using angle::unmap_buffer;
+      using angle::renderbuffer_storage_multisample;
    }
 #else
 #  include <glpp/gl2.h>
@@ -116,215 +117,215 @@ namespace {
       for (auto s : shaders) { gl_::delete_shader(s); }
    }
 
-   gl_::shader_type_t to_glenum(glpp::shader::Type type) {
+   gl_::shader_type_t to_glenum(glpp::shader::type_t type) {
       switch (type) {
-      case glpp::shader::Vertex: return gl_::shader_type_t::vertex_shader;
-      case glpp::shader::Fragment: return gl_::shader_type_t::fragment_shader;
+      case glpp::shader::type_t::vertex: return gl_::shader_type_t::vertex_shader;
+      case glpp::shader::type_t::fragment: return gl_::shader_type_t::fragment_shader;
       default: throw glpp::error("unsupported shader type");
       }
    }
 
-   glpp::ValueType gl_to_value_type(gl_::attrib_type_t type) {
+   glpp::value_type_t gl_to_value_type(gl_::attrib_type_t type) {
       switch (type) {
-      case gl_::attrib_type_t::float_: return glpp::ValueType::Float;
-      case gl_::attrib_type_t::float_vec2: return glpp::ValueType::FloatVec2;
-      case gl_::attrib_type_t::float_vec3: return glpp::ValueType::FloatVec3;
-      case gl_::attrib_type_t::float_vec4: return glpp::ValueType::FloatVec4;
-      case gl_::attrib_type_t::float_mat2: return glpp::ValueType::FloatMat2;
-      case gl_::attrib_type_t::float_mat3: return glpp::ValueType::FloatMat3;
-      case gl_::attrib_type_t::float_mat4: return glpp::ValueType::FloatMat4;
-      default: return glpp::ValueType::Unknown;
+      case gl_::attrib_type_t::float_: return glpp::value_type_t::Float;
+      case gl_::attrib_type_t::float_vec2: return glpp::value_type_t::FloatVec2;
+      case gl_::attrib_type_t::float_vec3: return glpp::value_type_t::FloatVec3;
+      case gl_::attrib_type_t::float_vec4: return glpp::value_type_t::FloatVec4;
+      case gl_::attrib_type_t::float_mat2: return glpp::value_type_t::FloatMat2;
+      case gl_::attrib_type_t::float_mat3: return glpp::value_type_t::FloatMat3;
+      case gl_::attrib_type_t::float_mat4: return glpp::value_type_t::FloatMat4;
+      default: return glpp::value_type_t::Unknown;
       }
    }
 
-   glpp::ValueType gl_to_value_type(gl_::uniform_type_t type) {
+   glpp::value_type_t gl_to_value_type(gl_::uniform_type_t type) {
       switch (type) {
-      case gl_::uniform_type_t::int_: return glpp::ValueType::Int;
-      case gl_::uniform_type_t::float_: return glpp::ValueType::Float;
-      case gl_::uniform_type_t::float_vec2: return glpp::ValueType::FloatVec2;
-      case gl_::uniform_type_t::float_vec3: return glpp::ValueType::FloatVec3;
-      case gl_::uniform_type_t::float_vec4: return glpp::ValueType::FloatVec4;
-      case gl_::uniform_type_t::int_vec2: return glpp::ValueType::IntVec2;
-      case gl_::uniform_type_t::int_vec3: return glpp::ValueType::IntVec3;
-      case gl_::uniform_type_t::int_vec4: return glpp::ValueType::IntVec4;
-      case gl_::uniform_type_t::bool_: return glpp::ValueType::Bool;
-      case gl_::uniform_type_t::bool_vec2: return glpp::ValueType::BoolVec2;
-      case gl_::uniform_type_t::bool_vec3: return glpp::ValueType::BoolVec3;
-      case gl_::uniform_type_t::bool_vec4: return glpp::ValueType::BoolVec4;
-      case gl_::uniform_type_t::float_mat2: return glpp::ValueType::FloatMat2;
-      case gl_::uniform_type_t::float_mat3: return glpp::ValueType::FloatMat3;
-      case gl_::uniform_type_t::float_mat4: return glpp::ValueType::FloatMat4;
-      case gl_::uniform_type_t::sampler_2d: return glpp::ValueType::Sampler2d;
-      case gl_::uniform_type_t::sampler_cube: return glpp::ValueType::SamplerCube;
+      case gl_::uniform_type_t::int_: return glpp::value_type_t::Int;
+      case gl_::uniform_type_t::float_: return glpp::value_type_t::Float;
+      case gl_::uniform_type_t::float_vec2: return glpp::value_type_t::FloatVec2;
+      case gl_::uniform_type_t::float_vec3: return glpp::value_type_t::FloatVec3;
+      case gl_::uniform_type_t::float_vec4: return glpp::value_type_t::FloatVec4;
+      case gl_::uniform_type_t::int_vec2: return glpp::value_type_t::IntVec2;
+      case gl_::uniform_type_t::int_vec3: return glpp::value_type_t::IntVec3;
+      case gl_::uniform_type_t::int_vec4: return glpp::value_type_t::IntVec4;
+      case gl_::uniform_type_t::bool_: return glpp::value_type_t::Bool;
+      case gl_::uniform_type_t::bool_vec2: return glpp::value_type_t::BoolVec2;
+      case gl_::uniform_type_t::bool_vec3: return glpp::value_type_t::BoolVec3;
+      case gl_::uniform_type_t::bool_vec4: return glpp::value_type_t::BoolVec4;
+      case gl_::uniform_type_t::float_mat2: return glpp::value_type_t::FloatMat2;
+      case gl_::uniform_type_t::float_mat3: return glpp::value_type_t::FloatMat3;
+      case gl_::uniform_type_t::float_mat4: return glpp::value_type_t::FloatMat4;
+      case gl_::uniform_type_t::sampler_2d: return glpp::value_type_t::Sampler2d;
+      case gl_::uniform_type_t::sampler_cube: return glpp::value_type_t::SamplerCube;
 
-      //case GL_BYTE: return glpp::ValueType::Byte;
-      //case GL_UNSIGNED_BYTE: return glpp::ValueType::UByte;
-      //case GL_SHORT: return glpp::ValueType::Short;
-      //case GL_UNSIGNED_SHORT: return glpp::ValueType::UShort;
-      //case GL_INT: return glpp::ValueType::Int;
-      //case GL_UNSIGNED_INT: return glpp::ValueType::UInt;
-      //case GL_FLOAT: return glpp::ValueType::Float;
-      //case GL_FIXED: return glpp::ValueType::Fixed;
+      //case GL_BYTE: return glpp::value_type_t::Byte;
+      //case GL_UNSIGNED_BYTE: return glpp::value_type_t::UByte;
+      //case GL_SHORT: return glpp::value_type_t::Short;
+      //case GL_UNSIGNED_SHORT: return glpp::value_type_t::UShort;
+      //case GL_INT: return glpp::value_type_t::Int;
+      //case GL_UNSIGNED_INT: return glpp::value_type_t::UInt;
+      //case GL_FLOAT: return glpp::value_type_t::Float;
+      //case GL_FIXED: return glpp::value_type_t::Fixed;
 
-      //case GL_FLOAT_VEC2: return glpp::ValueType::FloatVec2;
-      //case GL_FLOAT_VEC3: return glpp::ValueType::FloatVec3;
-      //case GL_FLOAT_VEC4: return glpp::ValueType::FloatVec4;
-      //case GL_INT_VEC2: return glpp::ValueType::IntVec2;
-      //case GL_INT_VEC3: return glpp::ValueType::IntVec3;
-      //case GL_INT_VEC4: return glpp::ValueType::IntVec4;
-      //case GL_BOOL: return glpp::ValueType::Bool;
-      //case GL_BOOL_VEC2: return glpp::ValueType::BoolVec2;
-      //case GL_BOOL_VEC3: return glpp::ValueType::BoolVec3;
-      //case GL_BOOL_VEC4: return glpp::ValueType::BoolVec4;
-      //case GL_FLOAT_MAT2: return glpp::ValueType::FloatMat2;
-      //case GL_FLOAT_MAT3: return glpp::ValueType::FloatMat3;
-      //case GL_FLOAT_MAT4: return glpp::ValueType::FloatMat4;
-      //case GL_SAMPLER_2D: return glpp::ValueType::Sampler2d;
-      //case GL_SAMPLER_CUBE: return glpp::ValueType::SamplerCube;
+      //case GL_FLOAT_VEC2: return glpp::value_type_t::FloatVec2;
+      //case GL_FLOAT_VEC3: return glpp::value_type_t::FloatVec3;
+      //case GL_FLOAT_VEC4: return glpp::value_type_t::FloatVec4;
+      //case GL_INT_VEC2: return glpp::value_type_t::IntVec2;
+      //case GL_INT_VEC3: return glpp::value_type_t::IntVec3;
+      //case GL_INT_VEC4: return glpp::value_type_t::IntVec4;
+      //case GL_BOOL: return glpp::value_type_t::Bool;
+      //case GL_BOOL_VEC2: return glpp::value_type_t::BoolVec2;
+      //case GL_BOOL_VEC3: return glpp::value_type_t::BoolVec3;
+      //case GL_BOOL_VEC4: return glpp::value_type_t::BoolVec4;
+      //case GL_FLOAT_MAT2: return glpp::value_type_t::FloatMat2;
+      //case GL_FLOAT_MAT3: return glpp::value_type_t::FloatMat3;
+      //case GL_FLOAT_MAT4: return glpp::value_type_t::FloatMat4;
+      //case GL_SAMPLER_2D: return glpp::value_type_t::Sampler2d;
+      //case GL_SAMPLER_CUBE: return glpp::value_type_t::SamplerCube;
 
-      default: return glpp::ValueType::Unknown;
+      default: return glpp::value_type_t::Unknown;
       }
    }
 
-   std::string to_string(glpp::ValueType type) {
+   std::string to_string(glpp::value_type_t type) {
       switch (type) {
-      case glpp::ValueType::Unknown: return "Unknown";
-      case glpp::ValueType::Int: return "Int";
-      case glpp::ValueType::UInt: return "UInt";
-      case glpp::ValueType::Float: return "Float";
-      case glpp::ValueType::FloatVec2: return "FloatVec2";
-      case glpp::ValueType::FloatVec3: return "FloatVec3";
-      case glpp::ValueType::FloatVec4: return "FloatVec4";
-      case glpp::ValueType::IntVec2: return "IntVec2";
-      case glpp::ValueType::IntVec3: return "IntVec3";
-      case glpp::ValueType::IntVec4: return "IntVec4";
-      case glpp::ValueType::FloatMat2: return "FloatMat2";
-      case glpp::ValueType::FloatMat3: return "FloatMat3";
-      case glpp::ValueType::FloatMat4: return "FloatMat4";
+      case glpp::value_type_t::Unknown: return "Unknown";
+      case glpp::value_type_t::Int: return "Int";
+      case glpp::value_type_t::UInt: return "UInt";
+      case glpp::value_type_t::Float: return "Float";
+      case glpp::value_type_t::FloatVec2: return "FloatVec2";
+      case glpp::value_type_t::FloatVec3: return "FloatVec3";
+      case glpp::value_type_t::FloatVec4: return "FloatVec4";
+      case glpp::value_type_t::IntVec2: return "IntVec2";
+      case glpp::value_type_t::IntVec3: return "IntVec3";
+      case glpp::value_type_t::IntVec4: return "IntVec4";
+      case glpp::value_type_t::FloatMat2: return "FloatMat2";
+      case glpp::value_type_t::FloatMat3: return "FloatMat3";
+      case glpp::value_type_t::FloatMat4: return "FloatMat4";
 
-      case glpp::ValueType::Bool: return "Bool";
-      case glpp::ValueType::Byte: return "Byte";
-      case glpp::ValueType::UByte: return "UByte";
-      case glpp::ValueType::Short: return "Short";
-      case glpp::ValueType::UShort: return "UShort";
-      case glpp::ValueType::Fixed: return "Fixed";
-      case glpp::ValueType::BoolVec2: return "BoolVec2";
-      case glpp::ValueType::BoolVec3: return "BoolVec3";
-      case glpp::ValueType::BoolVec4: return "BoolVec4";
-      case glpp::ValueType::Sampler2d: return "Sampler2d";
-      case glpp::ValueType::SamplerCube: return "SamplerCube";
+      case glpp::value_type_t::Bool: return "Bool";
+      case glpp::value_type_t::Byte: return "Byte";
+      case glpp::value_type_t::UByte: return "UByte";
+      case glpp::value_type_t::Short: return "Short";
+      case glpp::value_type_t::UShort: return "UShort";
+      case glpp::value_type_t::Fixed: return "Fixed";
+      case glpp::value_type_t::BoolVec2: return "BoolVec2";
+      case glpp::value_type_t::BoolVec3: return "BoolVec3";
+      case glpp::value_type_t::BoolVec4: return "BoolVec4";
+      case glpp::value_type_t::Sampler2d: return "Sampler2d";
+      case glpp::value_type_t::SamplerCube: return "SamplerCube";
 
-      case glpp::ValueType::FloatMat2x3: return "FloatMat2x3";
-      case glpp::ValueType::FloatMat2x4: return "FloatMat2x4";
-      case glpp::ValueType::FloatMat3x2: return "FloatMat3x2";
-      case glpp::ValueType::FloatMat3x4: return "FloatMat3x4";
-      case glpp::ValueType::FloatMat4x2: return "FloatMat4x2";
-      case glpp::ValueType::FloatMat4x3: return "FloatMat4x3";
-      case glpp::ValueType::UIntVec2: return "UIntVec2";
-      case glpp::ValueType::UIntVec3: return "UIntVec3";
-      case glpp::ValueType::UIntVec4: return "UIntVec4";
-      case glpp::ValueType::Double: return "Double";
-      case glpp::ValueType::DoubleVec2: return "DoubleVec2";
-      case glpp::ValueType::DoubleVec3: return "DoubleVec3";
-      case glpp::ValueType::DoubleVec4: return "DoubleVec4";
-      case glpp::ValueType::DoubleMat2: return "DoubleMat2";
-      case glpp::ValueType::DoubleMat3: return "DoubleMat3";
-      case glpp::ValueType::DoubleMat4: return "DoubleMat4";
-      case glpp::ValueType::DoubleMat2x3: return "DoubleMat2x3";
-      case glpp::ValueType::DoubleMat2x4: return "DoubleMat2x4";
-      case glpp::ValueType::DoubleMat3x2: return "DoubleMat3x2";
-      case glpp::ValueType::DoubleMat3x4: return "DoubleMat3x4";
-      case glpp::ValueType::DoubleMat4x2: return "DoubleMat4x2";
-      case glpp::ValueType::DoubleMat4x3: return "DoubleMat4x3";
+      case glpp::value_type_t::FloatMat2x3: return "FloatMat2x3";
+      case glpp::value_type_t::FloatMat2x4: return "FloatMat2x4";
+      case glpp::value_type_t::FloatMat3x2: return "FloatMat3x2";
+      case glpp::value_type_t::FloatMat3x4: return "FloatMat3x4";
+      case glpp::value_type_t::FloatMat4x2: return "FloatMat4x2";
+      case glpp::value_type_t::FloatMat4x3: return "FloatMat4x3";
+      case glpp::value_type_t::UIntVec2: return "UIntVec2";
+      case glpp::value_type_t::UIntVec3: return "UIntVec3";
+      case glpp::value_type_t::UIntVec4: return "UIntVec4";
+      case glpp::value_type_t::Double: return "Double";
+      case glpp::value_type_t::DoubleVec2: return "DoubleVec2";
+      case glpp::value_type_t::DoubleVec3: return "DoubleVec3";
+      case glpp::value_type_t::DoubleVec4: return "DoubleVec4";
+      case glpp::value_type_t::DoubleMat2: return "DoubleMat2";
+      case glpp::value_type_t::DoubleMat3: return "DoubleMat3";
+      case glpp::value_type_t::DoubleMat4: return "DoubleMat4";
+      case glpp::value_type_t::DoubleMat2x3: return "DoubleMat2x3";
+      case glpp::value_type_t::DoubleMat2x4: return "DoubleMat2x4";
+      case glpp::value_type_t::DoubleMat3x2: return "DoubleMat3x2";
+      case glpp::value_type_t::DoubleMat3x4: return "DoubleMat3x4";
+      case glpp::value_type_t::DoubleMat4x2: return "DoubleMat4x2";
+      case glpp::value_type_t::DoubleMat4x3: return "DoubleMat4x3";
 
       default: return "UNRECOGNISED TYPE";
       }
    }
 
    
-   std::size_t attrib_atomic_val_bytes(glpp::ValueType type) {
+   std::size_t attrib_atomic_val_bytes(glpp::value_type_t type) {
       switch (type) {
-      case glpp::ValueType::Byte:
-      case glpp::ValueType::UByte:
+      case glpp::value_type_t::Byte:
+      case glpp::value_type_t::UByte:
          return 1;
 
-      case glpp::ValueType::Short:
-      case glpp::ValueType::UShort:
+      case glpp::value_type_t::Short:
+      case glpp::value_type_t::UShort:
          return 2;
 
-      case glpp::ValueType::Int:
-      case glpp::ValueType::UInt:
-      case glpp::ValueType::Float:
-      case glpp::ValueType::FloatVec2:
-      case glpp::ValueType::FloatVec3:
-      case glpp::ValueType::FloatVec4:
-      case glpp::ValueType::IntVec2:
-      case glpp::ValueType::IntVec3:
-      case glpp::ValueType::IntVec4:
-      case glpp::ValueType::FloatMat2:
-      case glpp::ValueType::FloatMat3:
-      case glpp::ValueType::FloatMat4:
+      case glpp::value_type_t::Int:
+      case glpp::value_type_t::UInt:
+      case glpp::value_type_t::Float:
+      case glpp::value_type_t::FloatVec2:
+      case glpp::value_type_t::FloatVec3:
+      case glpp::value_type_t::FloatVec4:
+      case glpp::value_type_t::IntVec2:
+      case glpp::value_type_t::IntVec3:
+      case glpp::value_type_t::IntVec4:
+      case glpp::value_type_t::FloatMat2:
+      case glpp::value_type_t::FloatMat3:
+      case glpp::value_type_t::FloatMat4:
 
-      case glpp::ValueType::FloatMat2x3:
-      case glpp::ValueType::FloatMat2x4:
-      case glpp::ValueType::FloatMat3x2:
-      case glpp::ValueType::FloatMat3x4:
-      case glpp::ValueType::FloatMat4x2:
-      case glpp::ValueType::FloatMat4x3:
-      case glpp::ValueType::UIntVec2:
-      case glpp::ValueType::UIntVec3:
-      case glpp::ValueType::UIntVec4:
+      case glpp::value_type_t::FloatMat2x3:
+      case glpp::value_type_t::FloatMat2x4:
+      case glpp::value_type_t::FloatMat3x2:
+      case glpp::value_type_t::FloatMat3x4:
+      case glpp::value_type_t::FloatMat4x2:
+      case glpp::value_type_t::FloatMat4x3:
+      case glpp::value_type_t::UIntVec2:
+      case glpp::value_type_t::UIntVec3:
+      case glpp::value_type_t::UIntVec4:
          return 4;
 
-      case glpp::ValueType::Double:
-      case glpp::ValueType::DoubleVec2:
-      case glpp::ValueType::DoubleVec3:
-      case glpp::ValueType::DoubleVec4:
-      case glpp::ValueType::DoubleMat2:
-      case glpp::ValueType::DoubleMat3:
-      case glpp::ValueType::DoubleMat4:
-      case glpp::ValueType::DoubleMat2x3:
-      case glpp::ValueType::DoubleMat2x4:
-      case glpp::ValueType::DoubleMat3x2:
-      case glpp::ValueType::DoubleMat3x4:
-      case glpp::ValueType::DoubleMat4x2:
-      case glpp::ValueType::DoubleMat4x3:
+      case glpp::value_type_t::Double:
+      case glpp::value_type_t::DoubleVec2:
+      case glpp::value_type_t::DoubleVec3:
+      case glpp::value_type_t::DoubleVec4:
+      case glpp::value_type_t::DoubleMat2:
+      case glpp::value_type_t::DoubleMat3:
+      case glpp::value_type_t::DoubleMat4:
+      case glpp::value_type_t::DoubleMat2x3:
+      case glpp::value_type_t::DoubleMat2x4:
+      case glpp::value_type_t::DoubleMat3x2:
+      case glpp::value_type_t::DoubleMat3x4:
+      case glpp::value_type_t::DoubleMat4x2:
+      case glpp::value_type_t::DoubleMat4x3:
          return 8;
 
       default: throw glpp::error("cannot calculate primitive size of invalid attribute type");
       }
    }
 
-   gl_::draw_elements_type_t element_index_gl_type(glpp::ValueType type) {
+   gl_::draw_elements_type_t element_index_gl_type(glpp::value_type_t type) {
       switch (type) {
-      case glpp::ValueType::UByte: return gl_::draw_elements_type_t::unsigned_byte_;
-      case glpp::ValueType::UShort: return gl_::draw_elements_type_t::unsigned_short_;
-      case glpp::ValueType::UInt: return gl_::draw_elements_type_t::unsigned_int_;
+      case glpp::value_type_t::UByte: return gl_::draw_elements_type_t::unsigned_byte_;
+      case glpp::value_type_t::UShort: return gl_::draw_elements_type_t::unsigned_short_;
+      case glpp::value_type_t::UInt: return gl_::draw_elements_type_t::unsigned_int_;
       default: throw glpp::error("invalid element index type when drawing");
       }
    }
 
-   gl_::vertex_attrib_pointer_type_t attrib_atomic_gl_type(glpp::ValueType type) {
+   gl_::vertex_attrib_pointer_type_t attrib_atomic_gl_type(glpp::value_type_t type) {
       switch (type) {
-      case glpp::ValueType::Byte: return gl_::vertex_attrib_pointer_type_t::byte_;
-      case glpp::ValueType::UByte: return gl_::vertex_attrib_pointer_type_t::unsigned_byte_;
-      case glpp::ValueType::Short: return gl_::vertex_attrib_pointer_type_t::short_;
-      case glpp::ValueType::UShort: return gl_::vertex_attrib_pointer_type_t::unsigned_short_;
-      //case glpp::ValueType::Int: return GL_INT;
-      //case glpp::ValueType::UInt: return GL_UNSIGNED_INT;
-      case glpp::ValueType::Float: return gl_::vertex_attrib_pointer_type_t::float_;
-      //case glpp::ValueType::Double: return GL_DOUBLE;
+      case glpp::value_type_t::Byte: return gl_::vertex_attrib_pointer_type_t::byte_;
+      case glpp::value_type_t::UByte: return gl_::vertex_attrib_pointer_type_t::unsigned_byte_;
+      case glpp::value_type_t::Short: return gl_::vertex_attrib_pointer_type_t::short_;
+      case glpp::value_type_t::UShort: return gl_::vertex_attrib_pointer_type_t::unsigned_short_;
+      //case glpp::value_type_t::Int: return GL_INT;
+      //case glpp::value_type_t::UInt: return GL_UNSIGNED_INT;
+      case glpp::value_type_t::Float: return gl_::vertex_attrib_pointer_type_t::float_;
+      //case glpp::value_type_t::Double: return GL_DOUBLE;
 
-      case glpp::ValueType::FloatVec2: return gl_::vertex_attrib_pointer_type_t::float_;
-      case glpp::ValueType::FloatVec3: return gl_::vertex_attrib_pointer_type_t::float_;
-      case glpp::ValueType::FloatVec4: return gl_::vertex_attrib_pointer_type_t::float_;
-      //case glpp::ValueType::IntVec2: return GL_INT;
-      //case glpp::ValueType::IntVec3: return GL_INT;
-      //case glpp::ValueType::IntVec4: return GL_INT;
+      case glpp::value_type_t::FloatVec2: return gl_::vertex_attrib_pointer_type_t::float_;
+      case glpp::value_type_t::FloatVec3: return gl_::vertex_attrib_pointer_type_t::float_;
+      case glpp::value_type_t::FloatVec4: return gl_::vertex_attrib_pointer_type_t::float_;
+      //case glpp::value_type_t::IntVec2: return GL_INT;
+      //case glpp::value_type_t::IntVec3: return GL_INT;
+      //case glpp::value_type_t::IntVec4: return GL_INT;
 
-      case glpp::ValueType::FloatMat2: return gl_::vertex_attrib_pointer_type_t::float_;
-      case glpp::ValueType::FloatMat3: return gl_::vertex_attrib_pointer_type_t::float_;
-      case glpp::ValueType::FloatMat4: return gl_::vertex_attrib_pointer_type_t::float_;
+      case glpp::value_type_t::FloatMat2: return gl_::vertex_attrib_pointer_type_t::float_;
+      case glpp::value_type_t::FloatMat3: return gl_::vertex_attrib_pointer_type_t::float_;
+      case glpp::value_type_t::FloatMat4: return gl_::vertex_attrib_pointer_type_t::float_;
 
       default: throw glpp::error("invalid data value type when drawing");
       }
@@ -620,17 +621,17 @@ namespace glpp
    }
 
 
-   unsigned int texture_t::to_gl(texture_t::Target target) {
+   unsigned int texture_t::to_gl(texture_t::target_t target) {
       auto tgt
-         = target == texture_t::Target::TEXTURE_2D ? gl_::texture_target_t::texture_2d
-         : target == texture_t::Target::TEXTURE_CUBE_MAP ? gl_::texture_target_t::texture_cube_map
+         = target == texture_t::target_t::texture_2d ? gl_::texture_target_t::texture_2d
+         : target == texture_t::target_t::texture_cube_map ? gl_::texture_target_t::texture_cube_map
          : throw std::runtime_error("unrecognised texture target");
 
       return static_cast<unsigned int>(tgt);
    }
 
-   texture_t::state::state(image_t image, Target target, bool invert_y, bool srgb)
-   : format_(texture_format_t::RGBA) { // TODO: this may not be right?
+   texture_t::state::state(image_t image, target_t target, bool invert_y, bool srgb)
+   : format_(texture_format_t::rgba) { // TODO: this may not be right?
       dims_.x = image.width();
       dims_.y = image.height();
 
@@ -687,7 +688,7 @@ namespace glpp
       GL_VERIFY(gl_ctx_.bind_texture(tgt, 0));
    }
 
-   texture_t::state::state(dim_t const & dims, Target target, texture_format_t format)
+   texture_t::state::state(dim_t const & dims, target_t target, texture_format_t format)
    : dims_(dims), format_(format) {
       auto tgt = static_cast<gl_::texture_target_t>(to_gl(target));
 
@@ -695,20 +696,20 @@ namespace glpp
       GL_VERIFY(gl_ctx_.bind_texture(tgt, id_));
 
       auto internal_format
-         = format == texture_format_t::RGBA ? gl_::texture_component_count_t::rgba
-         : format == texture_format_t::RGB ? gl_::texture_component_count_t::rgb
-         : format == texture_format_t::DEPTH ? gl_::texture_component_count_t::depth_component
+         = format == texture_format_t::rgba ? gl_::texture_component_count_t::rgba
+         : format == texture_format_t::rgb ? gl_::texture_component_count_t::rgb
+         : format == texture_format_t::depth ? gl_::texture_component_count_t::depth_component
 #ifdef _MSC_VER
-         : format == texture_format_t::BGRA ? gl_::texture_component_count_t::bgra_ext
+         : format == texture_format_t::bgra ? gl_::texture_component_count_t::bgra_ext
 #endif
          : throw error("unrecognised image format");
 
       auto pixel_format
-         = format == texture_format_t::RGBA ? gl_::pixel_format_t::rgba
-         : format == texture_format_t::RGB ? gl_::pixel_format_t::rgb
-         : format == texture_format_t::DEPTH ? gl_::pixel_format_t::depth_component
+         = format == texture_format_t::rgba ? gl_::pixel_format_t::rgba
+         : format == texture_format_t::rgb ? gl_::pixel_format_t::rgb
+         : format == texture_format_t::depth ? gl_::pixel_format_t::depth_component
 #ifdef _MSC_VER
-         : format == texture_format_t::BGRA ? gl_::pixel_format_t::bgra_ext
+         : format == texture_format_t::bgra ? gl_::pixel_format_t::bgra_ext
 #endif
          : throw error("unrecognised image format");
 
@@ -771,11 +772,11 @@ namespace glpp
    }
 
    texture_t::texture_t(image_t image, bool invert_y, bool srgb)
-      : state_(std::make_shared<state>(image, TEXTURE_2D, invert_y, srgb)) {
+      : state_(std::make_shared<state>(image, target_t::texture_2d, invert_y, srgb)) {
    }
 
    texture_t::texture_t(dim_t const & dims, texture_format_t format)
-      : state_(std::make_shared<state>(dims, TEXTURE_2D, format)) {
+      : state_(std::make_shared<state>(dims, target_t::texture_2d, format)) {
    }
 
    void texture_t::save_current_framebuffer_(texture_t::state const & state, std::string const & filename) {
@@ -783,11 +784,11 @@ namespace glpp
       std::vector<uint8_t> buffer(4 * state.dims_.x * state.dims_.y);
 
       auto fmt
-         = state.format_ == texture_format_t::RGBA ? GL_RGBA
-         : state.format_ == texture_format_t::RGB ? GL_RGB
-         : state.format_ == texture_format_t::DEPTH ? GL_DEPTH_COMPONENT
+         = state.format_ == texture_format_t::rgba ? GL_RGBA
+         : state.format_ == texture_format_t::rgb ? GL_RGB
+         : state.format_ == texture_format_t::depth ? GL_DEPTH_COMPONENT
 #ifdef _MSC_VER
-         : state.format_ == texture_format_t::BGRA ? GL_BGRA_EXT
+         : state.format_ == texture_format_t::bgra ? GL_BGRA_EXT
 #endif
          : throw error("unrecognised image format");
 
@@ -840,7 +841,7 @@ namespace glpp
     */
 
    cube_map_texture_t::cube_map_texture_t(int side_length, texture_format_t format)
-      : state_(std::make_shared<texture_t::state>(dim_t{side_length, side_length}, texture_t::TEXTURE_CUBE_MAP, format)) {
+      : state_(std::make_shared<texture_t::state>(dim_t{side_length, side_length}, texture_t::target_t::texture_cube_map, format)) {
    }
 
    void cube_map_texture_t::bind() const {
@@ -927,24 +928,25 @@ namespace glpp
       // must use GL_BGRA8_EXT because thats what the default buffer format is in ANGLE (must match for blitting)
       GL_VERIFY(gl_::gen_renderbuffers(1, &colour_rbo_id_));
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, colour_rbo_id_));
+
+      const auto internal_format =
 #ifdef _MSC_VER
-      if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::bgra8_ext, dims_.x, dims_.y));
-      else GL_VERIFY(gl_::angle::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::bgra8_ext, dims_.x, dims_.y));
+         gl_::internal_format_t::bgra8_ext;
 #else
-      if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::rgb8, dims_.x, dims_.y));
-      else GL_VERIFY(gl_::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::rgb8, dims_.x, dims_.y));
+         gl_::internal_format_t::rgb8;
 #endif
+
+      if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, internal_format, dims_.x, dims_.y));
+      else GL_VERIFY(gl_::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, internal_format, dims_.x, dims_.y));
+
       GL_VERIFY(gl_::framebuffer_renderbuffer(gl_::framebuffer_target_t::framebuffer, gl_::framebuffer_attachment_t::color_attachment0, gl_::renderbuffer_target_t::renderbuffer, colour_rbo_id_));
 
       GL_VERIFY(gl_::gen_renderbuffers(1, &depth_rbo_id_));
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, depth_rbo_id_));
-#ifdef _MSC_VER
-      if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
-      else GL_VERIFY(gl_::angle::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
-#else
+
       if (samples_ == 0) GL_VERIFY(gl_::renderbuffer_storage(gl_::renderbuffer_target_t::renderbuffer, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
       else GL_VERIFY(gl_::renderbuffer_storage_multisample(gl_::renderbuffer_target_t::renderbuffer, samples_, gl_::internal_format_t::depth_component16, dims_.x, dims_.y));
-#endif
+
       GL_VERIFY(gl_::framebuffer_renderbuffer(gl_::framebuffer_target_t::framebuffer, gl_::framebuffer_attachment_t::depth_attachment, gl_::renderbuffer_target_t::renderbuffer, depth_rbo_id_));
 
       GL_VERIFY(gl_::bind_renderbuffer(gl_::renderbuffer_target_t::renderbuffer, 0));
@@ -961,28 +963,28 @@ namespace glpp
       GL_VERIFY(gl_::delete_framebuffers(1, &fbo_id_));
    }
 
-   void frame_buffer_t::bind(BindTarget target) const {
+   void frame_buffer_t::bind(bind_target_t target) const {
       assert(cube_map_texture_id_ == 0 && "wrong bind method called on frame buffer with cube map colour buffer");
       bind_(target);
    }
 
    namespace {
-      gl_::framebuffer_target_t to_gl(frame_buffer_t::BindTarget target) {
+      gl_::framebuffer_target_t to_gl(frame_buffer_t::bind_target_t target) {
          gl_::framebuffer_target_t t
-            = target == frame_buffer_t::ReadDraw ? gl_::framebuffer_target_t::framebuffer
-            : target == frame_buffer_t::Read ? gl_::framebuffer_target_t::read_framebuffer
-            : target == frame_buffer_t::Draw ? gl_::framebuffer_target_t::draw_framebuffer
+            = target == frame_buffer_t::bind_target_t::read_draw ? gl_::framebuffer_target_t::framebuffer
+            : target == frame_buffer_t::bind_target_t::read ? gl_::framebuffer_target_t::read_framebuffer
+            : target == frame_buffer_t::bind_target_t::draw ? gl_::framebuffer_target_t::draw_framebuffer
             : throw error("unrecognised bind target");
 
          return t;
       }
 
-      gl_::framebuffer_texture_target_t to_gl(frame_buffer_t::CubeFace face) {
+      gl_::framebuffer_texture_target_t to_gl(frame_buffer_t::cube_face_t face) {
          return static_cast<gl_::framebuffer_texture_target_t>(face);
       }
    }
 
-   void frame_buffer_t::bind(CubeFace face, BindTarget target) const {
+   void frame_buffer_t::bind(cube_face_t face, bind_target_t target) const {
       assert(cube_map_texture_id_ != 0 && "wrong bind method called on frame buffer without cube map colour buffer");
       bind_(target);
       auto t = to_gl(target);
@@ -995,13 +997,13 @@ namespace glpp
       //glDrawBuffer(GL_COLOR_ATTACHMENT0);
    }
 
-   void frame_buffer_t::bind_(BindTarget target) const {
+   void frame_buffer_t::bind_(bind_target_t target) const {
       check_fbo();
       auto t = to_gl(target);
       GL_VERIFY(gl_ctx_.bind_framebuffer(t, fbo_id_));
    }
 
-   void frame_buffer_t::unbind(BindTarget target) const {
+   void frame_buffer_t::unbind(bind_target_t target) const {
       auto t = to_gl(target);
       GL_VERIFY(gl_ctx_.bind_framebuffer(t, 0));
    }
@@ -1092,7 +1094,7 @@ namespace glpp
       , log_(get_shader_info_log(shader_id)) {
    }
 
-   shader::shader(std::string const & source, shader::Type type)
+   shader::shader(std::string const & source, shader::type_t type)
       : id_(gl_::create_shader(to_glenum(type)))
       , type_(type)
    {
@@ -1112,7 +1114,7 @@ namespace glpp
       compile_log_ = get_shader_info_log(id_);
    }
 
-   shader shader::create_from_file(std::string const & filename, shader::Type type)
+   shader shader::create_from_file(std::string const & filename, shader::type_t type)
    try {
       return create_from_source(utils::read_file(filename), type);
    }
@@ -1120,7 +1122,7 @@ namespace glpp
       throw shader_compile_error(filename, ex);
    }
 
-   shader shader::create_from_source(std::string const & source, shader::Type type) {
+   shader shader::create_from_source(std::string const & source, shader::type_t type) {
       return{ source, type };
    }
 
@@ -1143,33 +1145,33 @@ namespace glpp
    }
 
   /**
-   * ValueType functions
+   * value_type_t functions
    **/
 
-   template <> ValueType value_type<int8_t>() { return ValueType::Byte; }
-   template <> ValueType value_type<uint8_t>() { return ValueType::UByte; }
-   template <> ValueType value_type<int16_t>() { return ValueType::Short; }
-   template <> ValueType value_type<uint16_t>() { return ValueType::UShort; }
-   template <> ValueType value_type<int32_t>() { return ValueType::Int; }
-   template <> ValueType value_type<uint32_t>() { return ValueType::UInt; }
-   template <> ValueType value_type<float>() { return ValueType::Float; }
-   template <> ValueType value_type<const int8_t>() { return ValueType::Byte; }
-   template <> ValueType value_type<const uint8_t>() { return ValueType::UByte; }
-   template <> ValueType value_type<const int16_t>() { return ValueType::Short; }
-   template <> ValueType value_type<const uint16_t>() { return ValueType::UShort; }
-   template <> ValueType value_type<const int32_t>() { return ValueType::Int; }
-   template <> ValueType value_type<const uint32_t>() { return ValueType::UInt; }
-   template <> ValueType value_type<const float>() { return ValueType::Float; }
-   template <> ValueType value_type<glm::ivec2>() { return ValueType::IntVec2; }
-   template <> ValueType value_type<glm::ivec3>() { return ValueType::IntVec3; }
-   template <> ValueType value_type<glm::ivec4>() { return ValueType::IntVec4; }
-   template <> ValueType value_type<glm::vec2>() { return ValueType::FloatVec2; }
-   template <> ValueType value_type<glm::vec3>() { return ValueType::FloatVec3; }
-   template <> ValueType value_type<glm::vec4>() { return ValueType::FloatVec4; }
-   template <> ValueType value_type<glm::mat2>() { return ValueType::FloatMat2; }
-   template <> ValueType value_type<glm::mat3>() { return ValueType::FloatMat3; }
-   template <> ValueType value_type<glm::mat4>() { return ValueType::FloatMat4; }
-   template <> ValueType value_type<texture_unit_t>() { return ValueType::Sampler2d; }
+   template <> value_type_t value_type<int8_t>() { return value_type_t::Byte; }
+   template <> value_type_t value_type<uint8_t>() { return value_type_t::UByte; }
+   template <> value_type_t value_type<int16_t>() { return value_type_t::Short; }
+   template <> value_type_t value_type<uint16_t>() { return value_type_t::UShort; }
+   template <> value_type_t value_type<int32_t>() { return value_type_t::Int; }
+   template <> value_type_t value_type<uint32_t>() { return value_type_t::UInt; }
+   template <> value_type_t value_type<float>() { return value_type_t::Float; }
+   template <> value_type_t value_type<const int8_t>() { return value_type_t::Byte; }
+   template <> value_type_t value_type<const uint8_t>() { return value_type_t::UByte; }
+   template <> value_type_t value_type<const int16_t>() { return value_type_t::Short; }
+   template <> value_type_t value_type<const uint16_t>() { return value_type_t::UShort; }
+   template <> value_type_t value_type<const int32_t>() { return value_type_t::Int; }
+   template <> value_type_t value_type<const uint32_t>() { return value_type_t::UInt; }
+   template <> value_type_t value_type<const float>() { return value_type_t::Float; }
+   template <> value_type_t value_type<glm::ivec2>() { return value_type_t::IntVec2; }
+   template <> value_type_t value_type<glm::ivec3>() { return value_type_t::IntVec3; }
+   template <> value_type_t value_type<glm::ivec4>() { return value_type_t::IntVec4; }
+   template <> value_type_t value_type<glm::vec2>() { return value_type_t::FloatVec2; }
+   template <> value_type_t value_type<glm::vec3>() { return value_type_t::FloatVec3; }
+   template <> value_type_t value_type<glm::vec4>() { return value_type_t::FloatVec4; }
+   template <> value_type_t value_type<glm::mat2>() { return value_type_t::FloatMat2; }
+   template <> value_type_t value_type<glm::mat3>() { return value_type_t::FloatMat3; }
+   template <> value_type_t value_type<glm::mat4>() { return value_type_t::FloatMat4; }
+   template <> value_type_t value_type<texture_unit_t>() { return value_type_t::Sampler2d; }
 
 
   /**
@@ -1177,15 +1179,15 @@ namespace glpp
    *
    */
 
-   uniform::uniform(std::string const & name, int location, int size, ValueType type)
+   uniform::uniform(std::string const & name, int location, int size, value_type_t type)
       : state_{ new state{ name, location, size, type, false } } {
    }
 
    uniform::uniform(std::string const & name)
-      : uniform{ name, -1, 1, ValueType::Unknown } {
+      : uniform{ name, -1, 1, value_type_t::Unknown } {
    }
 
-   void uniform::reset(int location, int size, ValueType type) {
+   void uniform::reset(int location, int size, value_type_t type) {
       state_->location_ = location;
       state_->size_ = size;
       state_->type_ = type;
@@ -1200,21 +1202,21 @@ namespace glpp
    namespace {
 
       template <typename T>
-      ValueType uniform_type();
-      template <> ValueType uniform_type<int>() { return ValueType::Int; }
-      template <> ValueType uniform_type<float>() { return ValueType::Float; }
-      template <> ValueType uniform_type<glm::ivec2>() { return ValueType::IntVec2; }
-      template <> ValueType uniform_type<glm::ivec3>() { return ValueType::IntVec3; }
-      template <> ValueType uniform_type<glm::ivec4>() { return ValueType::IntVec4; }
-      template <> ValueType uniform_type<glm::vec2>() { return ValueType::FloatVec2; }
-      template <> ValueType uniform_type<glm::vec3>() { return ValueType::FloatVec3; }
-      template <> ValueType uniform_type<glm::vec4>() { return ValueType::FloatVec4; }
-      template <> ValueType uniform_type<glm::mat2>() { return ValueType::FloatMat2; }
-      template <> ValueType uniform_type<glm::mat3>() { return ValueType::FloatMat3; }
-      template <> ValueType uniform_type<glm::mat4>() { return ValueType::FloatMat4; }
-      template <> ValueType uniform_type<std::vector<glm::vec4>>() { return ValueType::FloatVec4; }
-      template <> ValueType uniform_type<std::vector<glm::mat4>>() { return ValueType::FloatMat4; }
-      template <> ValueType uniform_type<texture_unit_t>() { return ValueType::Sampler2d; }
+      value_type_t uniform_type();
+      template <> value_type_t uniform_type<int>() { return value_type_t::Int; }
+      template <> value_type_t uniform_type<float>() { return value_type_t::Float; }
+      template <> value_type_t uniform_type<glm::ivec2>() { return value_type_t::IntVec2; }
+      template <> value_type_t uniform_type<glm::ivec3>() { return value_type_t::IntVec3; }
+      template <> value_type_t uniform_type<glm::ivec4>() { return value_type_t::IntVec4; }
+      template <> value_type_t uniform_type<glm::vec2>() { return value_type_t::FloatVec2; }
+      template <> value_type_t uniform_type<glm::vec3>() { return value_type_t::FloatVec3; }
+      template <> value_type_t uniform_type<glm::vec4>() { return value_type_t::FloatVec4; }
+      template <> value_type_t uniform_type<glm::mat2>() { return value_type_t::FloatMat2; }
+      template <> value_type_t uniform_type<glm::mat3>() { return value_type_t::FloatMat3; }
+      template <> value_type_t uniform_type<glm::mat4>() { return value_type_t::FloatMat4; }
+      template <> value_type_t uniform_type<std::vector<glm::vec4>>() { return value_type_t::FloatVec4; }
+      template <> value_type_t uniform_type<std::vector<glm::mat4>>() { return value_type_t::FloatMat4; }
+      template <> value_type_t uniform_type<texture_unit_t>() { return value_type_t::Sampler2d; }
 
       template <typename T>
       bool set_uniform(uniform & u, T const & val, bool report_errors) {
@@ -1344,15 +1346,15 @@ namespace glpp
    *
    */
 
-   attrib::attrib(std::string const & name, int location, int size, ValueType type)
+   attrib::attrib(std::string const & name, int location, int size, value_type_t type)
       : state_{ new state{ name, location, size, type, false } } {
    }
 
    attrib::attrib(std::string const & name)
-      : attrib{ name, -1, 1, ValueType::Unknown } {
+      : attrib{ name, -1, 1, value_type_t::Unknown } {
    }
 
-   void attrib::reset(int location, int size, ValueType type) {
+   void attrib::reset(int location, int size, value_type_t type) {
       state_->location_ = location;
       state_->size_ = size;
       state_->type_ = type;
@@ -1370,26 +1372,26 @@ namespace glpp
    *
    */
    
-   buffer_t::state::state(Usage usage) : usage_(usage) {
+   buffer_t::state::state(usage_t usage) : usage_(usage) {
    }
 
-   buffer_t::state::state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, Usage usage)
+   buffer_t::state::state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, usage_t usage)
    : state(usage) {
       assign(vertex_data, vertex_count, vertex_byte_size);
    }
 
-   buffer_t::state::state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type, Usage usage)
+   buffer_t::state::state(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size, void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type, usage_t usage)
    : state(usage) {
       assign(vertex_data, vertex_count, vertex_byte_size, index_data, index_count, index_byte_size, index_data_type);
    }
 
-   buffer_t::state::state(void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type, Usage usage)
+   buffer_t::state::state(void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type, usage_t usage)
    : state(usage) {
       assign(index_data, index_count, index_byte_size, index_data_type);
    }
 
    buffer_t::state::~state() {
-      assign(nullptr, 0, 0, nullptr, 0, 0, ValueType::Unknown);
+      assign(nullptr, 0, 0, nullptr, 0, 0, value_type_t::Unknown);
    }
 
    void buffer_t::state::assign(void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size) {
@@ -1407,8 +1409,8 @@ namespace glpp
 
       if (!vertex_id_) gl_::gen_buffers(1, &vertex_id_);
       auto usage
-         = usage_ == Usage::Static ? gl_::buffer_usage_arb_t::static_draw
-         : usage_ == Usage::Dynamic ? gl_::buffer_usage_arb_t::dynamic_draw
+         = usage_ == usage_t::static_ ? gl_::buffer_usage_arb_t::static_draw
+         : usage_ == usage_t::dynamic ? gl_::buffer_usage_arb_t::dynamic_draw
          : gl_::buffer_usage_arb_t::stream_draw;
       gl_ctx_.bind_buffer(gl_::buffer_target_arb_t::array_buffer, vertex_id_);
       gl_::buffer_data(gl_::buffer_target_arb_t::array_buffer, vertex_byte_size, vertex_data, usage);
@@ -1417,7 +1419,7 @@ namespace glpp
 
    void buffer_t::state::assign(
       void* vertex_data, std::size_t vertex_count, std::size_t vertex_byte_size,
-      void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type) {
+      void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type) {
       assign(vertex_data, vertex_count, vertex_byte_size);
 
       if (0 == index_byte_size) {
@@ -1464,36 +1466,36 @@ namespace glpp
    }
 #endif
 
-   void buffer_t::state::assign(void* index_data, unsigned index_count, std::size_t index_byte_size, ValueType index_data_type) {
+   void buffer_t::state::assign(void* index_data, unsigned index_count, std::size_t index_byte_size, value_type_t index_data_type) {
       assign(nullptr, 0, 0, index_data, index_count, index_byte_size, index_data_type);
    }
 
-   buffer_t::buffer_t(Usage usage)
+   buffer_t::buffer_t(usage_t usage)
       : state_(std::make_shared<state>(usage)) {
    }
 
-   buffer_t::buffer_t(Target target, static_array_t data, Usage usage)
+   buffer_t::buffer_t(target_t target, static_array_t data, usage_t usage)
       : buffer_t(usage) {
       update(target, data);
    }
 
-   buffer_t::buffer_t(static_array_t vertex_data, Usage usage)
+   buffer_t::buffer_t(static_array_t vertex_data, usage_t usage)
       : buffer_t(usage) {
       update(vertex_data);
    }
 
-   buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data, Usage usage)
+   buffer_t::buffer_t(static_array_t vertex_data, static_array_t index_data, usage_t usage)
       : buffer_t(usage) {
       // TODO: verify all index data elements are within range of vertex_data element count
       update(vertex_data, index_data);
    }
 
-   void buffer_t::update(Target target, static_array_t data) {
+   void buffer_t::update(target_t target, static_array_t data) {
       switch (target) {
-      case Target::ArrayBuffer:
+      case target_t::array_buffer:
          state_->assign(data.data(), data.elem_count(), data.size());
          break;
-      case Target::IndexBuffer:
+      case target_t::index_buffer:
          state_->assign(data.data(), data.elem_count(), data.size(), data.data_type());
          break;
       default:
@@ -1509,7 +1511,7 @@ namespace glpp
    void buffer_t::update(static_array_t vertex_data, static_array_t index_data) {
       state_->assign(vertex_data.data(), vertex_data.elem_count(), vertex_data.size(), index_data.data(), index_data.elem_count(), index_data.size(), index_data.data_type());
 
-      assert((index_data.data_type() == ValueType::UInt || index_data.data_type() == ValueType::UShort || index_data.data_type() == ValueType::UByte) && "second buffer parameter must be index buffer (must be integral type)");
+      assert((index_data.data_type() == value_type_t::UInt || index_data.data_type() == value_type_t::UShort || index_data.data_type() == value_type_t::UByte) && "second buffer parameter must be index buffer (must be integral type)");
    }
 
    void buffer_t::bind() const {
@@ -1562,11 +1564,11 @@ namespace glpp
    void bind(mapped_buffer_t const & packed) {
       packed.buffer.bind();
       for (auto & attrib_info : packed.attribs) {
-         auto type_to_use = attrib_info.override_type != ValueType::Unknown
+         auto type_to_use = attrib_info.override_type != value_type_t::Unknown
             ? attrib_info.override_type
             : attrib_info.attrib.type();
          auto gl_type = attrib_atomic_gl_type(type_to_use);
-         auto normalise = type_to_use == ValueType::UByte;
+         auto normalise = type_to_use == value_type_t::UByte;
          GL_VERIFY(gl_::vertex_attrib_pointer(
             attrib_info.attrib.location(), attrib_info.count, gl_type,
             normalise, attrib_info.stride_bytes, reinterpret_cast<void*>(attrib_info.offset_bytes)));
@@ -1583,26 +1585,26 @@ namespace glpp
       packed.buffer.unbind();
    }
 
-   void draw(mapped_buffer_t const & b, DrawMode mode) {
+   void draw(mapped_buffer_t const & b, draw_mode_t mode) {
       unsigned count = b.buffer.has_index_data() ? b.buffer.index_count() : num_vertices(b);
       return draw(b, mode, 0, count);
    }
 
    namespace {
-      gl_::primitive_type_t gl_draw_mode(DrawMode mode) {
+      gl_::primitive_type_t gl_draw_mode(draw_mode_t mode) {
          switch (mode) {
-         case DrawMode::Points: return gl_::primitive_type_t::points;
-         case DrawMode::Lines: return gl_::primitive_type_t::lines;
-         case DrawMode::LineLoop: return gl_::primitive_type_t::line_loop;
-         case DrawMode::Triangles: return gl_::primitive_type_t::triangles;
-         case DrawMode::TriangleStrip: return gl_::primitive_type_t::triangle_strip;
-         case DrawMode::TriangleFan: return gl_::primitive_type_t::triangle_fan;
+         case draw_mode_t::points: return gl_::primitive_type_t::points;
+         case draw_mode_t::lines: return gl_::primitive_type_t::lines;
+         case draw_mode_t::line_loop: return gl_::primitive_type_t::line_loop;
+         case draw_mode_t::triangles: return gl_::primitive_type_t::triangles;
+         case draw_mode_t::triangle_strip: return gl_::primitive_type_t::triangle_strip;
+         case draw_mode_t::triangle_fan: return gl_::primitive_type_t::triangle_fan;
          default: throw error("unrecognised draw type when drawing");
          }
       }
    }
 
-   void draw(mapped_buffer_t const & b, DrawMode mode, unsigned first, unsigned count) {
+   void draw(mapped_buffer_t const & b, draw_mode_t mode, unsigned first, unsigned count) {
       bind(b);
 
       if (b.buffer.has_index_data()) {
@@ -1631,19 +1633,19 @@ namespace glpp
    }
 
    buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, unsigned elem_count) {
-      state_->slices_.push_back({ attrib_name, ValueType::Unknown, 0, elem_count });
+      state_->slices_.push_back({ attrib_name, value_type_t::Unknown, 0, elem_count });
 
       return *this;
    }
 
-   buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, ValueType type, unsigned elem_count) {
+   buffer_attrib_mappings_t buffer_attrib_mappings_t::push_attrib(std::string attrib_name, value_type_t type, unsigned elem_count) {
       state_->slices_.push_back({ attrib_name, type, (unsigned)attrib_atomic_val_bytes(type), elem_count });
 
       return *this;
    }
 
    buffer_attrib_mappings_t buffer_attrib_mappings_t::skip_bytes(unsigned bytes) {
-      state_->slices_.push_back({ "", ValueType::Unknown, 1, bytes });
+      state_->slices_.push_back({ "", value_type_t::Unknown, 1, bytes });
 
       return *this;
    }
@@ -1675,7 +1677,7 @@ namespace glpp
             // guess how big it is
             auto elem_size_guess
                = s.elem_size > 0 ? s.elem_size             // size specified in slice info
-               : attrib.type() == ValueType::Unknown ? 4   // size is probably float or int if type unknown
+               : attrib.type() == value_type_t::Unknown ? 4   // size is probably float or int if type unknown
                : attrib_atomic_val_bytes(attrib.type());   // derive size from known type
 
             pos_bytes += s.count * elem_size_guess;
@@ -1747,8 +1749,8 @@ void main() {
 )";
 
       return{
-         glpp::shader::create_from_source(vert_src, glpp::shader::Vertex),
-         glpp::shader::create_from_source(frag_src, glpp::shader::Fragment)
+         glpp::shader::create_from_source(vert_src, glpp::shader::type_t::vertex),
+         glpp::shader::create_from_source(frag_src, glpp::shader::type_t::fragment)
       };
    }
 
@@ -2003,21 +2005,21 @@ void main() {
       return draw_count;
    }
 
-   pass_t & pass_t::draw(DrawMode mode) {
+   pass_t & pass_t::draw(draw_mode_t mode) {
       prepare_draw_();
       draw_(mode, 0, calc_draw_count_());
       unprepare_draw_();
       return *this;
    }
 
-   pass_t & pass_t::draw(DrawMode mode, unsigned first, unsigned count) {
+   pass_t & pass_t::draw(draw_mode_t mode, unsigned first, unsigned count) {
       prepare_draw_();
       draw_(mode, first, count);
       unprepare_draw_();
       return *this;
    }
 
-   void pass_t::draw_(DrawMode mode, unsigned first, unsigned count) {
+   void pass_t::draw_(draw_mode_t mode, unsigned first, unsigned count) {
       auto * index_buffer = index_buffer_();
       if (nullptr != index_buffer) {
          auto index_count = index_buffer->index_count();
@@ -2036,7 +2038,7 @@ void main() {
       }
    }
 
-   pass_t & pass_t::draw_batch(render_batch_callback const & cb, DrawMode mode) {
+   pass_t & pass_t::draw_batch(render_batch_callback const & cb, draw_mode_t mode) {
       prepare_draw_();
 
       auto draw_count = calc_draw_count_();
@@ -2050,7 +2052,7 @@ void main() {
       return *this;
    }
 
-   pass_t & pass_t::draw_batch(render_batch_callback const & cb, DrawMode mode, unsigned first, unsigned count) {
+   pass_t & pass_t::draw_batch(render_batch_callback const & cb, draw_mode_t mode, unsigned first, unsigned count) {
       prepare_draw_();
 
       while (cb.prepare_next(state_->prg_)) {
@@ -2332,8 +2334,8 @@ void main() {
    std::string program::compile_logs() const {
       auto type_to_string = [](shader const & s) -> std::string {
          switch (s.type()) {
-         case shader::Vertex: return " --- vertex log ---\n";
-         case shader::Fragment: return " --- fragment log ---\n";
+         case shader::type_t::vertex: return " --- vertex log ---\n";
+         case shader::type_t::fragment: return " --- fragment log ---\n";
          default: return " --- unrecognised shader type log ---\n";
          }
       };

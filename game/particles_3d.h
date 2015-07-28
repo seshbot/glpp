@@ -60,7 +60,7 @@ public:
    glm::vec3 & vel_at(idx_t idx) { return particle_velocities_[idx]; }
 
 private:
-   glpp::buffer_t buffer_ = { glpp::buffer_t::Usage::Dynamic };
+   glpp::buffer_t buffer_ = { glpp::buffer_t::usage_t::dynamic };
    double current_time_ = 0.;
    std::vector<double> particle_create_times_;
    std::vector<glm::vec3> particle_positions_;

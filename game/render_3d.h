@@ -56,7 +56,8 @@ namespace game {
       glpp::archive_t const & assets;
 
       glpp::program prg_3d;
-      glpp::program prg_3d_shadow;
+      glpp::program prg_3d_shadow_pos;
+      glpp::program prg_3d_shadow_dir;
       glpp::program prg_3d_particle;
       glpp::program prg_post;
       glpp::program prg_ui;
@@ -106,7 +107,8 @@ namespace game {
       struct mesh_render_info {
          glpp::animation_t const & animation;
          std::vector<glpp::pass_t> d3_mesh_passes;
-         std::vector<glpp::pass_t> d3_shadow_mesh_passes;
+         std::vector<glpp::pass_t> d3_shadow_pos_mesh_passes;
+         std::vector<glpp::pass_t> d3_shadow_dir_mesh_passes;
       };
 
       std::vector<mesh_render_info> mesh_renderers;

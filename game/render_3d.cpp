@@ -339,11 +339,17 @@ namespace {
       return result;
    };
 
-   game::renderer::mesh_render_info make_render_info(game::render_context const & ctx, glpp::animation_t const & animation, glpp::program & prg_3d, glpp::program & prg_3d_shadow) {
+   game::renderer::mesh_render_info make_render_info(
+      game::render_context const & ctx,
+      glpp::animation_t const & animation,
+      glpp::program & prg_3d,
+      glpp::program & prg_3d_shadow_pos,
+      glpp::program & prg_3d_shadow_dir) {
       return{
          animation,
          make_mesh_passes(ctx, prg_3d, animation, false),
-         make_mesh_passes(ctx, prg_3d_shadow, animation, true)
+         make_mesh_passes(ctx, prg_3d_shadow_pos, animation, true),
+         make_mesh_passes(ctx, prg_3d_shadow_dir, animation, true)
       };
    };
 
@@ -457,7 +463,8 @@ namespace game {
       , ui_context{ glpp::imgui::init(context, UI_TEXTURE_UNIT) }
       , assets(assets)
       , prg_3d{ create_program(assets, "3d") }
-      , prg_3d_shadow{ create_program(assets, "3d_shadow") }
+      , prg_3d_shadow_pos{ create_program(assets, "3d_shadow_pos") }
+      , prg_3d_shadow_dir{ create_program(assets, "3d_shadow_dir") }
       , prg_3d_particle{ create_program(assets, "3d_particle") }
       , prg_post{ create_program(assets, "post") }
       , prg_ui{ glpp::make_debug_ui_program() }
@@ -486,7 +493,8 @@ namespace game {
       try {
          ::reload_program(assets, prg_3d, "3d");
          ::reload_program(assets, prg_3d_particle, "3d_particle");
-         ::reload_program(assets, prg_3d_shadow, "3d_shadow");
+         ::reload_program(assets, prg_3d_shadow_pos, "3d_shadow_pos");
+         ::reload_program(assets, prg_3d_shadow_dir, "3d_shadow_dir");
          ::reload_program(assets, prg_post, "post");
       }
       catch (glpp::shader_compile_error const & ex) {
@@ -502,17 +510,19 @@ namespace game {
       auto pos_shadow_texture_dims = glpp::dim_t{ pos_shadow_texture_width, pos_shadow_texture_width };
       auto dir_shadow_texture_dims = glpp::dim_t{ dir_shadow_texture_width, dir_shadow_texture_width};
 
+      const auto tex_fmt =
 #ifdef WIN32 
-      const glpp::texture_format_t tex_fmt = glpp::texture_format_t::BGRA;
+         glpp::texture_format_t::bgra;
 #else
-      const glpp::texture_format_t tex_fmt = glpp::texture_format_t::RGBA;
+         glpp::texture_format_t::rgba;
 #endif
+
       if (!pos_shadow_fbo || pos_shadow_fbo->dims() != pos_shadow_texture_dims) {
          pos_shadow_tex.reset(new glpp::cube_map_texture_t(pos_shadow_texture_dims.x, tex_fmt));
          pos_shadow_fbo.reset(new glpp::frame_buffer_t(*pos_shadow_tex));
       }
       if (!dir_shadow_fbo || dir_shadow_fbo->dims() != dir_shadow_texture_dims) {
-         dir_shadow_tex.reset(new glpp::texture_t(dir_shadow_texture_dims, tex_fmt));
+         dir_shadow_tex.reset(new glpp::texture_t(dir_shadow_texture_dims, glpp::texture_format_t::depth));
          dir_shadow_fbo.reset(new glpp::frame_buffer_t(*dir_shadow_tex));
       }
       if (!tex_fbo || tex_fbo->dims() != dims) {
@@ -614,13 +624,13 @@ namespace game {
 
       auto accumulate_scene_renderers = [&](glpp::scene_t const & scene) {
          auto & static_animation = scene.default_animation();
-         mesh_renderers.push_back(make_render_info(context, static_animation, context.prg_3d, context.prg_3d_shadow));
+         mesh_renderers.push_back(make_render_info(context, static_animation, context.prg_3d, context.prg_3d_shadow_pos, context.prg_3d_shadow_dir));
          for (auto idx = 0U; idx < static_animation.child_count(); idx++) {
             auto & static_animation_child = static_animation.child(idx);
-            mesh_renderers.push_back(make_render_info(context, static_animation_child, context.prg_3d, context.prg_3d_shadow));
+            mesh_renderers.push_back(make_render_info(context, static_animation_child, context.prg_3d, context.prg_3d_shadow_pos, context.prg_3d_shadow_dir));
          }
          for (auto anim_name : scene.animation_names()) {
-            mesh_renderers.push_back(make_render_info(context, scene.animation(anim_name), context.prg_3d, context.prg_3d_shadow));
+            mesh_renderers.push_back(make_render_info(context, scene.animation(anim_name), context.prg_3d, context.prg_3d_shadow_pos, context.prg_3d_shadow_dir));
          }
       };
 
@@ -740,10 +750,19 @@ namespace game {
    }
 
    namespace {
-      std::vector<glpp::pass_t> & mesh_passes_for_animation(renderer & state, glpp::animation_t const & animation, bool shadow) {
+      enum class render_shader_type {
+         diffuse,
+         shadow_pos,
+         shadow_dir,
+      };
+      std::vector<glpp::pass_t> & mesh_passes_for_animation(renderer & state, glpp::animation_t const & animation, render_shader_type shader) {
          for (auto & render_info : state.mesh_renderers) {
             if (animation == render_info.animation) {
-               return shadow ? render_info.d3_shadow_mesh_passes : render_info.d3_mesh_passes;
+               switch (shader) {
+               case render_shader_type::diffuse: return render_info.d3_mesh_passes;
+               case render_shader_type::shadow_pos: return render_info.d3_shadow_pos_mesh_passes;
+               case render_shader_type::shadow_dir: return render_info.d3_shadow_dir_mesh_passes;
+               }
             }
          }
 
@@ -860,10 +879,10 @@ namespace game {
          auto entity_filter,
          glm::mat4 const & view_mat,
          glm::mat4 const & proj_mat,
-         bool use_shadow_passes) {
+         render_shader_type shader_type) {
          while (entity_it != entity_it_end) {
             auto & entity_info = *entity_it;
-            auto & passes = mesh_passes_for_animation(*this, entity_info.sprite->animation(), use_shadow_passes);
+            auto & passes = mesh_passes_for_animation(*this, entity_info.sprite->animation(), shader_type);
 
             auto same_entity_type = [&](auto & entity_info_in) {
                return entity_info_in.sprite->animation() == entity_info.sprite->animation();
@@ -872,7 +891,7 @@ namespace game {
 
             auto ambient_light = mesh_render_batch_callback_t::light_t{};
             auto sky_light = mesh_render_batch_callback_t::light_t{};
-            if (!use_shadow_passes) {
+            if (shader_type != render_shader_type::diffuse) {
                ambient_light = mesh_render_batch_callback_t::light_t{ambient_colour, ambient_intensity};
                sky_light = mesh_render_batch_callback_t::light_t{sky_light_colour, sky_light_intensity, sky_light_position};
             }
@@ -887,7 +906,7 @@ namespace game {
                      view_mat, proj_mat,
                      entity_filter,
                      ambient_light, sky_light},
-                  glpp::DrawMode::Triangles);
+                  glpp::draw_mode_t::triangles);
             }
 
             entity_it = entity_partition_end;
@@ -942,20 +961,21 @@ namespace game {
 
          dir_shadow_mvp_biased = bias_xform * light_proj * view * glm::mat4{};
 
-         context.dir_shadow_fbo->bind(glpp::frame_buffer_t::BindTarget::Draw);
+         context.dir_shadow_fbo->bind(glpp::frame_buffer_t::bind_target_t::draw);
 
          GL_VERIFY(gl::clear(
             gl::clear_buffer_flags_t::color_buffer_bit |
             gl::clear_buffer_flags_t::depth_buffer_bit));
 
-         context.prg_3d_shadow.use();
-         context.prg_3d_shadow.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
-         context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(shadow_light.position);
-         context.prg_3d_shadow.uniform("shadow_lights[0].direction").set(shadow_light_direction);
+         context.prg_3d_shadow_pos.use();
+         context.prg_3d_shadow_pos.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
+         context.prg_3d_shadow_pos.uniform("shadow_lights[0].world_position").set(shadow_light.position);
+         context.prg_3d_shadow_pos.uniform("shadow_lights[0].direction").set(shadow_light_direction);
 
          // TODO: exclude entities outside view radius
-         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, view, light_proj, true);
-         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, view, light_proj, true);
+         auto shader_type = render_shader_type::shadow_dir;
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, view, light_proj, shader_type);
+         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, view, light_proj, shader_type);
 
          context.dir_shadow_fbo->unbind();
       } // end daytime shadow calculations
@@ -965,19 +985,19 @@ namespace game {
 
          // const PositionalLight c_light1 = PositionalLight(vec3(400., 30., -300.), vec3(0., 0., 0.), vec3(.9, .8, .1), .1);
          struct face_info {
-            glpp::frame_buffer_t::CubeFace face;
+            glpp::frame_buffer_t::cube_face_t face;
             glm::vec3 view_direction;
             glm::vec3 up_direction;
             std::string name;
          };
 
          const face_info faces[6] = {
-            { glpp::frame_buffer_t::POSITIVE_X,{ 1., 0., 0. },{ 0., -1., 0. }, "x_pos" },
-            { glpp::frame_buffer_t::NEGATIVE_X,{ -1., 0., 0. },{ 0., -1., 0. }, "x_neg" },
-            { glpp::frame_buffer_t::POSITIVE_Y,{ 0., 1., 0. },{ 0., 0., 1. }, "y_pos" },
-            { glpp::frame_buffer_t::NEGATIVE_Y,{ 0., -1., 0. },{ 0., 0., -1. }, "y_neg" },
-            { glpp::frame_buffer_t::POSITIVE_Z,{ 0., 0., 1. },{ 0., -1., 0. }, "z_pos" },
-            { glpp::frame_buffer_t::NEGATIVE_Z,{ 0., 0., -1. },{ 0., -1., 0. }, "z_neg" },
+            { glpp::frame_buffer_t::positive_x,{ 1., 0., 0. },{ 0., -1., 0. }, "x_pos" },
+            { glpp::frame_buffer_t::negative_x,{ -1., 0., 0. },{ 0., -1., 0. }, "x_neg" },
+            { glpp::frame_buffer_t::positive_y,{ 0., 1., 0. },{ 0., 0., 1. }, "y_pos" },
+            { glpp::frame_buffer_t::negative_y,{ 0., -1., 0. },{ 0., 0., -1. }, "y_neg" },
+            { glpp::frame_buffer_t::positive_z,{ 0., 0., 1. },{ 0., -1., 0. }, "z_pos" },
+            { glpp::frame_buffer_t::negative_z,{ 0., 0., -1. },{ 0., -1., 0. }, "z_neg" },
          };
 
          shadow_light = player_light;
@@ -987,7 +1007,7 @@ namespace game {
             auto & face = faces[face_idx];
             const auto view = glm::lookAt(shadow_light.position, shadow_light.position + face.view_direction, face.up_direction);
 
-            context.pos_shadow_fbo->bind(face.face, glpp::frame_buffer_t::BindTarget::Draw);
+            context.pos_shadow_fbo->bind(face.face, glpp::frame_buffer_t::bind_target_t::draw);
 
             GL_VERIFY(gl::clear(
                gl::clear_buffer_flags_t::color_buffer_bit |
@@ -995,7 +1015,7 @@ namespace game {
 
             auto filter = [&](game::world_view_t::render_info_t const & render_info) {
                // not casting shadows upwards
-               if (face.face == glpp::frame_buffer_t::POSITIVE_Y) return false;
+               if (face.face == glpp::frame_buffer_t::positive_y) return false;
 
                auto light_to_entity = render_info.moment->pos() - glm::vec2(shadow_light.position.x, -shadow_light.position.z);
                auto light_height_squared = shadow_light.position.y * shadow_light.position.y;
@@ -1009,7 +1029,7 @@ namespace game {
                // TODO: exclude entities that are far away
 
                // not close to the light, wont cast a shadow underneath the light
-               if (face.face == glpp::frame_buffer_t::NEGATIVE_Y) return false;
+               if (face.face == glpp::frame_buffer_t::negative_y) return false;
 
                auto light_to_entity_norm = glm::normalize(light_to_entity);
                auto dot = light_to_entity.x * face.view_direction.x + light_to_entity.y * -face.view_direction.z;
@@ -1017,12 +1037,13 @@ namespace game {
                return dot > 0;
             };
 
-            context.prg_3d_shadow.use();
-            context.prg_3d_shadow.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
-            context.prg_3d_shadow.uniform("shadow_lights[0].world_position").set(shadow_light.position);
+            context.prg_3d_shadow_pos.use();
+            context.prg_3d_shadow_pos.uniform("shadow_lights[0].is_directional").set(is_daytime ? 1.f : 0.f);
+            context.prg_3d_shadow_pos.uniform("shadow_lights[0].world_position").set(shadow_light.position);
 
-            render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, true);
-            render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, true);
+            auto shader_type = render_shader_type::shadow_pos;
+            render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), filter, view, light_proj, shader_type);
+            render_entity_meshes(world_view.props_begin(), world_view.props_end(), filter, view, light_proj, shader_type);
          }
 
          context.pos_shadow_fbo->unbind();
@@ -1098,12 +1119,13 @@ namespace game {
             gl::clear_buffer_flags_t::depth_buffer_bit);
 
 #if 1
-         ground_pass.back().draw(glpp::DrawMode::Triangles);
+         ground_pass.back().draw(glpp::draw_mode_t::triangles);
 #endif
 
 #if 1
-         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, get_view(*this), get_proj(ortho), false);
-         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, get_view(*this), get_proj(ortho), false);
+         auto shader_type = render_shader_type::diffuse;
+         render_entity_meshes(world_view.creatures_begin(), world_view.creatures_end(), default_entity_filter, get_view(*this), get_proj(ortho), shader_type);
+         render_entity_meshes(world_view.props_begin(), world_view.props_end(), default_entity_filter, get_view(*this), get_proj(ortho), shader_type);
 #endif
 
          //debug_diamond_pass.back().draw(glpp::DrawMode::Triangles);
@@ -1190,8 +1212,8 @@ namespace game {
 #if defined(USE_MSAA_FBO)
       context.msaa_fbo->bind();
       // TODO: tex_fbo should be a non-MSAA renderbuffer (not texture)
-      context.tex_fbo->bind(glpp::frame_buffer_t::Draw);
-      context.msaa_fbo->bind(glpp::frame_buffer_t::Read);
+      context.tex_fbo->bind(glpp::frame_buffer_t::bind_target_t::draw);
+      context.msaa_fbo->bind(glpp::frame_buffer_t::bind_target_t::read);
       {
          gl::clear(
             gl::clear_buffer_flags_t::color_buffer_bit |
@@ -1216,7 +1238,7 @@ namespace game {
       pass.set_uniform("saturation", post_saturation);
       pass.set_uniform("contrast", post_contrast);
       pass.set_uniform("gamma", post_gamma);
-      pass.draw(glpp::DrawMode::Triangles);
+      pass.draw(glpp::draw_mode_t::triangles);
 #endif
 
 #if 1

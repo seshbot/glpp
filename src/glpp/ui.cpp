@@ -154,7 +154,7 @@ void main() {
             else
             {
                gl_::scissor((int)pcmd->clip_rect.x, (int)(height - pcmd->clip_rect.w), (int)(pcmd->clip_rect.z - pcmd->clip_rect.x), (int)(pcmd->clip_rect.w - pcmd->clip_rect.y));
-               glpp::draw(ui_context->mapped_buffer, glpp::DrawMode::Triangles, vtx_offset, pcmd->vtx_count);
+               glpp::draw(ui_context->mapped_buffer, glpp::draw_mode_t::triangles, vtx_offset, pcmd->vtx_count);
             }
             vtx_offset += pcmd->vtx_count;
          }
@@ -263,8 +263,8 @@ namespace imgui {
    ui_context_t init(context & ctx, glpp::texture_unit_t ui_texture_unit)
    {
       glpp::program prg(
-         glpp::shader::create_from_source(VERTEX_SHADER, glpp::shader::Vertex),
-         glpp::shader::create_from_source(FRAG_SHADER, glpp::shader::Fragment));
+         glpp::shader::create_from_source(VERTEX_SHADER, glpp::shader::type_t::vertex),
+         glpp::shader::create_from_source(FRAG_SHADER, glpp::shader::type_t::fragment));
 
       auto buffer_attrib_map = glpp::buffer_attrib_mappings_t()
          .push_attrib("Position", 2)
@@ -291,7 +291,7 @@ namespace imgui {
          ctx, 0.,
          prg,
          ui_texture_unit, texture,
-         glpp::map_buffer(prg, glpp::buffer_t(glpp::buffer_t::Usage::Stream), buffer_attrib_map) 
+         glpp::map_buffer(prg, glpp::buffer_t(glpp::buffer_t::usage_t::stream), buffer_attrib_map) 
       };
 
       auto ui_context_impl = std::unique_ptr<ui_context_t::impl>(new ui_context_t::impl{ ui_context_data });

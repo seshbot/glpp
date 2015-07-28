@@ -198,15 +198,15 @@ namespace glpp {
       auto type = [&] {
          auto ext = file_path.file_name_extension();
          if (ext.size() != 0) {
-            if (ext == "vs") return shader::Type::Vertex;
-            if (ext == "vert") return shader::Type::Vertex;
-            if (ext == "fs") return shader::Type::Fragment;
-            if (ext == "frag") return shader::Type::Fragment;
+            if (ext == "vs") return shader::type_t::vertex;
+            if (ext == "vert") return shader::type_t::vertex;
+            if (ext == "fs") return shader::type_t::fragment;
+            if (ext == "frag") return shader::type_t::fragment;
          }
 
          auto base = file_path.file_name_without_extension();
-         if (string_contains(base, "vert", false)) return shader::Type::Vertex;
-         if (string_contains(base, "frag", false)) return shader::Type::Fragment;
+         if (string_contains(base, "vert", false)) return shader::type_t::vertex;
+         if (string_contains(base, "frag", false)) return shader::type_t::fragment;
 
          throw std::runtime_error(("could not deduce shader type from filename '"s + id).c_str());
       }();
