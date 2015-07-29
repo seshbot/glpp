@@ -62,8 +62,8 @@ void texture_batches_demo() {
    glpp::context context({ 800, 600 }, key_handler);
 
    glpp::program prg(
-      glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::Vertex),
-      glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::Fragment)
+      glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::type_t::vertex),
+      glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::type_t::fragment)
       );
 
    float screen_vertices[] = {
@@ -197,12 +197,12 @@ void texture_batches_demo() {
       //
       prg.use();
 
-      pass1.draw(glpp::DrawMode::Triangles);
+      pass1.draw(glpp::draw_mode_t::triangles);
       float body_scale = .1f;
-      pass2.draw_batch(render_batch_callback_t{ { .0, .0 }, body_scale }, glpp::DrawMode::Triangles);
-      pass2.draw_batch(render_batch_callback_t{ { .0, body_scale * 1.5f }, body_scale * .5f }, glpp::DrawMode::Triangles);
-      pass2.draw_batch(render_batch_callback_t{ { -1.25f * body_scale, body_scale * oscillating }, body_scale * .25f }, glpp::DrawMode::Triangles);
-      pass2.draw_batch(render_batch_callback_t{ { 1.25f * body_scale, body_scale * (1.f - oscillating) }, body_scale * .25f }, glpp::DrawMode::Triangles);
+      pass2.draw_batch(render_batch_callback_t{ { .0, .0 }, body_scale }, glpp::draw_mode_t::triangles);
+      pass2.draw_batch(render_batch_callback_t{ { .0, body_scale * 1.5f }, body_scale * .5f }, glpp::draw_mode_t::triangles);
+      pass2.draw_batch(render_batch_callback_t{ { -1.25f * body_scale, body_scale * oscillating }, body_scale * .25f }, glpp::draw_mode_t::triangles);
+      pass2.draw_batch(render_batch_callback_t{ { 1.25f * body_scale, body_scale * (1.f - oscillating) }, body_scale * .25f }, glpp::draw_mode_t::triangles);
 
       last_tick = this_tick;
 

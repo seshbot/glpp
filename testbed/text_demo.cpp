@@ -109,7 +109,7 @@ void text_demo() {
    while (!context.win().closing()) {
       gl::clear(gl::clear_buffer_flags_t::color_buffer_bit | gl::clear_buffer_flags_t::depth_buffer_bit);
 
-      ui_pass.draw(glpp::DrawMode::Triangles);
+      ui_pass.draw(glpp::draw_mode_t::triangles);
 
       context.win().swap();
    }

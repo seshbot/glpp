@@ -57,8 +57,8 @@ void triangle_demo() {
    glpp::context context({ 800, 600 }, key_handler);
 
    glpp::program prg(
-      glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::Vertex),
-      glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::Fragment)
+      glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::type_t::vertex),
+      glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::type_t::fragment)
       );
 
    const float verts[] = {
@@ -96,7 +96,7 @@ void triangle_demo() {
       // render
       //
       prg.use();
-      glpp::draw(vert_buffer, glpp::DrawMode::Triangles);
+      glpp::draw(vert_buffer, glpp::draw_mode_t::triangles);
 
       last_tick = this_tick;
 

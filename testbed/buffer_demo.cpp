@@ -121,11 +121,11 @@ void buffer_demo() {
    gl::disable(gl::enable_cap_t::cull_face);
 
    glpp::program prg(
-      glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::Vertex),
-      glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::Fragment)
+      glpp::shader::create_from_source(VERT_SHADER_SOURCE, glpp::shader::type_t::vertex),
+      glpp::shader::create_from_source(FRAG_SHADER_SOURCE, glpp::shader::type_t::fragment)
       );
 
-   auto buffer = glpp::buffer_t{ glpp::buffer_t::Usage::Stream };
+   auto buffer = glpp::buffer_t{ glpp::buffer_t::usage_t::stream };
 
    //auto buffer = glpp::buffer_t{ { (float*)shape_verts.data(), (sizeof(vert_info) * shape_verts.size()) / 4 }, glpp::buffer_t::Usage::Stream };
    auto mapped_buffer =
@@ -155,7 +155,7 @@ void buffer_demo() {
       }
       prg.use();
       prg.uniform("t").set((float)(glpp::get_time() - start_time));
-      glpp::draw(mapped_buffer, glpp::DrawMode::Triangles);
+      glpp::draw(mapped_buffer, glpp::draw_mode_t::triangles);
 
       context.win().swap();
    }
